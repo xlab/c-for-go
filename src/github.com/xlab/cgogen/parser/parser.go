@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/cznic/c/internal/cc"
+	"github.com/cznic/c/internal/xc"
 )
 
 type Config struct {
@@ -75,6 +76,7 @@ func New(cfg *Config) (*Parser, error) {
 	if len(cfg.IncludePaths) == 0 {
 		cfg.IncludePaths = []string{"."}
 	}
+	cfg.SysIncludePaths = []string{"/usr/include", "/usr/local/Cellar/libvpx/1.4.0/include/vpx"}
 	if len(cfg.DefinesPath) > 0 {
 		if buf, err := ioutil.ReadFile(cfg.DefinesPath); err != nil {
 			return nil, errors.New("parser: custom defines file provided but can't be read")
@@ -85,8 +87,18 @@ func New(cfg *Config) (*Parser, error) {
 	return p, nil
 }
 
-func (p *Parser) Parse() (*cc.TranslationUnit, error) {
-	return cc.Parse(p.predefined, p.cfg.TargetPaths, p.model,
+func (p *Parser) Parse() (unit *cc.TranslationUnit, macros []string, err error) {
+	unit, err = cc.Parse(p.predefined, p.cfg.TargetPaths, p.model,
 		cc.IncludePaths(p.cfg.IncludePaths),
 		cc.SysIncludePaths(p.cfg.SysIncludePaths))
+	if err != nil {
+		unit = nil
+		return
+	}
+	for id := range cc.Macros {
+		if macro := xc.Dict.S(id); len(macro) > 0 {
+			macros = append(macros, string(macro))
+		}
+	}
+	return
 }
