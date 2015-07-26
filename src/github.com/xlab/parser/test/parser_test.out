@@ -37,13 +37,13 @@
 · · · · · · Declarator: &cc.Declarator{
 · · · · · · · IsTypedef: true,
 · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
-· · · · · · · · Token: test/parser_test.h:1:22: IDENTIFIER "int8_t",
+· · · · · · · · Token: test/parser_test.h:1:21: IDENTIFIER "int8_t",
 · · · · · · · },
 · · · · · · },
 · · · · · },
 · · · · },
 · · · },
-· · · Token: test/parser_test.h:1:28: ';',
+· · · Token: test/parser_test.h:1:27: ';',
 · · },
 · },
 · TranslationUnit: &cc.TranslationUnit{
