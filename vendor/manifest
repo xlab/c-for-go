@@ -1,0 +1,44 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/cznic/c/internal/cc",
+			"repository": "https://github.com/cznic/c",
+			"revision": "91541d0ad25a1867ae419fb0ddec50f0c1b094a0",
+			"branch": "master",
+			"path": "/internal/cc"
+		},
+		{
+			"importpath": "github.com/cznic/c/internal/xc",
+			"repository": "https://github.com/cznic/c",
+			"revision": "91541d0ad25a1867ae419fb0ddec50f0c1b094a0",
+			"branch": "master",
+			"path": "/internal/xc"
+		},
+		{
+			"importpath": "github.com/cznic/golex/lex",
+			"repository": "https://github.com/cznic/golex",
+			"revision": "a799639cffe3567786ea9d7de534659ec57a1cff",
+			"branch": "master",
+			"path": "/lex"
+		},
+		{
+			"importpath": "github.com/cznic/mathutil",
+			"repository": "https://github.com/cznic/mathutil",
+			"revision": "a804f0f2d8521e22d6adabf02cbec61dc1f9dbd2",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/cznic/sortutil",
+			"repository": "https://github.com/cznic/sortutil",
+			"revision": "4c7342852e65c2088c981288f2c5610d10b9f7f4",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/cznic/strutil",
+			"repository": "https://github.com/cznic/strutil",
+			"revision": "1eb03e3cc9d345307a45ec82bd3016cde4bd4464",
+			"branch": "master"
+		}
+	]
+}

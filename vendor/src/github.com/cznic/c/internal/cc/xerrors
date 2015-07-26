@@ -1,0 +1,6 @@
+//TODO Revisit: PPIF PPOTHER '\n' '\n' "unterminated #if"
+
+CONSTANT_EXPRESSION "constant expression: unexpected EOF"
+MACRO_ARGS "macro arguments: unexpected EOF"
+PREPROCESSING_FILE "preprocessing file: unexpected EOF"
+TRANSLATION_UNIT "translation unit: unexpected EOF"
