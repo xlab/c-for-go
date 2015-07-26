@@ -1,0 +1,120 @@
+&cc.TranslationUnit{
+· Declarations: &cc.Bindings{
+· · Type: 1,
+· },
+· ExternalDeclaration: &cc.ExternalDeclaration{
+· · Case: 1,
+· · Declaration: &cc.Declaration{
+· · · IsFileScope: true,
+· · · IsTypedef: true,
+· · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
+· · · · IsTypedef: true,
+· · · · DeclarationSpecifiersOpt: &cc.DeclarationSpecifiersOpt{
+· · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
+· · · · · · Case: 1,
+· · · · · · DeclarationSpecifiersOpt: &cc.DeclarationSpecifiersOpt{
+· · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
+· · · · · · · · Case: 1,
+· · · · · · · · TypeSpecifier: &cc.TypeSpecifier{
+· · · · · · · · · Case: 1,
+· · · · · · · · · Token: test/parser_test.h:1:16: CHAR "char",
+· · · · · · · · },
+· · · · · · · },
+· · · · · · },
+· · · · · · TypeSpecifier: &cc.TypeSpecifier{
+· · · · · · · Case: 7,
+· · · · · · · Token: test/parser_test.h:1:9: SIGNED "signed",
+· · · · · · },
+· · · · · },
+· · · · },
+· · · · StorageClassSpecifier: &cc.StorageClassSpecifier{
+· · · · · Token: test/parser_test.h:1:1: TYPEDEF "typedef",
+· · · · },
+· · · },
+· · · InitDeclaratorListOpt: &cc.InitDeclaratorListOpt{
+· · · · InitDeclaratorList: &cc.InitDeclaratorList{
+· · · · · InitDeclarator: &cc.InitDeclarator{
+· · · · · · Declarator: &cc.Declarator{
+· · · · · · · IsTypedef: true,
+· · · · · · · DirectDeclarator: &cc.DirectDeclarator{
+· · · · · · · · Token: test/parser_test.h:1:22: IDENTIFIER "int8_t",
+· · · · · · · },
+· · · · · · },
+· · · · · },
+· · · · },
+· · · },
+· · · Token: test/parser_test.h:1:28: ';',
+· · },
+· },
+· TranslationUnit: &cc.TranslationUnit{
+· · Case: 1,
+· · ExternalDeclaration: &cc.ExternalDeclaration{
+· · · Case: 1,
+· · · Declaration: &cc.Declaration{
+· · · · IsFileScope: true,
+· · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
+· · · · · Case: 1,
+· · · · · TypeSpecifier: &cc.TypeSpecifier{
+· · · · · · Case: 13,
+· · · · · · Token: test/parser_test.h:2:1: TYPEDEFNAME "int8_t",
+· · · · · },
+· · · · },
+· · · · InitDeclaratorListOpt: &cc.InitDeclaratorListOpt{
+· · · · · InitDeclaratorList: &cc.InitDeclaratorList{
+· · · · · · InitDeclarator: &cc.InitDeclarator{
+· · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
+· · · · · · · · · Case: 6,
+· · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
+· · · · · · · · · · Token: test/parser_test.h:2:8: IDENTIFIER "plus",
+· · · · · · · · · },
+· · · · · · · · · DirectDeclarator2: &cc.DirectDeclarator2{
+· · · · · · · · · · ParameterTypeList: &cc.ParameterTypeList{
+· · · · · · · · · · · ParameterList: &cc.ParameterList{
+· · · · · · · · · · · · ParameterDeclaration: &cc.ParameterDeclaration{
+· · · · · · · · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
+· · · · · · · · · · · · · · Case: 1,
+· · · · · · · · · · · · · · TypeSpecifier: &cc.TypeSpecifier{
+· · · · · · · · · · · · · · · Case: 13,
+· · · · · · · · · · · · · · · Token: test/parser_test.h:2:14: TYPEDEFNAME "int8_t",
+· · · · · · · · · · · · · · },
+· · · · · · · · · · · · · },
+· · · · · · · · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
+· · · · · · · · · · · · · · · Token: test/parser_test.h:2:21: IDENTIFIER "a",
+· · · · · · · · · · · · · · },
+· · · · · · · · · · · · · },
+· · · · · · · · · · · · },
+· · · · · · · · · · · · ParameterList: &cc.ParameterList{
+· · · · · · · · · · · · · Case: 1,
+· · · · · · · · · · · · · ParameterDeclaration: &cc.ParameterDeclaration{
+· · · · · · · · · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
+· · · · · · · · · · · · · · · Case: 1,
+· · · · · · · · · · · · · · · TypeSpecifier: &cc.TypeSpecifier{
+· · · · · · · · · · · · · · · · Case: 13,
+· · · · · · · · · · · · · · · · Token: test/parser_test.h:2:24: TYPEDEFNAME "int8_t",
+· · · · · · · · · · · · · · · },
+· · · · · · · · · · · · · · },
+· · · · · · · · · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
+· · · · · · · · · · · · · · · · Token: test/parser_test.h:2:31: IDENTIFIER "b",
+· · · · · · · · · · · · · · · },
+· · · · · · · · · · · · · · },
+· · · · · · · · · · · · · },
+· · · · · · · · · · · · · Token: test/parser_test.h:2:22: ',',
+· · · · · · · · · · · · },
+· · · · · · · · · · · },
+· · · · · · · · · · },
+· · · · · · · · · · Token: test/parser_test.h:2:32: ')',
+· · · · · · · · · },
+· · · · · · · · · Token: test/parser_test.h:2:13: '(',
+· · · · · · · · },
+· · · · · · · },
+· · · · · · },
+· · · · · },
+· · · · },
+· · · · Token: test/parser_test.h:2:33: ';',
+· · · },
+· · },
+· },
+}
