@@ -16,28 +16,32 @@ import (
 )
 
 type Translator struct {
-	out       io.Writer
-	rules     Rules
-	acceptRxs RxMap
-	ignoreRxs RxMap
+	out         io.Writer
+	rules       Rules
+	compiledRxs map[RuleAction]RxMap
 }
 
-type RxMap map[RuleTarget][]*regexp.Regexp
+type RxMap map[RuleTarget][]Rx
+
+type Rx struct {
+	From *regexp.Regexp
+	To   []byte
+	//
+	Transform RuleTransform
+}
 
 func New(rules Rules, out io.Writer) (*Translator, error) {
 	t := &Translator{
-		rules: rules,
-		out:   out,
+		rules:       rules,
+		out:         out,
+		compiledRxs: make(map[RuleAction]RxMap),
 	}
-	if rxMap, err := getRuleActionRxs(rules, ActionAccept); err != nil {
-		return nil, err
-	} else {
-		t.acceptRxs = rxMap
-	}
-	if rxMap, err := getRuleActionRxs(rules, ActionIgnore); err != nil {
-		return nil, err
-	} else {
-		t.ignoreRxs = rxMap
+	for _, action := range ruleActions {
+		if rxMap, err := getRuleActionRxs(rules, action); err != nil {
+			return nil, err
+		} else {
+			t.compiledRxs[action] = rxMap
+		}
 	}
 	return t, nil
 }
@@ -46,12 +50,27 @@ func getRuleActionRxs(rules Rules, action RuleAction) (RxMap, error) {
 	rxMap := make(RxMap, len(rules))
 	for target, specs := range rules {
 		for _, spec := range specs {
+			if spec.Action == ActionNone {
+				spec.Action = ActionReplace
+				spec.To = "${_src}"
+				if len(spec.From) == 0 {
+					spec.From = "(?P<_src>.*)"
+				} else {
+					spec.From = fmt.Sprintf("(?P<_src>%s)", spec.From)
+				}
+			} else if len(spec.From) == 0 {
+				spec.From = "(.*)"
+			}
 			if spec.Action != action {
 				continue
 			}
-			rx, err := regexp.Compile(spec.From)
+			rxFrom, err := regexp.Compile(spec.From)
 			if err != nil {
 				return nil, errors.New(fmt.Sprintf("translator: %s rules: invalid regexp %s", target, spec.From))
+			}
+			rx := Rx{From: rxFrom, To: []byte(spec.To)}
+			if spec.Action == ActionReplace {
+				rx.Transform = spec.Transform
 			}
 			rxMap[target] = append(rxMap[target], rx)
 		}
@@ -115,34 +134,77 @@ func (t *Translator) Learn(macros []int) {
 		pos := xc.FileSet.Position(def.Pos)
 		t.Printf("\n// %s:%d:%d\n//   > define %s %v\n%s = %s",
 			narrowPath(pos.Filename), pos.Line, pos.Offset, def.Name, srcLineByID[id],
-			def.Name, xc.Dict.S(defineByID[id]))
+			t.transformName(TargetConst, string(def.Name)), xc.Dict.S(defineByID[id]))
 	}
 	t.Printf("\n)\n\n")
 }
 
-func (t *Translator) transformName(target RuleTarget, name []byte) []byte {
-	for _, rule := range t.rules[target] {
-		switch rule.Action {
-		// case ActionCut:
-		// TODO: rx precompile
+func (t *Translator) transformName(target RuleTarget, name string) []byte {
+	var src []byte
+	if target != TargetGlobal {
+		// apply global rules
+		src = t.transformName(TargetGlobal, name)
+	} else {
+		src = []byte(name)
+	}
+
+	for _, rx := range t.compiledRxs[ActionReplace][target] {
+		indices := rx.From.FindAllSubmatchIndex(src, -1)
+		reference := make([]byte, 0, len(src))
+		reference = append(reference, src...)
+
+		// Itrate submatches backwards since we need to insert expanded
+		// versions into the original src and doing so from beginning will shift indices
+		// for latter inserts.
+		//
+		// Example flow:
+		// doing title at _partitions in vpx_error_resilient_partitions
+		// doing title at _resilient in vpx_error_resilientPartitions
+		// doing title at _error in vpx_errorResilientPartitions
+		// -> vpxErrorResilientPartitions
+		for i := len(indices) - 1; i >= 0; i-- {
+			idx := indices[i]
+			// if len(rx.Transform) > 0 {
+			// 	log.Println("doing", rx.Transform, "at", string(src[idx[0]:idx[1]]), "in", string(src))
+			// }
+			buf := rx.From.Expand([]byte{}, rx.To, reference, idx)
+			switch rx.Transform {
+			case TransformLower:
+				buf = bytes.ToLower(buf)
+			case TransformTitle:
+				buf = bytes.Title(buf)
+			case TransformUpper:
+				buf = bytes.ToUpper(buf)
+			}
+			src = replaceBytes(src, idx, buf)
 		}
 	}
+
+	return src
 }
 
 func (t *Translator) isAcceptableName(target RuleTarget, name []byte) bool {
-	if rxs, ok := t.ignoreRxs[target]; ok {
+	if rxs, ok := t.compiledRxs[ActionIgnore][target]; ok {
 		for _, rx := range rxs {
-			if rx.Match(name) {
+			if rx.From.Match(name) {
+				if target != TargetGlobal {
+					// fallback to global rules
+					return t.isAcceptableName(TargetGlobal, name)
+				}
 				return false
 			}
 		}
 	}
-	if rxs, ok := t.acceptRxs[target]; ok {
+	if rxs, ok := t.compiledRxs[ActionAccept][target]; ok {
 		for _, rx := range rxs {
-			if rx.Match(name) {
+			if rx.From.Match(name) {
 				return true
 			}
 		}
+	}
+	if target != TargetGlobal {
+		// fallback to global rules
+		return t.isAcceptableName(TargetGlobal, name)
 	}
 	return false
 }

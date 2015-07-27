@@ -3,19 +3,30 @@ package translator
 type Rules map[RuleTarget][]RuleSpec
 
 type RuleSpec struct {
-	From, To string
-	Action   RuleAction
+	From, To  string
+	Action    RuleAction
+	Transform RuleTransform
 }
 
 type RuleAction string
 
 const (
-	ActionAccept  RuleAction = "accept"
-	ActionReplace            = "replace"
-	ActionAbbr               = "abbr"
-	ActionLower              = "lower"
-	ActionUpper              = "upper"
+	ActionNone    RuleAction = ""
+	ActionAccept             = "accept"
 	ActionIgnore             = "ignore"
+	ActionReplace            = "replace"
+)
+
+var ruleActions = []RuleAction{
+	ActionAccept, ActionIgnore, ActionReplace,
+}
+
+type RuleTransform string
+
+const (
+	TransformLower RuleTransform = "lower"
+	TransformTitle               = "title"
+	TransformUpper               = "upper"
 )
 
 type RuleTarget string

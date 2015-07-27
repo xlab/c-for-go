@@ -22,8 +22,16 @@ func TestLearn(t *testing.T) {
 	buf := bufio.NewWriter(os.Stdout)
 	defer buf.Flush()
 	rules := Rules{
-		TargetConst: {
+		TargetGlobal: {
 			RuleSpec{From: "(?i)VPX_", Action: ActionAccept},
+			RuleSpec{Transform: TransformLower},
+		},
+		TargetConst: {
+			RuleSpec{From: "vpx_", To: "_", Action: ActionReplace},
+			RuleSpec{From: "_abi", Transform: TransformUpper},
+			RuleSpec{From: "_img", To: "_image", Action: ActionReplace},
+			RuleSpec{From: "_fmt", To: "_format", Action: ActionReplace},
+			RuleSpec{From: "_([^_]+)", To: "$1", Action: ActionReplace, Transform: TransformTitle},
 		},
 	}
 	tl, err := New(rules, buf)
