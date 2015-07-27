@@ -139,22 +139,22 @@ func (t *Translator) Learn(macros []int) {
 	t.Printf("\n)\n\n")
 }
 
-func (t *Translator) transformName(target RuleTarget, name string) []byte {
-	var src []byte
+func (t *Translator) TransformName(target RuleTarget, str string) []byte {
+	var name []byte
 	if target != TargetGlobal {
 		// apply global rules
-		src = t.transformName(TargetGlobal, name)
+		name = t.transformName(TargetGlobal, str)
 	} else {
-		src = []byte(name)
+		name = []byte(str)
 	}
 
 	for _, rx := range t.compiledRxs[ActionReplace][target] {
-		indices := rx.From.FindAllSubmatchIndex(src, -1)
-		reference := make([]byte, 0, len(src))
-		reference = append(reference, src...)
+		indices := rx.From.FindAllSubmatchIndex(name, -1)
+		reference := make([]byte, 0, len(name))
+		reference = append(reference, name...)
 
 		// Itrate submatches backwards since we need to insert expanded
-		// versions into the original src and doing so from beginning will shift indices
+		// versions into the original name and doing so from beginning will shift indices
 		// for latter inserts.
 		//
 		// Example flow:
@@ -165,7 +165,7 @@ func (t *Translator) transformName(target RuleTarget, name string) []byte {
 		for i := len(indices) - 1; i >= 0; i-- {
 			idx := indices[i]
 			// if len(rx.Transform) > 0 {
-			// 	log.Println("doing", rx.Transform, "at", string(src[idx[0]:idx[1]]), "in", string(src))
+			// 	log.Println("doing", rx.Transform, "at", string(name[idx[0]:idx[1]]), "in", string(name))
 			// }
 			buf := rx.From.Expand([]byte{}, rx.To, reference, idx)
 			switch rx.Transform {
@@ -176,11 +176,11 @@ func (t *Translator) transformName(target RuleTarget, name string) []byte {
 			case TransformUpper:
 				buf = bytes.ToUpper(buf)
 			}
-			src = replaceBytes(src, idx, buf)
+			name = replaceBytes(name, idx, buf)
 		}
 	}
 
-	return src
+	return name
 }
 
 func (t *Translator) isAcceptableName(target RuleTarget, name []byte) bool {
