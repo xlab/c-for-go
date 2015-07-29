@@ -18,6 +18,7 @@ import (
 type Translator struct {
 	out         io.Writer
 	rules       Rules
+	defines     []*defineLine
 	compiledRxs map[RuleAction]RxMap
 }
 
@@ -30,7 +31,7 @@ type Rx struct {
 	Transform RuleTransform
 }
 
-func New(rules Rules, out io.Writer) (*Translator, error) {
+func New(rules Rules, typemap CTypeMap, out io.Writer) (*Translator, error) {
 	t := &Translator{
 		rules:       rules,
 		out:         out,
@@ -78,15 +79,18 @@ func getRuleActionRxs(rules Rules, action RuleAction) (RxMap, error) {
 	return rxMap, nil
 }
 
-type definePosList []definePos
-type definePos struct {
-	Pos  token.Pos
-	Name []byte
+type defineLine struct {
+	Pos   token.Pos
+	Name  []byte
+	Value []byte
+	Src   string
 }
 
-func (s definePosList) Len() int      { return len(s) }
-func (s definePosList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s definePosList) Less(i, j int) bool {
+type defineLines []*defineLine
+
+func (s defineLines) Len() int      { return len(s) }
+func (s defineLines) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s defineLines) Less(i, j int) bool {
 	if s[i].Pos != s[j].Pos {
 		return s[i].Pos < s[j].Pos
 	} else {
@@ -98,11 +102,7 @@ func (t *Translator) Printf(format string, args ...interface{}) {
 	fmt.Fprintf(t.out, format, args...)
 }
 
-func (t *Translator) Learn(macros []int) {
-	var defList definePosList
-	srcLineByID := make(map[int]string)
-	defineByID := make(map[int]int)
-
+func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	for _, id := range macros {
 		name := xc.Dict.S(id)
 		if !t.isAcceptableName(TargetConst, name) {
@@ -112,38 +112,37 @@ func (t *Translator) Learn(macros []int) {
 		if !ok || len(tokList) == 0 {
 			continue
 		}
-
-		defineByID[id] = tokList[0].Val
-		defList = append(defList, definePos{
-			Pos:  pos,
-			Name: name,
-		})
-
 		srcParts := make([]string, len(uTokList))
 		for i, v := range uTokList {
 			srcParts[i] = cc.TokSrc(v)
 		}
-		srcLineByID[id] = strings.Join(srcParts, " ")
+		t.defines = append(t.defines, &defineLine{
+			Pos:   pos,
+			Name:  name,
+			Value: tokList[0].S(),
+			Src:   strings.Join(srcParts, " "),
+		})
 	}
 
-	sort.Sort(definePosList(defList))
+	sort.Sort(defineLines(t.defines))
 
 	t.Printf("const (")
-	for _, def := range defList {
-		id := xc.Dict.ID(def.Name)
-		pos := xc.FileSet.Position(def.Pos)
-		t.Printf("\n// %s:%d:%d\n//   > define %s %v\n%s = %s",
-			narrowPath(pos.Filename), pos.Line, pos.Offset, def.Name, srcLineByID[id],
-			t.transformName(TargetConst, string(def.Name)), xc.Dict.S(defineByID[id]))
+	for _, line := range t.defines {
+		pos := xc.FileSet.Position(line.Pos)
+		t.Printf("\n// %s:%d\n//   > define %s %v\n%s = %s",
+			narrowPath(pos.Filename), pos.Line, line.Name, line.Src,
+			t.TransformName(TargetConst, string(line.Name)), line.Value)
 	}
 	t.Printf("\n)\n\n")
+
+	return xc.Compilation.Errors(true)
 }
 
 func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 	var name []byte
 	if target != TargetGlobal {
 		// apply global rules
-		name = t.transformName(TargetGlobal, str)
+		name = t.TransformName(TargetGlobal, str)
 	} else {
 		name = []byte(str)
 	}
