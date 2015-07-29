@@ -80,6 +80,7 @@
 · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · },
 · · · · · · · · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · · · · · · · IsDefinition: true,
 · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · · · · · · · Token: test/parser_test.h:2:21: IDENTIFIER "a",
 · · · · · · · · · · · · · · },
@@ -96,6 +97,7 @@
 · · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · · · · · · · · IsDefinition: true,
 · · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · · · · · · · · Token: test/parser_test.h:2:31: IDENTIFIER "b",
 · · · · · · · · · · · · · · · },
