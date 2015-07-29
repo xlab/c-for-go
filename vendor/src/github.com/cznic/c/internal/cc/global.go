@@ -38,7 +38,7 @@ var (
 	// dict id: macro. No mutex needed, AST preprocessing is serial.
 
 	// Macros records macros defined during preprocessing. Map key is the identifier ID.
-	Macros = map[int]*macro{}
+	Macros = map[int]*macro{} //TODO unexport?
 
 	model           Model
 	printHooks      = strutil.PrettyPrintHooks{}

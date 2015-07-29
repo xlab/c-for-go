@@ -14,6 +14,7 @@ var (
 	_ Type = (*declarationSpecifiers)(nil)
 	_ Type = (*directAbstractDeclarator)(nil)
 	_ Type = (*directDeclarator)(nil)
+	_ Type = (*functionDefintion)(nil)
 	_ Type = (*indirectType)(nil)
 	_ Type = (*specifierQualifierList)(nil)
 	_ Type = (*structOrUnionSpecifier)(nil)
@@ -117,13 +118,6 @@ func (d *declarationSpecifiers) StructOrUnionType() *StructOrUnionSpecifier {
 	return (*typeSpecifier)(d.typeSpecification()).StructOrUnionType()
 }
 
-// TypedefType implements Type.
-func (d *declarationSpecifiers) TypedefType() Type {
-	if !d.IsTypedef {
-		panic("internal error")
-	}
-	return (*typeSpecifier)(d.typeSpecification()) }
-
 // typeSpecification returns the first TypeSpecifier of d, if any, or nil
 // otherwise.
 func (d *declarationSpecifiers) typeSpecification() *TypeSpecifier {
@@ -184,6 +178,34 @@ func (d *Declarator) Ident() xc.Token {
 	return d.DirectDeclarator.ident()
 }
 
+// SUSpecifier returns the StructOrUnionSpecifier of a field d declares.
+// SUSpecifier will panic if d does not declare a field.
+func (d *Declarator) SUSpecifier() *StructOrUnionSpecifier { return d.SUSpecifier0.SUSpecifier }
+
+func (d *Declarator) insert(sc *Bindings, ns Namespace, isDefinition bool) {
+	dd := d.DirectDeclarator
+	for {
+		switch dd.Case {
+		case 0: // IDENTIFIER
+			d.IsDefinition = isDefinition
+			sc.insert(NSIdentifiers, dd.Token, d)
+			return
+		case 1: //  '(' Declarator ')'
+			dd.Declarator.insert(sc, ns, isDefinition)
+			return
+		case
+			2, // DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'
+			3, // DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'
+			4, // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
+			5, // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
+			6: // DirectDeclarator '(' DirectDeclarator2
+			dd = dd.DirectDeclarator
+		default:
+			panic("internal error")
+		}
+	}
+}
+
 type directAbstractDeclarator DirectAbstractDeclarator
 
 // BaseType implements Type.
@@ -215,9 +237,6 @@ func (d *directAbstractDeclarator) ResultType() Type {
 func (d *directAbstractDeclarator) StructOrUnionType() *StructOrUnionSpecifier {
 	panic("internal error")
 }
-
-// TypedefType implements Type.
-func (d *directAbstractDeclarator) TypedefType() Type { panic("internal error") }
 
 type directDeclarator DirectDeclarator
 
@@ -271,14 +290,6 @@ func (d *directDeclarator) ResultType() Type {
 // StructOrUnionType implements Type.
 func (d *directDeclarator) StructOrUnionType() *StructOrUnionSpecifier {
 	return (*DirectDeclarator)(d).spec().StructOrUnionType()
-}
-
-// TypedefType implements Type.
-func (d *directDeclarator) TypedefType() Type {
-	switch d.Case {
-	default:
-		panic(d.Case)
-	}
 }
 
 func (d *DirectDeclarator) postProc(sc *Bindings) {
@@ -363,11 +374,32 @@ func (e *EnumSpecifier0) Tag() (xc.Token, bool) {
 	return o.Token, true
 }
 
-// IsDeclaration reports whether i is a declaration without a definition.
-func (i *InitDeclarator) IsDeclaration() bool { return !i.IsDefinition() }
+// Type returns the type of f.
+func (f *FunctionDefinition) Type() Type { return (*functionDefintion)(f) }
 
-// IsDefinition reports whether i is a declaration with a definition.
-func (i *InitDeclarator) IsDefinition() bool { return i.Initializer != nil }
+type functionDefintion FunctionDefinition
+
+// BaseType implements Type.
+func (f *functionDefintion) BaseType() Type { panic("internal error") }
+
+// Kind implements Type.
+func (f *functionDefintion) Kind() Kind { return FunctionType }
+
+// Name implements Type.
+func (f *functionDefintion) Name() xc.Token { panic("internal error") }
+
+// ParameterTypeList implements Type.
+func (f *functionDefintion) ParameterTypeList() *ParameterTypeList {
+	return (*FunctionDefinition)(f).Declarator.DirectDeclarator.DirectDeclarator2.ParameterTypeList
+}
+
+// ResultType implements Type.
+func (f *functionDefintion) ResultType() Type {
+	return newIndirectType(f.DeclarationSpecifiers.Type(), f.Declarator.DirectDeclarator.indirection)
+}
+
+// StructOrUnionType implements Type.
+func (f *functionDefintion) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }
 
 // FindInitDeclarator returns the init declarator associated with nm or nil if
 // no such init declarator exists.
@@ -422,11 +454,6 @@ func (s *specifierQualifierList) ResultType() Type { panic("internal error") }
 // StructOrUnionType implements Type.
 func (s *specifierQualifierList) StructOrUnionType() *StructOrUnionSpecifier {
 	return (*typeSpecifier)(s.typeSpecification()).StructOrUnionType()
-}
-
-// TypedefType implements Type.
-func (s *specifierQualifierList) TypedefType() Type {
-	return (*typeSpecifier)(s.typeSpecification()).TypedefType()
 }
 
 // typeSpecification returns the first TypeSpecifier of s, if any, or nil
@@ -525,9 +552,6 @@ func (s *structOrUnionSpecifier) StructOrUnionType() *StructOrUnionSpecifier {
 	return (*StructOrUnionSpecifier)(s)
 }
 
-// TypedefType implements Type.
-func (s *structOrUnionSpecifier) TypedefType() Type { panic("internal error") }
-
 // StructOrUnionType implements Type.
 func (s *StructOrUnionSpecifier0) StructOrUnionType() *StructOrUnionSpecifier { return s.SUSpecifier }
 
@@ -617,6 +641,3 @@ func (t *typeSpecifier) StructOrUnionType() *StructOrUnionSpecifier {
 		panic(PrettyString(t))
 	}
 }
-
-// TypedefType implements Type.
-func (t *typeSpecifier) TypedefType() Type { panic("internal error") }

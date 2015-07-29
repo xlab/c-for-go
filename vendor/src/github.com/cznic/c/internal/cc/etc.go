@@ -40,10 +40,6 @@ type Type interface {
 	// StructType or a UnionType. Calling StructOrUnionType for other type
 	// kinds will panic.
 	StructOrUnionType() *StructOrUnionSpecifier
-
-	// TypedefType returns the type a NamedType defines. Calling
-	// TypedefType for other type kinds will panic.
-	TypedefType() Type
 }
 
 //TODO
@@ -62,12 +58,12 @@ func PrettyString(v interface{}) string {
 	return strutil.PrettyString(v, "", "", printHooks)
 }
 
-type nodeStat struct {
+type nodeStat struct { //TODO -> all_test.go
 	instances int
 	sizeof    int
 }
 
-func astSum(m map[string]*nodeStat, v interface{}) {
+func astSum(m map[string]*nodeStat, v interface{}) { //TODO -> all_test.go
 	if v == nil {
 		return
 	}
@@ -189,7 +185,7 @@ func isZero(i interface{}) bool {
 
 func strConst(t xc.Token) interface{} {
 	s := dict.S(t.Val)
-	return string(s[1 : len(s)-1]) //TODO This is inccomplete
+	return string(s[1 : len(s)-1]) //TODO This is incomplete
 }
 
 func intConst(t xc.Token) interface{} {
@@ -371,87 +367,46 @@ func (s *Bindings) boot(ns Namespace) map[int]*binding {
 }
 
 func (s *Bindings) insert(ns Namespace, tok xc.Token, node interface{}) {
-	//if tok.Val == dict.SID("SorterRecord") {
-	//	fmt.Printf("==== insert(%v): %v %T\n", ns, PrettyString(tok), node)
-	//}
-	if tok.Rune != IDENTIFIER {
+	if tok.Rune != IDENTIFIER || ns == NSTags && s.Type != ScopeFile {
 		panic("internal error")
 	}
 
-	for ns == NSTags && s.Type != ScopeFile {
-		s = s.parent
-	}
-
-	_, nodeIsDeclarator := node.(*Declarator)
-	if nodeIsDeclarator && node.(*Declarator).DirectDeclarator.Case != 0 { //TODO-
-		panic("internal error")
-	}
 	m := s.boot(ns)
 	nm := tok.Val
 	if ex, ok := m[nm]; ok {
-		if nodeIsDeclarator {
-			return
-		}
-
 		switch exn := ex.Node.(type) {
 		case *Declarator:
-			m[nm] = newBinding(tok, node)
-			return
-		case *Declaration:
 			switch n := node.(type) {
-			case *Declaration:
-				exIsDecl := exn.FindInitDeclarator(tok.Val).IsDeclaration()
-				nIsDef := n.FindInitDeclarator(tok.Val).IsDefinition()
-				switch {
-				case exIsDecl && nIsDef: // decl, def
-					m[nm] = newBinding(tok, node)
-					return
-				case exIsDecl && !nIsDef: // decl, redecl
-					if exn.DeclarationSpecifiers.IsExtern && n.DeclarationSpecifiers.IsExtern {
-						//TODO check eq
-						return // ok
-					}
-				//case !exIsDecl && nIsDef: // def, redef
-				case !exIsDecl && !nIsDef: // def, decl
-					return
-				}
 			case *FunctionDefinition:
-				if exn.FindInitDeclarator(tok.Val).IsDeclaration() { // decl, def
+				m[nm] = newBinding(tok, node)
+				return
+			case *Declarator:
+				switch {
+				case !exn.IsDefinition && n.IsDefinition:
 					m[nm] = newBinding(tok, node)
 					return
+				default:
+					panic("internal error")
 				}
-			default:
-				panic("internal error")
-			}
-		case *StructOrUnionSpecifier0:
-			switch n := node.(type) {
-			case *StructOrUnionSpecifier:
-				m[nm] = newBinding(tok, n)
-				return
 			default:
 				panic("internal error")
 			}
 		case *StructOrUnionSpecifier:
-			switch exn.Case {
-			case 0: // StructOrUnionSpecifier0 '{' StructDeclarationList '}'
-				switch n := node.(type) {
-				case *StructOrUnionSpecifier:
-					switch n.Case {
-					case 1: // StructOrUnionSpecifier0 '{' StructDeclarationList '}'
-						return // def, decl
-					default:
-						panic("internal error")
-					}
-				default:
-					panic("internal error")
-				}
-			case 1: // StructOrUnion IDENTIFIER
-				switch n := node.(type) {
-				case *StructOrUnionSpecifier:
+			switch n := node.(type) {
+			case *StructOrUnionSpecifier:
+				switch exn.Case {
+				case 1: // StructOrUnion IDENTIFIER
 					switch n.Case {
 					case 0: // StructOrUnionSpecifier0 '{' StructDeclarationList '}'
-						m[nm] = newBinding(tok, n) // decl, def
+						m[nm] = newBinding(tok, node)
 						return
+					case 1: // StructOrUnion IDENTIFIER
+						return
+					default:
+						panic(n.Case)
+					}
+				case 0: // StructOrUnionSpecifier0 '{' StructDeclarationList '}'
+					switch n.Case {
 					case 1: // StructOrUnion IDENTIFIER
 						return
 					default:
@@ -509,7 +464,7 @@ func (s *Bindings) IsTypedefName(nm int) bool {
 	switch x := b.Node.(type) {
 	case *Declarator:
 		return x.IsTypedef
-	case *Declaration:
+	case *Declaration: //TODO-
 		return x.IsTypedef
 	case *FunctionDefinition:
 		return false
@@ -664,6 +619,3 @@ func (i *indirectType) ResultType() Type { panic("internal error") }
 
 // StructOrUnionType implements Type.
 func (i *indirectType) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }
-
-// TypedefType implements Type.
-func (i *indirectType) TypedefType() Type { return i }

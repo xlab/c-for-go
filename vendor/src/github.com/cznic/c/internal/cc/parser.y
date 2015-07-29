@@ -200,7 +200,7 @@ import (
 	IterationStatement		"iteration statement"
 	JumpStatement			"jump statement"
 	LabeledStatement		"labeled statement"
-	LogicalAndExpression		"logical and expression"
+	LogicalAndExpression		"logical-and expression"
 	LogicalOrExpression		"logical-or expression"
 	MacroArgList			"macro argument list"
 	MacroArgsList			"macro arguments list"
@@ -539,7 +539,13 @@ InitDeclaratorListOpt:
 // (6.7)
 InitDeclarator:
 	Declarator
+	{
+		lhs.Declarator.insert(lx.scope, NSIdentifiers, false)
+	}
 |	Declarator '=' Initializer
+	{
+		lhs.Declarator.insert(lx.scope, NSIdentifiers, true)
+	}
 
 // (6.7.1)
 StorageClassSpecifier:
@@ -703,12 +709,14 @@ StructDeclarator:
 		lhs.align.pos = pos
 		lhs.offset.pos = pos
 		lhs.size.pos = pos
+		lhs.Declarator.insert(lx.scope, NSMembers, true)
 	}
 |	DeclaratorOpt ':' ConstantExpression
 	{
 		pos := lhs.Token.Pos()
 		if o := lhs.DeclaratorOpt; o != nil {
 			pos = o.Declarator.Ident().Pos()
+			o.Declarator.insert(lx.scope, NSMembers, true)
 		}
 		lhs.align.pos = pos
 		lhs.offset.pos = pos
@@ -760,29 +768,16 @@ FunctionSpecifier:
 	"inline"
 
 // (6.7.5)
+//yy:field	IsDefinition	bool				// Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
 //yy:field	IsTypedef	bool
 //yy:field	SUSpecifier0	*StructOrUnionSpecifier0	// Non nil if d declares a field.
 Declarator:
 	PointerOpt DirectDeclarator
 	{
 		lhs.DirectDeclarator.indirection = lhs.PointerOpt.indirection()
-		lhs.IsTypedef = lx.scope.isTypedef
 		sc := lx.scope
+		lhs.IsTypedef = sc.isTypedef
 		lhs.SUSpecifier0 = sc.SUSpecifier0
-		if lhs.DirectDeclarator.Case != 0 {
-			break
-		}
-
-		nm := lhs.Ident()
-		typ := sc.Type
-		switch typ {
-		case ScopeFile, ScopeFnParams, ScopeBlock:
-			sc.insert(NSIdentifiers, nm, lhs)
-		case ScopeMembers:
-			sc.insert(NSMembers, nm, lhs)
-		default:
-			fmt.Printf("TODO %v, %v\n", typ, nm)
-		}
 	}
 
 DeclaratorOpt:
@@ -874,6 +869,9 @@ ParameterList:
 // (6.7.5)
 ParameterDeclaration:
 	DeclarationSpecifiers Declarator
+	{
+		lhs.Declarator.insert(lx.scope, NSIdentifiers, true)
+	}
 |	DeclarationSpecifiers AbstractDeclaratorOpt
 
 // (6.7.5)
@@ -1097,7 +1095,9 @@ FunctionDefinition:
 	DeclarationListOpt CompoundStatement
 	{
 		lhs.fnScope = lx.popScope(lhs.CompoundStatement.Token2)
-		lx.scope.insert(NSIdentifiers, lhs.Declarator.Ident(), lhs)
+		d := lhs.Declarator
+		d.IsDefinition = true
+		lx.scope.insert(NSIdentifiers, d.Ident(), lhs)
 	}
 
 // (6.9.1)

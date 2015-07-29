@@ -54,10 +54,10 @@ func Cpp(f func([]xc.Token)) Opt {
 	return func(lx *lexer) { lx.cpp = f }
 }
 
-// Parse clears any existing macros and define any macros in predefined. Then
-// Parse preprocesses and then parses the translation unit consisting of files
-// in paths. The m communicates the scalar types model and opts allow to amend
-// the parser. Parse is not reentrant nor safe to call concurrently.
+// Parse clears any existing macros and define any macros in predefine. Then
+// Parse preprocesses and parses the translation unit consisting of files in
+// paths. The m communicates the scalar types model and opts allow to amend the
+// parser. Parse is not reentrant nor safe to call concurrently.
 func Parse(predefine string, paths []string, m Model, opts ...Opt) (*TranslationUnit, error) {
 	fromSlashes(paths)
 	compilation.ClearErrors()

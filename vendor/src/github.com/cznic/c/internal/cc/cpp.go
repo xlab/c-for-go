@@ -129,7 +129,7 @@ type macro struct {
 
 // ExpandDefine returns (pos, expanded-list, unexpanded-list, true) if id
 // refers to a object like definition of a token list. Otherwise (zero-value,
-// nil, false) is returned.
+// nil, nil, false) is returned.
 func ExpandDefine(id int) (token.Pos, []xc.Token, []xc.Token, bool) {
 	m, ok := Macros[id]
 	if !ok || m.isFunctionLike() {
@@ -541,6 +541,7 @@ func unquote(b []byte) []byte {
 	}
 	return b
 }
+
 func stringify(toks []xc.Token, paste bool) xc.Token {
 	if len(toks) == 0 {
 		return newToken(0, STRINGLITERAL, idEmptyString)
@@ -669,8 +670,6 @@ func (p *PreprocessingFile) preprocess(ctx *evalCtx) {
 	}
 }
 
-//var includeNest int //TODO-
-
 func (c *ControlLine) preprocess(ctx *evalCtx) {
 	switch c.Case {
 	case 0: // PPDEFINE IDENTIFIER ReplacementList
@@ -700,13 +699,6 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 			return
 		}
 
-		//TODO includeNest++
-		//TODO defer func() {
-		//TODO 	dbg("%sfinished preprocessing %s", strings.Repeat("· ", includeNest), s0)
-		//TODO 	includeNest--
-		//TODO }()
-
-		//TODO dbg("%s%v: include %s", strings.Repeat("· ", includeNest), fileset.Position(t.Pos()), s0)
 		switch s0[0] {
 		case '"':
 			s := string(s0[1 : len(s0)-1])
@@ -734,7 +726,6 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 				return
 
 			}
-			//TODO- compilation.Err(t.Pos(), "include file not found: %s", s0)
 			fallthrough // Look for #include "foo" also as #include <foo>
 		case '<':
 			s := string(s0[1 : len(s0)-1])

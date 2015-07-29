@@ -1095,7 +1095,7 @@ var (
 		yyXError{331, -1}: "expected initializer or one of ['!', '&', '(', '*', '+', '-', '{', '~', ++, --, character constant, defined, floating-point constant, identifier, integer constant, long character constant, long string constant, sizeof, string literal]",
 		yyXError{261, -1}: "expected initializer or optional designation or one of ['!', '&', '(', '*', '+', '-', '.', '[', '{', '}', '~', ++, --, character constant, defined, floating-point constant, identifier, integer constant, long character constant, long string constant, sizeof, string literal]",
 		yyXError{266, -1}: "expected initializer or optional designation or one of ['!', '&', '(', '*', '+', '-', '.', '[', '{', '}', '~', ++, --, character constant, defined, floating-point constant, identifier, integer constant, long character constant, long string constant, sizeof, string literal]",
-		yyXError{93, -1}:  "expected logical and expression or one of ['!', '&', '(', '*', '+', '-', '~', ++, --, character constant, defined, floating-point constant, identifier, integer constant, long character constant, long string constant, sizeof, string literal]",
+		yyXError{93, -1}:  "expected logical-and expression or one of ['!', '&', '(', '*', '+', '-', '~', ++, --, character constant, defined, floating-point constant, identifier, integer constant, long character constant, long string constant, sizeof, string literal]",
 		yyXError{11, -1}:  "expected macro argument list or one of [')', ',', macro argument]",
 		yyXError{6, -1}:   "expected macro arguments list or one of [')', ',', macro argument]",
 		yyXError{136, -1}: "expected multiplicative expression or one of ['!', '&', '(', '*', '+', '-', '~', ++, --, character constant, defined, floating-point constant, identifier, integer constant, long character constant, long string constant, sizeof, string literal]",
@@ -3132,18 +3132,24 @@ yynewstate:
 		}
 	case 106:
 		{
-			yyVAL.item = &InitDeclarator{
+			lx := yylex.(*lexer)
+			lhs := &InitDeclarator{
 				Declarator: yyS[yypt-0].item.(*Declarator),
 			}
+			yyVAL.item = lhs
+			lhs.Declarator.insert(lx.scope, NSIdentifiers, false)
 		}
 	case 107:
 		{
-			yyVAL.item = &InitDeclarator{
+			lx := yylex.(*lexer)
+			lhs := &InitDeclarator{
 				Case:        1,
 				Declarator:  yyS[yypt-2].item.(*Declarator),
 				Token:       yyS[yypt-1].Token,
 				Initializer: yyS[yypt-0].item.(*Initializer),
 			}
+			yyVAL.item = lhs
+			lhs.Declarator.insert(lx.scope, NSIdentifiers, true)
 		}
 	case 108:
 		{
@@ -3453,6 +3459,7 @@ yynewstate:
 		}
 	case 144:
 		{
+			lx := yylex.(*lexer)
 			lhs := &StructDeclarator{
 				Declarator: yyS[yypt-0].item.(*Declarator),
 			}
@@ -3461,9 +3468,11 @@ yynewstate:
 			lhs.align.pos = pos
 			lhs.offset.pos = pos
 			lhs.size.pos = pos
+			lhs.Declarator.insert(lx.scope, NSMembers, true)
 		}
 	case 145:
 		{
+			lx := yylex.(*lexer)
 			lhs := &StructDeclarator{
 				Case:               1,
 				DeclaratorOpt:      yyS[yypt-2].item.(*DeclaratorOpt),
@@ -3474,6 +3483,7 @@ yynewstate:
 			pos := lhs.Token.Pos()
 			if o := lhs.DeclaratorOpt; o != nil {
 				pos = o.Declarator.Ident().Pos()
+				o.Declarator.insert(lx.scope, NSMembers, true)
 			}
 			lhs.align.pos = pos
 			lhs.offset.pos = pos
@@ -3593,23 +3603,9 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			lhs.DirectDeclarator.indirection = lhs.PointerOpt.indirection()
-			lhs.IsTypedef = lx.scope.isTypedef
 			sc := lx.scope
+			lhs.IsTypedef = sc.isTypedef
 			lhs.SUSpecifier0 = sc.SUSpecifier0
-			if lhs.DirectDeclarator.Case != 0 {
-				break
-			}
-
-			nm := lhs.Ident()
-			typ := sc.Type
-			switch typ {
-			case ScopeFile, ScopeFnParams, ScopeBlock:
-				sc.insert(NSIdentifiers, nm, lhs)
-			case ScopeMembers:
-				sc.insert(NSMembers, nm, lhs)
-			default:
-				fmt.Printf("TODO %v, %v\n", typ, nm)
-			}
 		}
 	case 159:
 		{
@@ -3826,10 +3822,13 @@ yynewstate:
 		}
 	case 185:
 		{
-			yyVAL.item = &ParameterDeclaration{
+			lx := yylex.(*lexer)
+			lhs := &ParameterDeclaration{
 				DeclarationSpecifiers: yyS[yypt-1].item.(*DeclarationSpecifiers),
 				Declarator:            yyS[yypt-0].item.(*Declarator),
 			}
+			yyVAL.item = lhs
+			lhs.Declarator.insert(lx.scope, NSIdentifiers, true)
 		}
 	case 186:
 		{
@@ -4420,7 +4419,9 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			lhs.fnScope = lx.popScope(lhs.CompoundStatement.Token2)
-			lx.scope.insert(NSIdentifiers, lhs.Declarator.Ident(), lhs)
+			d := lhs.Declarator
+			d.IsDefinition = true
+			lx.scope.insert(NSIdentifiers, d.Ident(), lhs)
 		}
 	case 255:
 		{

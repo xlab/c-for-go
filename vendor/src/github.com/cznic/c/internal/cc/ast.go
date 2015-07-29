@@ -534,6 +534,7 @@ func (d *DeclarationSpecifiersOpt) String() string {
 //	Declarator:
 //	        PointerOpt DirectDeclarator
 type Declarator struct {
+	IsDefinition     bool // Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
 	IsTypedef        bool
 	SUSpecifier0     *StructOrUnionSpecifier0 // Non nil if d declares a field.
 	DirectDeclarator *DirectDeclarator

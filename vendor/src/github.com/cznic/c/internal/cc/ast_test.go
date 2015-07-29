@@ -2663,6 +2663,7 @@ func ExampleExternalDeclaration() {
 	// · · · },
 	// · · },
 	// · · Declarator: &cc.Declarator{
+	// · · · IsDefinition: true,
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example251.c:1:11: IDENTIFIER "a",
 	// · · · },
@@ -2709,6 +2710,7 @@ func ExampleFunctionDefinition() {
 	// · · },
 	// · },
 	// · Declarator: &cc.Declarator{
+	// · · IsDefinition: true,
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example254.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -2958,6 +2960,7 @@ func ExampleInitDeclarator_case1() {
 	// &cc.InitDeclarator{
 	// · Case: 1,
 	// · Declarator: &cc.Declarator{
+	// · · IsDefinition: true,
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example107.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -3968,6 +3971,7 @@ func ExampleParameterDeclaration() {
 	// · · },
 	// · },
 	// · Declarator: &cc.Declarator{
+	// · · IsDefinition: true,
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example185.c:1:21: IDENTIFIER "a",
 	// · · },
@@ -5328,6 +5332,7 @@ func ExampleStructDeclarator() {
 	// · size: cc.size{
 	// · },
 	// · Declarator: &cc.Declarator{
+	// · · IsDefinition: true,
 	// · · SUSpecifier0: &cc.StructOrUnionSpecifier0{
 	// · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · Token: example144.c:1:6: STRUCT "struct",
@@ -5403,6 +5408,7 @@ func ExampleStructDeclaratorList() {
 	// · · size: cc.size{
 	// · · },
 	// · · Declarator: &cc.Declarator{
+	// · · · IsDefinition: true,
 	// · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{
 	// · · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · · Token: example140.c:1:6: STRUCT "struct",
@@ -5428,6 +5434,7 @@ func ExampleStructDeclaratorList_case1() {
 	// · · size: cc.size{
 	// · · },
 	// · · Declarator: &cc.Declarator{
+	// · · · IsDefinition: true,
 	// · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{
 	// · · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · · Token: example141.c:1:6: STRUCT "struct",
@@ -5448,6 +5455,7 @@ func ExampleStructDeclaratorList_case1() {
 	// · · · size: cc.size{
 	// · · · },
 	// · · · Declarator: &cc.Declarator{
+	// · · · · IsDefinition: true,
 	// · · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example141.c:1:25: IDENTIFIER "b",
@@ -5478,6 +5486,7 @@ func ExampleStructDeclaratorListOpt_case1() {
 	// · · · size: cc.size{
 	// · · · },
 	// · · · Declarator: &cc.Declarator{
+	// · · · · IsDefinition: true,
 	// · · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{
 	// · · · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · · · Token: example143.c:1:6: STRUCT "struct",

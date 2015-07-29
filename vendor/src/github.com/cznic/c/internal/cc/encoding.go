@@ -66,7 +66,7 @@ const (
 )
 
 var (
-	classStr = map[int]string{
+	classStr = map[int]string{ //TODO go generate
 		ccEOF:         "ccEOF",
 		ccError:       "ccError",
 		ccOther:       "ccOther",
@@ -158,7 +158,7 @@ var (
 	// idSTDCIEC559Complex = dict.SID("__STDC_IEC_559_COMPLEX__")
 	// idSTDCISO10646      = dict.SID("__STDC_ISO_10646__")
 
-	idBuiltinOffsetof  = dict.SID("__builtin_offsetof")
+	idBuiltinOffsetof  = dict.SID("__builtin_offsetof") //TODO- probably
 	idDate             = dict.SID("__DATE__")
 	idFile             = dict.SID("__FILE__")
 	idLine             = dict.SID("__LINE__")
