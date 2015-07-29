@@ -1,9 +1,68 @@
 package translator
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"go/token"
+	"sort"
 	"strconv"
 )
+
+type CDefKind int
+
+const (
+	TypeDef CDefKind = iota
+	StructDef
+	FunctionDef
+)
+
+type CDef interface {
+	Kind() CDefKind
+	String() string
+}
+
+type CTypeDecl struct {
+	Spec CDef
+	Name string
+	Pos  token.Pos
+}
+
+func (c *CTypeDecl) String() string {
+	if c == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s %s", c.Spec.String(), c.Name)
+}
+
+type CFunctionSpec struct {
+	Returns  CTypeDecl
+	Members  []CTypeDecl
+	Pointers uint8
+}
+
+func (c *CFunctionSpec) Kind() CDefKind {
+	return FunctionDef
+}
+
+func (c *CFunctionSpec) String() string {
+	return "// TODO: function spec"
+}
+
+type CStructSpec struct {
+	Tag      string
+	Union    bool
+	Members  []CTypeDecl
+	Pointers uint8
+}
+
+func (c *CStructSpec) Kind() CDefKind {
+	return StructDef
+}
+
+func (c *CStructSpec) String() string {
+	return "// TODO: struct spec"
+}
 
 type CTypeSpec struct {
 	Base     string
@@ -11,13 +70,15 @@ type CTypeSpec struct {
 	Unsigned bool
 	Short    bool
 	Long     bool
+	Struct   bool
 	Pointers uint8
 }
 
-func (cts *CTypeSpec) MarshalJSON() ([]byte, error) {
-	if len(cts.Base) == 0 {
-		return nil, errors.New("base type isn't specified")
-	}
+func (c *CTypeSpec) Kind() CDefKind {
+	return TypeDef
+}
+
+func (cts *CTypeSpec) String() string {
 	var str string
 	if cts.Const {
 		str += "const "
@@ -25,6 +86,8 @@ func (cts *CTypeSpec) MarshalJSON() ([]byte, error) {
 	switch {
 	case cts.Unsigned:
 		str += "unsigned "
+	case cts.Struct:
+		str += "struct "
 	}
 	switch {
 	case cts.Long:
@@ -36,7 +99,101 @@ func (cts *CTypeSpec) MarshalJSON() ([]byte, error) {
 	for i := uint8(0); i < cts.Pointers; i++ {
 		str += "*"
 	}
-	return []byte(str), nil
+	return str
+}
+
+func (cts *CTypeSpec) MarshalJSON() ([]byte, error) {
+	if cts == nil {
+		return nil, nil
+	}
+	if len(cts.Base) == 0 {
+		return nil, errors.New("base type isn't specified")
+	}
+	return []byte(cts.String()), nil
+}
+
+type bytesSlice [][]byte
+
+func (s bytesSlice) Len() int           { return len(s) }
+func (s bytesSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s bytesSlice) Less(i, j int) bool { return bytes.Compare(s[i], s[j]) < 0 }
+
+var (
+	qualConst       = []byte("const")
+	specStruct      = []byte("struct")
+	specUnion       = []byte("union")
+	specUnsigned    = []byte("unsigned")
+	specSigned      = []byte("signed")
+	specLong        = []byte("long")
+	specShort       = []byte("short")
+	ptrStr          = []byte("*")
+	sliceStr        = []byte("[]")
+	spaceStr        = []byte(" ")
+	emptyStr        = []byte{}
+	restrictedNames = bytes.Join([][]byte{
+		qualConst, specStruct, specUnion, specUnsigned, specSigned, specShort,
+	}, spaceStr)
+)
+
+func (cts *CTypeSpec) UnmarshalJSON(b []byte) error {
+	parts := bytes.Split(b, spaceStr)
+	if len(parts) == 0 {
+		return errors.New("unexpected EOF")
+	}
+	ts := CTypeSpec{}
+	sort.Reverse(bytesSlice(parts))
+
+	// states:
+	// 0 — pointers
+	// 1 — base
+	// 2 — qualifiers
+	var state int
+	for _, part := range parts {
+		if len(part) == 0 {
+			continue
+		}
+		switch state {
+		case 0:
+			// read pointers count
+			for bytes.HasSuffix(part, ptrStr) {
+				ts.Pointers++
+				part = part[:len(part)-1]
+			}
+			state = 1
+		case 1:
+			// read the base name
+			if bytes.Contains(restrictedNames, part) {
+				return errors.New("ctype: can't use keyword as a base type name: " + string(part))
+			}
+			ts.Base = string(part)
+			state = 2
+		case 2:
+			// read specifiers and qualifiers
+			switch {
+			case bytes.Equal(part, specStruct), bytes.Equal(part, specUnion):
+				ts.Struct = true
+				if len(ts.Base) == 0 {
+					return errors.New("ctype: no base type name specified")
+				}
+				*cts = ts
+				return nil
+			case bytes.Equal(part, specShort):
+				ts.Short = true
+			case bytes.Equal(part, specLong):
+				ts.Long = true
+			case bytes.Equal(part, specUnsigned):
+				ts.Unsigned = true
+			case bytes.Equal(part, qualConst):
+				ts.Const = true
+			}
+		}
+	}
+
+	if len(ts.Base) == 0 {
+		return errors.New("ctype: no base type name specified")
+	}
+	*cts = ts
+	return nil
 }
 
 // func (cts CTypeSpec)  string {
@@ -80,6 +237,43 @@ func (gts *GoTypeSpec) String() string {
 		}
 	}
 	return str
+}
+
+func (gts *GoTypeSpec) MarshalJSON() ([]byte, error) {
+	if gts == nil {
+		return []byte{}, nil
+	}
+	return []byte(gts.String()), nil
+}
+
+func (gts *GoTypeSpec) UnmarshalJSON(b []byte) error {
+	// purge any spaces
+	b = bytes.Replace(b, spaceStr, emptyStr, -1)
+
+	// states:
+	// 0 — beginning
+	// 1 — processing slices
+	// 2 — processing pointers
+	// 3
+	// 3 — base
+	var state int
+	// var ts = GoTypeSpec{}
+
+	for {
+		switch state {
+		case 0:
+			switch {
+			case bytes.HasPrefix(b, sliceStr):
+				state = 1
+				continue
+			case bytes.HasPrefix(b, ptrStr):
+				state = 2
+				continue
+			}
+		}
+	}
+	// TODO
+	return nil
 }
 
 type CTypeMap map[CTypeSpec]GoTypeSpec
