@@ -4,14 +4,14 @@
 		{
 			"importpath": "github.com/cznic/c/internal/cc",
 			"repository": "https://github.com/cznic/c",
-			"revision": "7e7f2cc6224b0099febb8ffe81fb939529ad7e5f",
+			"revision": "753aa61f662d721e394d5b2f2d44c7b7f5cb835c",
 			"branch": "master",
 			"path": "/internal/cc"
 		},
 		{
 			"importpath": "github.com/cznic/c/internal/xc",
 			"repository": "https://github.com/cznic/c",
-			"revision": "7e7f2cc6224b0099febb8ffe81fb939529ad7e5f",
+			"revision": "753aa61f662d721e394d5b2f2d44c7b7f5cb835c",
 			"branch": "master",
 			"path": "/internal/xc"
 		},
