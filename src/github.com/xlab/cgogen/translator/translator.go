@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -125,6 +126,8 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	}
 
 	sort.Sort(defineLines(t.defines))
+	log.Println(unit)
+	log.Println(t.walkAST(unit))
 
 	t.Printf("const (")
 	for _, line := range t.defines {
@@ -209,5 +212,5 @@ func (t *Translator) isAcceptableName(target RuleTarget, name []byte) bool {
 }
 
 func (t *Translator) Translate(unit *cc.TranslationUnit, macros []string) {
-
+	// TODO
 }
