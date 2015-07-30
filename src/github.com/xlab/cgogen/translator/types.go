@@ -7,46 +7,65 @@ import (
 	"go/token"
 	"sort"
 	"strconv"
+	"strings"
 )
 
-type CDefKind int
+type CTypeKind int
 
 const (
-	TypeDef CDefKind = iota
+	TypeDef CTypeKind = iota
 	StructDef
 	FunctionDef
 )
 
-type CDef interface {
-	Kind() CDefKind
+type CType interface {
+	SetPointers(n uint8)
+	Kind() CTypeKind
 	String() string
+	Copy() CType
 }
 
 type CTypeDecl struct {
-	Spec CDef
+	Spec CType
 	Name string
 	Pos  token.Pos
 }
 
-func (c *CTypeDecl) String() string {
-	if c == nil {
-		return ""
+func (c CTypeDecl) String() string {
+	if len(c.Name) > 0 {
+		return fmt.Sprintf("%s %s", c.Spec.String(), c.Name)
 	}
-	return fmt.Sprintf("%s %s", c.Spec.String(), c.Name)
+	return c.Spec.String()
+}
+
+func (c *CTypeDecl) SetPointers(n uint8) {
+	c.Spec.SetPointers(n)
 }
 
 type CFunctionSpec struct {
-	Returns  CTypeDecl
-	Members  []CTypeDecl
-	Pointers uint8
+	Returns   CTypeDecl
+	ParamList []CTypeDecl
+	Pointers  uint8
 }
 
-func (c *CFunctionSpec) Kind() CDefKind {
+func (c *CFunctionSpec) SetPointers(n uint8) {
+	c.Pointers = n
+}
+
+func (c CFunctionSpec) Kind() CTypeKind {
 	return FunctionDef
 }
 
-func (c *CFunctionSpec) String() string {
-	return "// TODO: function spec"
+func (c CFunctionSpec) String() string {
+	var params []string
+	for _, param := range c.ParamList {
+		params = append(params, param.String())
+	}
+	return fmt.Sprintf("%s (%s)", c.Returns, strings.Join(params, ", "))
+}
+
+func (c CFunctionSpec) Copy() CType {
+	return &c
 }
 
 type CStructSpec struct {
@@ -56,12 +75,20 @@ type CStructSpec struct {
 	Pointers uint8
 }
 
-func (c *CStructSpec) Kind() CDefKind {
+func (c *CStructSpec) SetPointers(n uint8) {
+	c.Pointers = n
+}
+
+func (c CStructSpec) Kind() CTypeKind {
 	return StructDef
 }
 
-func (c *CStructSpec) String() string {
+func (c CStructSpec) String() string {
 	return "// TODO: struct spec"
+}
+
+func (c CStructSpec) Copy() CType {
+	return &c
 }
 
 type CTypeSpec struct {
@@ -74,11 +101,15 @@ type CTypeSpec struct {
 	Pointers uint8
 }
 
-func (c *CTypeSpec) Kind() CDefKind {
+func (c *CTypeSpec) SetPointers(n uint8) {
+	c.Pointers = n
+}
+
+func (c CTypeSpec) Kind() CTypeKind {
 	return TypeDef
 }
 
-func (cts *CTypeSpec) String() string {
+func (cts CTypeSpec) String() string {
 	var str string
 	if cts.Const {
 		str += "const "
@@ -100,6 +131,10 @@ func (cts *CTypeSpec) String() string {
 		str += "*"
 	}
 	return str
+}
+
+func (c CTypeSpec) Copy() CType {
+	return &c
 }
 
 func (cts *CTypeSpec) MarshalJSON() ([]byte, error) {

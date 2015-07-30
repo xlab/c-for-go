@@ -127,13 +127,19 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 
 	sort.Sort(defineLines(t.defines))
 	log.Println(unit)
-	log.Println(t.walkAST(unit))
+	decl, err := t.walkAST(unit)
+	if err != nil {
+		return err
+	}
+	log.Println("DECLARATIONS:")
+	for _, d := range decl {
+		log.Println(d)
+	}
 
 	t.Printf("const (")
 	for _, line := range t.defines {
-		pos := xc.FileSet.Position(line.Pos)
-		t.Printf("\n// %s:%d\n//   > define %s %v\n%s = %s",
-			narrowPath(pos.Filename), pos.Line, line.Name, line.Src,
+		t.Printf("\n// %s\n//   > define %s %v\n%s = %s",
+			srcLocation(line.Pos), line.Name, line.Src,
 			t.TransformName(TargetConst, string(line.Name)), line.Value)
 	}
 	t.Printf("\n)\n\n")

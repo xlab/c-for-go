@@ -1,6 +1,13 @@
 package translator
 
-import "path/filepath"
+import (
+	"fmt"
+	"go/token"
+	"log"
+	"path/filepath"
+
+	"github.com/cznic/c/internal/xc"
+)
 
 // narrowPath reduces full path to file name and parent dir only.
 func narrowPath(fp string) string {
@@ -35,4 +42,13 @@ func replaceBytes(buf []byte, idx []int, piece []byte) []byte {
 	pLen := copy(altered[a:], piece)
 	copy(altered[a+pLen:], buf[b:])
 	return altered
+}
+
+func srcLocation(p token.Pos) string {
+	pos := xc.FileSet.Position(p)
+	return fmt.Sprintf("%s:%d", narrowPath(pos.Filename), pos.Line)
+}
+
+func unmanagedCaseWarn(c int, p token.Pos) {
+	log.Printf("unmanaged ParameterDeclaration case %d at %s\n", c, srcLocation(p))
 }

@@ -2,11 +2,16 @@ package translator
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"testing"
 
 	"github.com/xlab/cgogen/parser"
 )
+
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
 
 func TestLearn(t *testing.T) {
 	pCfg := parser.NewConfig("test/translator_test.h")
