@@ -136,7 +136,6 @@ func walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CTypeDecl) (next *cc
 		//	|       DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'  // Case 3
 		//	|       DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'     // Case 4
 		//	|       DirectDeclarator '[' TypeQualifierListOpt '*' ']'                            // Case 5
-		//	|       DirectDeclarator '(' DirectDeclarator2                                       // Case 6
 	}
 	return
 }
