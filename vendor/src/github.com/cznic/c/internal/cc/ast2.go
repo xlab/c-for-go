@@ -49,6 +49,7 @@ func (o *offset) set(n int) int { o.val = n + 1; return n }
 func (o *offset) get() int      { return o.val - 1 }
 
 // Offsetof reports the relative address of a field within a struct or union.
+// Offset of a union field is always zero.
 func (o *offset) Offsetof() int {
 	if v := o.get(); v >= 0 {
 		return v
@@ -96,13 +97,22 @@ type declarationSpecifiers DeclarationSpecifiers
 
 func (d *declarationSpecifiers) Type() Type { return d }
 
+// Alignof implements Type.
+func (d *declarationSpecifiers) Alignof() int { panic("TODO") }
+
 // BaseType implements Type.
 func (d *declarationSpecifiers) BaseType() Type { panic("internal error") }
+
+// ElementType implements Type.
+func (d *declarationSpecifiers) ElementType() Type { panic("internal error") }
 
 // Kind implements Type.
 func (d *declarationSpecifiers) Kind() Kind {
 	return typeSpecifier2TypeKind(d.typ)
 }
+
+// Len implements Type.
+func (d *declarationSpecifiers) Len() (int, bool) { panic("internal error") }
 
 // Name implements Type.
 func (d *declarationSpecifiers) Name() xc.Token { return (*typeSpecifier)(d.typeSpecification()).Name() }
@@ -112,6 +122,9 @@ func (d *declarationSpecifiers) ParameterTypeList() *ParameterTypeList { panic("
 
 // ResultType implements Type.
 func (d *declarationSpecifiers) ResultType() Type { panic("internal error") }
+
+// Sizeof implements Type.
+func (d *declarationSpecifiers) Sizeof() int { panic("TODO") }
 
 // StructOrUnionType implements Type.
 func (d *declarationSpecifiers) StructOrUnionType() *StructOrUnionSpecifier {
@@ -208,14 +221,53 @@ func (d *Declarator) insert(sc *Bindings, ns Namespace, isDefinition bool) {
 
 type directAbstractDeclarator DirectAbstractDeclarator
 
+// Alignof implements Type.
+func (d *directAbstractDeclarator) Alignof() int { panic("TODO") }
+
 // BaseType implements Type.
 func (d *directAbstractDeclarator) BaseType() Type {
 	panic("internal error")
 }
 
+// ElementType implements Type.
+func (d *directAbstractDeclarator) ElementType() Type {
+	switch d.Case {
+	case
+		1, // DirectAbstractDeclaratorOpt '[' AssignmentExpressionOpt ']'
+		2, // DirectAbstractDeclaratorOpt '[' TypeQualifierList AssignmentExpressionOpt ']'
+		3, // DirectAbstractDeclaratorOpt '[' "static" TypeQualifierListOpt AssignmentExpression ']'
+		4, // DirectAbstractDeclaratorOpt '[' TypeQualifierList "static" AssignmentExpression ']'
+		5: // DirectAbstractDeclaratorOpt '[' '*' ']'
+		return newIndirectType(d.specifier, d.indirection)
+	default:
+		panic("internal error")
+	}
+}
+
 // Kind implements Type.
 func (d *directAbstractDeclarator) Kind() Kind {
 	panic("internal error")
+}
+
+// Len implements Type.
+func (d *directAbstractDeclarator) Len() (int, bool) {
+	switch d.Case {
+	case
+		1, // DirectAbstractDeclaratorOpt '[' AssignmentExpressionOpt ']'
+		3, // DirectAbstractDeclaratorOpt '[' "static" TypeQualifierListOpt AssignmentExpression ']'
+		4: // DirectAbstractDeclaratorOpt '[' TypeQualifierList "static" AssignmentExpression ']'
+		return d.AssignmentExpression.eval2(), true
+	case 2: // DirectAbstractDeclaratorOpt '[' TypeQualifierList AssignmentExpressionOpt ']'
+		if o := d.AssignmentExpressionOpt; o != nil {
+			return o.AssignmentExpression.eval2(), true
+		}
+
+		return 0, false
+	case 5: // DirectAbstractDeclaratorOpt '[' '*' ']'
+		return 0, false
+	default:
+		panic("internal error")
+	}
 }
 
 // Name implements Type.
@@ -233,6 +285,9 @@ func (d *directAbstractDeclarator) ResultType() Type {
 	panic("internal error")
 }
 
+// Sizeof implements Type.
+func (d *directAbstractDeclarator) Sizeof() int { panic("TODO") }
+
 // StructOrUnionType implements Type.
 func (d *directAbstractDeclarator) StructOrUnionType() *StructOrUnionSpecifier {
 	panic("internal error")
@@ -240,9 +295,26 @@ func (d *directAbstractDeclarator) StructOrUnionType() *StructOrUnionSpecifier {
 
 type directDeclarator DirectDeclarator
 
+// Alignof implements Type.
+func (d *directDeclarator) Alignof() int { panic("TODO") }
+
 // BaseType implements Type.
 func (d *directDeclarator) BaseType() Type {
 	return (*DirectDeclarator)(d).spec().BaseType()
+}
+
+// ElementType implements Type.
+func (d *directDeclarator) ElementType() Type {
+	switch d.Case {
+	case
+		2, // DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'
+		3, // DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'
+		4, // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
+		5: // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
+		return newIndirectType(d.specifier, d.indirection)
+	default:
+		panic("internal error")
+	}
 }
 
 // Kind implements Type.
@@ -259,6 +331,26 @@ func (d *directDeclarator) Kind() Kind {
 		return ArrayType
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		return FunctionType
+	default:
+		panic("internal error")
+	}
+}
+
+// Len implements Type.
+func (d *directDeclarator) Len() (int, bool) {
+	switch d.Case {
+	case 2: // DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'
+		if o := d.AssignmentExpressionOpt; o != nil {
+			return o.AssignmentExpression.eval2(), true
+		}
+
+		return 0, false
+	case
+		3, // DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'
+		4: // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
+		return d.AssignmentExpression.eval2(), true
+	case 5: // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
+		return 0, false
 	default:
 		panic("internal error")
 	}
@@ -286,6 +378,9 @@ func (d *directDeclarator) ResultType() Type {
 		panic(d.Case)
 	}
 }
+
+// Sizeof implements Type.
+func (d *directDeclarator) Sizeof() int { panic("TODO") }
 
 // StructOrUnionType implements Type.
 func (d *directDeclarator) StructOrUnionType() *StructOrUnionSpecifier {
@@ -379,11 +474,20 @@ func (f *FunctionDefinition) Type() Type { return (*functionDefintion)(f) }
 
 type functionDefintion FunctionDefinition
 
+// Alignof implements Type.
+func (f *functionDefintion) Alignof() int { panic("internal error") }
+
 // BaseType implements Type.
 func (f *functionDefintion) BaseType() Type { panic("internal error") }
 
+// ElementType implements Type.
+func (f *functionDefintion) ElementType() Type { panic("internal error") }
+
 // Kind implements Type.
 func (f *functionDefintion) Kind() Kind { return FunctionType }
+
+// Len implements Type.
+func (f *functionDefintion) Len() (int, bool) { panic("internal error") }
 
 // Name implements Type.
 func (f *functionDefintion) Name() xc.Token { panic("internal error") }
@@ -397,6 +501,9 @@ func (f *functionDefintion) ParameterTypeList() *ParameterTypeList {
 func (f *functionDefintion) ResultType() Type {
 	return newIndirectType(f.DeclarationSpecifiers.Type(), f.Declarator.DirectDeclarator.indirection)
 }
+
+// Sizeof implements Type.
+func (f *functionDefintion) Sizeof() int { panic("TODO") }
 
 // StructOrUnionType implements Type.
 func (f *functionDefintion) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }
@@ -432,13 +539,22 @@ func (p *PointerOpt) indirection() int {
 
 type specifierQualifierList SpecifierQualifierList
 
+// Alignof implements Type.
+func (s *specifierQualifierList) Alignof() int { panic("TODO") }
+
 // BaseType implements Type.
 func (s *specifierQualifierList) BaseType() Type { panic("internal error") }
+
+// ElementType implements Type.
+func (s *specifierQualifierList) ElementType() Type { panic("internal error") }
 
 // Kind implements Type.
 func (s *specifierQualifierList) Kind() Kind {
 	return typeSpecifier2TypeKind(s.typ)
 }
+
+// Len implements Type.
+func (s *specifierQualifierList) Len() (int, bool) { panic("internal error") }
 
 // Name implements Type.
 func (s *specifierQualifierList) Name() xc.Token {
@@ -450,6 +566,9 @@ func (s *specifierQualifierList) ParameterTypeList() *ParameterTypeList { panic(
 
 // ResultType implements Type.
 func (s *specifierQualifierList) ResultType() Type { panic("internal error") }
+
+// Sizeof implements Type.
+func (s *specifierQualifierList) Sizeof() int { return (*typeSpecifier)(s.typeSpecification()).Sizeof() }
 
 // StructOrUnionType implements Type.
 func (s *specifierQualifierList) StructOrUnionType() *StructOrUnionSpecifier {
@@ -526,8 +645,14 @@ func (s *StructOrUnionSpecifier) Tok() xc.Token {
 
 type structOrUnionSpecifier StructOrUnionSpecifier
 
+// Alignof implements Type.
+func (s *structOrUnionSpecifier) Alignof() int { panic("TODO") }
+
 // BaseType implements Type.
 func (s *structOrUnionSpecifier) BaseType() Type { panic("internal error") }
+
+// ElementType implements Type.
+func (s *structOrUnionSpecifier) ElementType() Type { panic("internal error") }
 
 // Kind implements Type.
 func (s *structOrUnionSpecifier) Kind() Kind {
@@ -538,6 +663,9 @@ func (s *structOrUnionSpecifier) Kind() Kind {
 	return StructType
 }
 
+// Len implements Type.
+func (s *structOrUnionSpecifier) Len() (int, bool) { panic("internal error") }
+
 // Name implements Type.
 func (s *structOrUnionSpecifier) Name() xc.Token { panic("internal error") }
 
@@ -546,6 +674,9 @@ func (s *structOrUnionSpecifier) ParameterTypeList() *ParameterTypeList { panic(
 
 // ResultType implements Type.
 func (s *structOrUnionSpecifier) ResultType() Type { panic("internal error") }
+
+// Sizeof implements Type.
+func (s *structOrUnionSpecifier) Sizeof() int { panic("TODO") }
 
 // StructOrUnionType implements Type.
 func (s *structOrUnionSpecifier) StructOrUnionType() *StructOrUnionSpecifier {
@@ -601,10 +732,25 @@ func (t *TypeSpecifier) Tok() xc.Token {
 	}
 }
 
+func (t *TypeName) Type() Type {
+	switch o := t.AbstractDeclaratorOpt; o {
+	case nil:
+		return (*specifierQualifierList)(t.SpecifierQualifierList)
+	default:
+		panic("TODO")
+	}
+}
+
 type typeSpecifier TypeSpecifier
+
+// Alignof implements Type.
+func (t *typeSpecifier) Alignof() int { panic("TODO") }
 
 // BaseType implements Type.
 func (t *typeSpecifier) BaseType() Type { panic("internal error") }
+
+// ElementType implements Type.
+func (t *typeSpecifier) ElementType() Type { panic("internal error") }
 
 // Kind implements Type.
 func (t *typeSpecifier) Kind() Kind {
@@ -615,6 +761,9 @@ func (t *typeSpecifier) Kind() Kind {
 		return typeSpecifier2TypeKind(t.Case)
 	}
 }
+
+// Len implements Type.
+func (t *typeSpecifier) Len() (int, bool) { panic("internal error") }
 
 // Name implements Type.
 func (t *typeSpecifier) Name() xc.Token {
@@ -631,6 +780,28 @@ func (t *typeSpecifier) ParameterTypeList() *ParameterTypeList { panic("internal
 
 // ResultType implements Type.
 func (t *typeSpecifier) ResultType() Type { panic("internal error") }
+
+// Sizeof implements Type.
+func (t *typeSpecifier) Sizeof() int {
+	switch t.Case {
+	// case 0: // "void"
+	// case 1: // "char"
+	// case 2: // "short"
+	// case 3: // "int"
+	// case 4: // "long"
+	// case 5: // "float"
+	// case 6: // "double"
+	// case 7: // "signed"
+	// case 8: // "unsigned"
+	// case 9: // "_Bool"
+	// case 10: // "_Complex"
+	// case 11: // StructOrUnionSpecifier
+	// case 12: // EnumSpecifier
+	// case 13: // TYPEDEFNAME
+	default:
+		panic("internal error")
+	}
+}
 
 // StructOrUnionType implements Type.
 func (t *typeSpecifier) StructOrUnionType() *StructOrUnionSpecifier {

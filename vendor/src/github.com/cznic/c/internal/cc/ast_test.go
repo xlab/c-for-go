@@ -1433,6 +1433,10 @@ func ExampleDeclarator() {
 	fmt.Println(exampleAST(158, "\U00100002 auto a )"))
 	// Output:
 	// &cc.Declarator{
+	// · align: cc.align{
+	// · },
+	// · size: cc.size{
+	// · },
 	// · DirectDeclarator: &cc.DirectDeclarator{
 	// · · Token: example158.c:1:11: IDENTIFIER "a",
 	// · },
@@ -1454,6 +1458,10 @@ func ExampleDeclaratorOpt_case1() {
 	// · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · Token: example160.c:1:6: STRUCT "struct",
 	// · · · },
+	// · · },
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
 	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example160.c:1:21: IDENTIFIER "a",
@@ -1793,6 +1801,10 @@ func ExampleDirectDeclarator_case1() {
 	// &cc.DirectDeclarator{
 	// · Case: 1,
 	// · Declarator: &cc.Declarator{
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example162.c:1:13: IDENTIFIER "a",
 	// · · },
@@ -2664,6 +2676,10 @@ func ExampleExternalDeclaration() {
 	// · · },
 	// · · Declarator: &cc.Declarator{
 	// · · · IsDefinition: true,
+	// · · · align: cc.align{
+	// · · · },
+	// · · · size: cc.size{
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example251.c:1:11: IDENTIFIER "a",
 	// · · · },
@@ -2711,6 +2727,10 @@ func ExampleFunctionDefinition() {
 	// · },
 	// · Declarator: &cc.Declarator{
 	// · · IsDefinition: true,
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example254.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -2947,6 +2967,10 @@ func ExampleInitDeclarator() {
 	// Output:
 	// &cc.InitDeclarator{
 	// · Declarator: &cc.Declarator{
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example106.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -2961,6 +2985,10 @@ func ExampleInitDeclarator_case1() {
 	// · Case: 1,
 	// · Declarator: &cc.Declarator{
 	// · · IsDefinition: true,
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example107.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -3013,6 +3041,10 @@ func ExampleInitDeclaratorList() {
 	// &cc.InitDeclaratorList{
 	// · InitDeclarator: &cc.InitDeclarator{
 	// · · Declarator: &cc.Declarator{
+	// · · · align: cc.align{
+	// · · · },
+	// · · · size: cc.size{
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example102.c:1:11: IDENTIFIER "a",
 	// · · · },
@@ -3027,6 +3059,10 @@ func ExampleInitDeclaratorList_case1() {
 	// &cc.InitDeclaratorList{
 	// · InitDeclarator: &cc.InitDeclarator{
 	// · · Declarator: &cc.Declarator{
+	// · · · align: cc.align{
+	// · · · },
+	// · · · size: cc.size{
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example103.c:1:11: IDENTIFIER "a",
 	// · · · },
@@ -3036,6 +3072,10 @@ func ExampleInitDeclaratorList_case1() {
 	// · · Case: 1,
 	// · · InitDeclarator: &cc.InitDeclarator{
 	// · · · Declarator: &cc.Declarator{
+	// · · · · align: cc.align{
+	// · · · · },
+	// · · · · size: cc.size{
+	// · · · · },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example103.c:1:15: IDENTIFIER "b",
 	// · · · · },
@@ -3059,6 +3099,10 @@ func ExampleInitDeclaratorListOpt_case1() {
 	// · InitDeclaratorList: &cc.InitDeclaratorList{
 	// · · InitDeclarator: &cc.InitDeclarator{
 	// · · · Declarator: &cc.Declarator{
+	// · · · · align: cc.align{
+	// · · · · },
+	// · · · · size: cc.size{
+	// · · · · },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example105.c:1:11: IDENTIFIER "a",
 	// · · · · },
@@ -3972,6 +4016,10 @@ func ExampleParameterDeclaration() {
 	// · },
 	// · Declarator: &cc.Declarator{
 	// · · IsDefinition: true,
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example185.c:1:21: IDENTIFIER "a",
 	// · · },
@@ -5338,6 +5386,10 @@ func ExampleStructDeclarator() {
 	// · · · · Token: example144.c:1:6: STRUCT "struct",
 	// · · · },
 	// · · },
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example144.c:1:21: IDENTIFIER "a",
 	// · · },
@@ -5414,6 +5466,10 @@ func ExampleStructDeclaratorList() {
 	// · · · · · Token: example140.c:1:6: STRUCT "struct",
 	// · · · · },
 	// · · · },
+	// · · · align: cc.align{
+	// · · · },
+	// · · · size: cc.size{
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example140.c:1:21: IDENTIFIER "a",
 	// · · · },
@@ -5440,6 +5496,10 @@ func ExampleStructDeclaratorList_case1() {
 	// · · · · · Token: example141.c:1:6: STRUCT "struct",
 	// · · · · },
 	// · · · },
+	// · · · align: cc.align{
+	// · · · },
+	// · · · size: cc.size{
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example141.c:1:21: IDENTIFIER "a",
 	// · · · },
@@ -5457,6 +5517,10 @@ func ExampleStructDeclaratorList_case1() {
 	// · · · Declarator: &cc.Declarator{
 	// · · · · IsDefinition: true,
 	// · · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
+	// · · · · align: cc.align{
+	// · · · · },
+	// · · · · size: cc.size{
+	// · · · · },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example141.c:1:25: IDENTIFIER "b",
 	// · · · · },
@@ -5491,6 +5555,10 @@ func ExampleStructDeclaratorListOpt_case1() {
 	// · · · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · · · Token: example143.c:1:6: STRUCT "struct",
 	// · · · · · },
+	// · · · · },
+	// · · · · align: cc.align{
+	// · · · · },
+	// · · · · size: cc.size{
 	// · · · · },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example143.c:1:21: IDENTIFIER "a",

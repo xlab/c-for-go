@@ -2157,11 +2157,14 @@ func (u *UnaryExpression) eval() interface{} {
 		default:
 			panic("TODO")
 		}
+	case 5: // "sizeof" '(' TypeName ')'
+		return intT(u.TypeName.Type().Sizeof())
 	case 6: // DEFINED IDENTIFIER
 		return boolT(Macros[u.Token2.Val] != nil)
 	case 7: // DEFINED '(' IDENTIFIER ')'
 		return boolT(Macros[u.Token3.Val] != nil)
 	default:
+		println(PrettyString(u)) //TODO-
 		panic("TODO")
 	}
 	panic("unreachable")
@@ -2249,5 +2252,14 @@ func (a *AssignmentExpression) eval() interface{} {
 		return a.ConditionalExpression.eval()
 	default:
 		panic("TODO")
+	}
+}
+
+func (a *AssignmentExpression) eval2() int {
+	switch n := a.eval().(type) {
+	case int32:
+		return int(n)
+	default:
+		panic(fmt.Sprintf("%T", n))
 	}
 }

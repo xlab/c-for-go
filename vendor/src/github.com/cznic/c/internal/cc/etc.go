@@ -17,12 +17,25 @@ import (
 )
 
 type Type interface {
+	// Alignof return the required alignment of a type in bytes. Calling
+	// Alignof of a FunctionType will panic.
+	Alignof() int
+
 	// BaseType returns the type a PtrType points to.  Calling BaseType for
 	// other type kinds will panic.
 	BaseType() Type
 
+	// ElementType returns the element type of an ArrayType. Calling
+	// ElementType for other type kinds will panic.
+	ElementType() Type
+
 	// One of PtrType, VoidType, IntType, ...
 	Kind() Kind
+
+	// Len returns a pair (declared size, true) of an ArrayType if the size
+	// declaration is a constant expression or (0, false) otherwise.
+	// Calling Len for other type kinds will panic.
+	Len() (int, bool)
 
 	// Name returns the typedef name of a NamedType.  Calling Name for
 	// other type kinds will panic.
@@ -35,6 +48,10 @@ type Type interface {
 	// ResultType returns the result type of a function type. Calling ResultType
 	// for other type kinds will panic.
 	ResultType() Type
+
+	// Sizeof return the size of a type in bytes. Calling Sizeof of a
+	// FunctionType will panic.
+	Sizeof() int
 
 	// StructOrUnionType returns the struct or union specification of a
 	// StructType or a UnionType. Calling StructOrUnionType for other type
@@ -134,8 +151,9 @@ func intT(i interface{}) interface{} { // C int
 		return x
 	case int64:
 		return int32(x)
+	default:
+		panic("TODO")
 	}
-	panic("unreachable")
 }
 
 func uintT(i interface{}) interface{} { // C unsigned
@@ -596,6 +614,9 @@ func newIndirectType(specifier Type, ind int) Type {
 	return &indirectType{specifier, ind}
 }
 
+// Alignof implements Type.
+func (i *indirectType) Alignof() int { panic("TODO") }
+
 // BaseType implements Type.
 func (i *indirectType) BaseType() Type {
 	if i.n == 1 {
@@ -605,8 +626,14 @@ func (i *indirectType) BaseType() Type {
 	return &indirectType{i.specifier, i.n - 1}
 }
 
+// ElementType implements Type.
+func (i *indirectType) ElementType() Type { panic("internal error") }
+
 // Kind implements Type.
 func (i *indirectType) Kind() Kind { return PtrType }
+
+// Len implements Type.
+func (i *indirectType) Len() (int, bool) { panic("internal error") }
 
 // Name implements Type.
 func (i *indirectType) Name() xc.Token { panic("internal error") }
@@ -616,6 +643,9 @@ func (i *indirectType) ParameterTypeList() *ParameterTypeList { panic("internal 
 
 // ResultType implements Type.
 func (i *indirectType) ResultType() Type { panic("internal error") }
+
+// Sizeof implements Type.
+func (i *indirectType) Sizeof() int { panic("TODO") }
 
 // StructOrUnionType implements Type.
 func (i *indirectType) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }

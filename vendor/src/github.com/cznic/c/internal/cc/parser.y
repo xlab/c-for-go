@@ -771,6 +771,8 @@ FunctionSpecifier:
 //yy:field	IsDefinition	bool				// Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
 //yy:field	IsTypedef	bool
 //yy:field	SUSpecifier0	*StructOrUnionSpecifier0	// Non nil if d declares a field.
+//yy:field	align
+//yy:field	size
 Declarator:
 	PointerOpt DirectDeclarator
 	{
@@ -778,6 +780,9 @@ Declarator:
 		sc := lx.scope
 		lhs.IsTypedef = sc.isTypedef
 		lhs.SUSpecifier0 = sc.SUSpecifier0
+		pos := lhs.DirectDeclarator.ident().Pos()
+		lhs.align.pos = pos
+		lhs.size.pos = pos
 	}
 
 DeclaratorOpt:
@@ -892,6 +897,11 @@ IdentifierOpt:
 // (6.7.6)
 TypeName:
 	SpecifierQualifierList AbstractDeclaratorOpt
+	{
+		if o := lhs.AbstractDeclaratorOpt; o != nil {
+			o.AbstractDeclarator.specifier = (*specifierQualifierList)(lhs.SpecifierQualifierList)
+		}
+	}
 
 // (6.7.6)
 //yy:field	indirection	int	// 'int **i': 2.

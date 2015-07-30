@@ -30,6 +30,7 @@ const (
 var (
 	compilation  = xc.Compilation
 	db           = newTokDB()
+	declarations = newBindings(ScopeFile, nil)
 	dict         = xc.Dict
 	fileset      = xc.FileSet
 	includePaths []string

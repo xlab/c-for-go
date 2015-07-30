@@ -3606,6 +3606,9 @@ yynewstate:
 			sc := lx.scope
 			lhs.IsTypedef = sc.isTypedef
 			lhs.SUSpecifier0 = sc.SUSpecifier0
+			pos := lhs.DirectDeclarator.ident().Pos()
+			lhs.align.pos = pos
+			lhs.size.pos = pos
 		}
 	case 159:
 		{
@@ -3875,9 +3878,13 @@ yynewstate:
 		}
 	case 193:
 		{
-			yyVAL.item = &TypeName{
+			lhs := &TypeName{
 				SpecifierQualifierList: yyS[yypt-1].item.(*SpecifierQualifierList),
 				AbstractDeclaratorOpt:  yyS[yypt-0].item.(*AbstractDeclaratorOpt),
+			}
+			yyVAL.item = lhs
+			if o := lhs.AbstractDeclaratorOpt; o != nil {
+				o.AbstractDeclarator.specifier = (*specifierQualifierList)(lhs.SpecifierQualifierList)
 			}
 		}
 	case 194:
