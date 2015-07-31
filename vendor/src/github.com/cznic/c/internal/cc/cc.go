@@ -27,6 +27,7 @@ import (
 
 	"github.com/cznic/c/internal/xc"
 	"github.com/cznic/golex/lex"
+	"github.com/cznic/mathutil"
 )
 
 // Opt is a configuration/setup function.
@@ -68,6 +69,10 @@ func Parse(predefine string, paths []string, m Model, opts ...Opt) (*Translation
 	}
 
 	model = m
+	maxAlignment = -1
+	for _, v := range m {
+		maxAlignment = mathutil.Max(maxAlignment, v.Align)
+	}
 	lx := newTULexer()
 	for _, opt := range opts {
 		opt(lx)

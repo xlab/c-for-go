@@ -30,7 +30,6 @@ const (
 var (
 	compilation  = xc.Compilation
 	db           = newTokDB()
-	declarations = newBindings(ScopeFile, nil)
 	dict         = xc.Dict
 	fileset      = xc.FileSet
 	includePaths []string
@@ -41,6 +40,7 @@ var (
 	// Macros records macros defined during preprocessing. Map key is the identifier ID.
 	Macros = map[int]*macro{} //TODO unexport?
 
+	maxAlignment    int
 	model           Model
 	printHooks      = strutil.PrettyPrintHooks{}
 	sysIncludePaths []string

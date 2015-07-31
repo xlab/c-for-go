@@ -13,6 +13,7 @@ import (
 
 	"github.com/cznic/c/internal/xc"
 	"github.com/cznic/golex/lex"
+	"github.com/cznic/mathutil"
 )
 %}
 
@@ -592,6 +593,8 @@ StructOrUnionSpecifier0:
 	{
 		lx.pushScope(ScopeMembers)
 		lx.scope.SUSpecifier0 = lhs
+		lx.scope.isUnion = lhs.StructOrUnion.Token.Val == idUnion
+		lx.scope.maxFldAlign = 1
 	}
 
 // (6.7.2.1)
@@ -606,17 +609,28 @@ StructOrUnionSpecifier:
 		if io := s0.IdentifierOpt; io != nil {
 			lx.fileScope.insert(NSTags, io.Token, lhs)
 		}
-		lhs.Members = lx.popScope($4)
 		s0.SUSpecifier = lhs
 		pos := s0.StructOrUnion.Token.Pos()
 		lhs.align.pos = pos
 		lhs.size.pos = pos
-		lhs.isUnion = s0.StructOrUnion.Token.Val == idUnion
+		sc := lx.scope
+		lhs.isUnion = sc.isUnion
+		switch {
+		case lhs.isUnion:
+			lhs.align.set(sc.maxFldAlign)
+			lhs.size.set(sc.maxFldSize)
+		default:
+			lhs.align.set(sc.maxFldAlign)
+			lhs.size.set(fieldOffset(sc.fldOffset, sc.maxFldAlign))
+		}
+		lhs.Members = lx.popScope($4)
 	}
 |	StructOrUnion IDENTIFIER
 	{
 		lx.fileScope.insert(NSTags, lhs.Token, lhs)
 		lhs.isUnion = lhs.StructOrUnion.Token.Val == idUnion
+		lhs.align.set(maxAlignment)
+		lhs.size.set(0)
 	}
 
 // (6.7.2.1)
@@ -705,22 +719,54 @@ StructDeclaratorListOpt:
 StructDeclarator:
 	Declarator
 	{
-		pos := lhs.Declarator.Ident().Pos()
+		d := lhs.Declarator
+		pos := d.Ident().Pos()
 		lhs.align.pos = pos
 		lhs.offset.pos = pos
 		lhs.size.pos = pos
-		lhs.Declarator.insert(lx.scope, NSMembers, true)
+		sc := lx.scope
+		sz := d.Sizeof()
+		sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
+		lhs.size.set(sz)
+		al := d.Alignof()
+		sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, sz)
+		lhs.align.set(al)
+		fldOffset := fieldOffset(sc.fldOffset, al)
+		if sc.isUnion {
+			fldOffset = 0
+		}
+		lhs.offset.set(fldOffset)
+		if !sc.isUnion {
+			sc.fldOffset = fldOffset+sz
+		}
+		lhs.Declarator.insert(sc, NSMembers, true)
 	}
 |	DeclaratorOpt ':' ConstantExpression
 	{
+		//TODO compute real bitfields
+		sc := lx.scope
 		pos := lhs.Token.Pos()
+		al := model[Int].Align
 		if o := lhs.DeclaratorOpt; o != nil {
 			pos = o.Declarator.Ident().Pos()
-			o.Declarator.insert(lx.scope, NSMembers, true)
+			o.Declarator.insert(sc, NSMembers, true)
 		}
 		lhs.align.pos = pos
 		lhs.offset.pos = pos
 		lhs.size.pos = pos
+		sz := model[Int].Size 
+		sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
+		lhs.size.set(sz)
+		sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, sz)
+		lhs.align.set(al)
+		fldOffset := fieldOffset(sc.fldOffset, al)
+		if sc.isUnion {
+			fldOffset = 0
+		}
+		lhs.offset.set(fldOffset)
+		if !sc.isUnion {
+			sc.fldOffset = fldOffset+sz
+		}
 	}
 
 EnumSpecifier0:
@@ -783,6 +829,9 @@ Declarator:
 		pos := lhs.DirectDeclarator.ident().Pos()
 		lhs.align.pos = pos
 		lhs.size.pos = pos
+		t := lhs.Type()
+		lhs.align.set(t.Alignof())
+		lhs.size.set(t.Sizeof())
 	}
 
 DeclaratorOpt:

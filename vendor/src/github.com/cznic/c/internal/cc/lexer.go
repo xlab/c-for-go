@@ -212,7 +212,6 @@ type lexer struct {
 
 func newTULexer() *lexer {
 	scope := newBindings(ScopeFile, nil)
-	declarations = scope
 	return &lexer{
 		fileScope: scope,
 		scope:     scope,

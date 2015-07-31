@@ -340,15 +340,20 @@ func newBinding(tok xc.Token, node interface{}) *binding { return &binding{Token
 
 // Bindings maps identifiers to declarations or definitions.
 type Bindings struct {
+	Type        Scope
+	identifiers map[int]*binding
+	labels      map[int]*binding
+	members     map[int]*binding
+	parent      *Bindings
+	tags        map[int]*binding
+
 	SUSpecifier0 *StructOrUnionSpecifier0
-	Type         Scope
-	specifier    Type
-	identifiers  map[int]*binding
+	fldOffset    int
 	isTypedef    bool
-	labels       map[int]*binding
-	members      map[int]*binding
-	parent       *Bindings
-	tags         map[int]*binding
+	isUnion      bool
+	maxFldAlign  int
+	maxFldSize   int
+	specifier    Type
 }
 
 func newBindings(typ Scope, parent *Bindings) *Bindings {
@@ -615,7 +620,7 @@ func newIndirectType(specifier Type, ind int) Type {
 }
 
 // Alignof implements Type.
-func (i *indirectType) Alignof() int { panic("TODO") }
+func (i *indirectType) Alignof() int { return model[Ptr].Align }
 
 // BaseType implements Type.
 func (i *indirectType) BaseType() Type {
@@ -645,7 +650,71 @@ func (i *indirectType) ParameterTypeList() *ParameterTypeList { panic("internal 
 func (i *indirectType) ResultType() Type { panic("internal error") }
 
 // Sizeof implements Type.
-func (i *indirectType) Sizeof() int { panic("TODO") }
+func (i *indirectType) Sizeof() int { return model[Ptr].Size }
 
 // StructOrUnionType implements Type.
 func (i *indirectType) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }
+
+func fieldOffset(off, align int) int {
+	d := off % align
+	if d != 0 {
+		off += align - d
+	}
+	return off
+}
+
+func szAlign(t Type) ModelItem {
+	switch t.Kind() {
+	case VoidType:
+		return ModelItem{Size: 0, Align: 1}
+	case BoolType:
+		return model[Bool]
+	case IntType:
+		return model[Int]
+	case NamedType:
+		var ts *TypeSpecifier
+		switch n := t.(type) {
+		case *declarationSpecifiers:
+			ts = n.typeSpecification()
+		case *specifierQualifierList:
+			ts = n.typeSpecification()
+		default:
+			panic("TODO")
+		}
+		b, _ := ts.bindings.Lookup(NSIdentifiers, ts.Token.Val)
+		d := b.Node.(*Declarator)
+		return szAlign(d.Type())
+	case CharType:
+		return model[Char]
+	case StructType, UnionType:
+		sus := t.StructOrUnionType()
+		return ModelItem{Size: sus.Sizeof(), Align: sus.Alignof()}
+	case LongLongType:
+		return model[LongLong]
+	case ULongLongType:
+		return model[ULongLong]
+	case UCharType:
+		return model[UChar]
+	case DoubleType:
+		return model[Double]
+	case UIntType:
+		return model[UInt]
+	case UShortType:
+		return model[UShort]
+	case ShortType:
+		return model[Short]
+	case LongType:
+		return model[Long]
+	case PtrType, FunctionType:
+		return model[Ptr]
+	case ArrayType:
+		return szAlign(t.ElementType()) //TODO This is not correct
+	default:
+		//panic(PrettyString(t))//TODO-
+		panic(t.Kind())
+	}
+}
+
+func alignof(t Type) int { return szAlign(t).Align }
+
+func sizeof(t Type) int { return szAlign(t).Size }

@@ -5591,13 +5591,13 @@ func ExampleStructOrUnionSpecifier() {
 	// Output:
 	// &cc.StructOrUnionSpecifier{
 	// · Members: &cc.Bindings{
+	// · · Type: 4,
 	// · · SUSpecifier0: &cc.StructOrUnionSpecifier0{
 	// · · · SUSpecifier: &cc.StructOrUnionSpecifier{ /* recursive/repetitive pointee not shown */ },
 	// · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · Token: example128.c:1:6: STRUCT "struct",
 	// · · · },
 	// · · },
-	// · · Type: 4,
 	// · },
 	// · align: cc.align{
 	// · },
@@ -5624,6 +5624,10 @@ func ExampleStructOrUnionSpecifier_case1() {
 	fmt.Println(exampleAST(129, "\U00100002 struct a ("))
 	// Output:
 	// &cc.StructOrUnionSpecifier{
+	// · align: cc.align{
+	// · },
+	// · size: cc.size{
+	// · },
 	// · Case: 1,
 	// · StructOrUnion: &cc.StructOrUnion{
 	// · · Token: example129.c:1:6: STRUCT "struct",
@@ -5888,6 +5892,10 @@ func ExampleTypeSpecifier_case11() {
 	// &cc.TypeSpecifier{
 	// · Case: 11,
 	// · StructOrUnionSpecifier: &cc.StructOrUnionSpecifier{
+	// · · align: cc.align{
+	// · · },
+	// · · size: cc.size{
+	// · · },
 	// · · Case: 1,
 	// · · StructOrUnion: &cc.StructOrUnion{
 	// · · · Token: example124.c:1:6: STRUCT "struct",
