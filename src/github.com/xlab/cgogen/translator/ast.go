@@ -1,6 +1,10 @@
 package translator
 
-import "github.com/cznic/c/internal/cc"
+import (
+	"log"
+
+	"github.com/cznic/c/internal/cc"
+)
 
 func (t *Translator) walkAST(unit *cc.TranslationUnit) ([]CTypeDecl, error) {
 	var declarations []CTypeDecl
@@ -53,6 +57,9 @@ func walkDeclaration(declr *cc.Declaration) ([]CTypeDecl, error) {
 			nextList = walkInitDeclaratorList(nextList, decl)
 			declarations = append(declarations, *decl)
 		}
+	}
+	if len(declarations) == 0 {
+		log.Println("EMPTY declaration:", refDecl)
 	}
 
 	return declarations, nil

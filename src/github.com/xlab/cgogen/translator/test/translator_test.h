@@ -12,9 +12,11 @@ typedef struct lol {
 } lol_t;
 
 
+// void fun(int a, void ( *holop ) (void *agent, int32_t call_idx));
+
 // int gc_group_load(struct VPX_LOL *save);
 
-// typedef struct test {
+// typeavledef struct test {
 // 	char A;
 // 	char B;
 // } test_t;

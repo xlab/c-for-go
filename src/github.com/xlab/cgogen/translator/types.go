@@ -256,16 +256,13 @@ func (cts *CTypeSpec) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// func (cts CTypeSpec)  string {
-// 	return cts.Base // TODO: lookup in cache
-// }
-
 type GoTypeSpec struct {
 	Slices   uint8
 	Pointers uint8
+	Arrays   []uint64
+	Inner    *GoTypeSpec
 	Unsigned bool
 	Base     string
-	Inner    *GoTypeSpec
 	Bits     uint16
 }
 
@@ -273,17 +270,17 @@ func (gts *GoTypeSpec) Wrap(innerGTS GoTypeSpec) GoTypeSpec {
 	return GoTypeSpec{
 		Slices:   gts.Slices,
 		Pointers: gts.Pointers,
+		Arrays:   gts.Arrays,
 		Inner:    &innerGTS,
 	}
 }
 
 func (gts *GoTypeSpec) String() string {
 	var str string
-	for i := uint8(0); i < gts.Slices; i++ {
-		str += "[]"
-	}
-	for i := uint8(0); i < gts.Pointers; i++ {
-		str += "*"
+	str += strings.Repeat("[]", int(gts.Slices))
+	str += strings.Repeat("*", int(gts.Pointers))
+	for _, size := range gts.Arrays {
+		str += fmt.Sprintf("[%d]", size)
 	}
 	if gts.Inner != nil {
 		str += gts.Inner.String()
