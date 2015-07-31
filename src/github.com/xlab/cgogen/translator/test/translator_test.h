@@ -2,14 +2,15 @@
 // typedef const unsigned char* int8_t;
 // typedef int8_t alias_t;
 
+typedef int int32_t;
+typedef void ( *VPX_LOL ) (void *agent, int32_t call_idx);
+
+#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
+
 typedef struct lol {
-	int a;
-	int *b, c;
+    PAIR(VPX_LOL, void *) acb;
 } lol_t;
 
-struct VPX_LOL {
-    int   self_nick[VPX_LOLO][4];
-} lal_t;
 
 // int gc_group_load(struct VPX_LOL *save);
 

@@ -35,9 +35,10 @@ type CTypeDecl struct {
 func (c CTypeDecl) String() string {
 	var str string
 	if len(c.Name) > 0 {
-		str = fmt.Sprintf("%s %s", c.Spec.String(), c.Name)
+		str = c.Spec.String() + " " + c.Name
+	} else {
+		str = c.Spec.String()
 	}
-	str = c.Spec.String()
 	for _, size := range c.Arrays {
 		if size > 0 {
 			str += fmt.Sprintf("[%d]", size)
