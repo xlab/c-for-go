@@ -33,10 +33,19 @@ type CTypeDecl struct {
 }
 
 func (c CTypeDecl) String() string {
+	var str string
 	if len(c.Name) > 0 {
-		return fmt.Sprintf("%s %s", c.Spec.String(), c.Name)
+		str = fmt.Sprintf("%s %s", c.Spec.String(), c.Name)
 	}
-	return c.Spec.String()
+	str = c.Spec.String()
+	for _, size := range c.Arrays {
+		if size > 0 {
+			str += fmt.Sprintf("[%d]", size)
+		} else {
+			str += "[]"
+		}
+	}
+	return str
 }
 
 func (c *CTypeDecl) SetPointers(n uint8) {

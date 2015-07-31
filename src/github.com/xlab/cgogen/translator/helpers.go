@@ -3,7 +3,6 @@ package translator
 import (
 	"fmt"
 	"go/token"
-	"log"
 	"path/filepath"
 	"runtime"
 
@@ -50,7 +49,12 @@ func srcLocation(p token.Pos) string {
 	return fmt.Sprintf("%s:%d", narrowPath(pos.Filename), pos.Line)
 }
 
+func unresolvedIdentifierWarn(name string, p token.Pos) {
+	_, file, line, _ := runtime.Caller(1)
+	fmt.Printf("WARN: %s:%d unresolved identifier %s at %s\n", narrowPath(file), line, name, srcLocation(p))
+}
+
 func unmanagedCaseWarn(c int, p token.Pos) {
 	_, file, line, _ := runtime.Caller(1)
-	log.Printf("%s:%d unmanaged case %d at %s\n", narrowPath(file), line, c, srcLocation(p))
+	fmt.Printf("WARN: %s:%d unmanaged case %d at %s\n", narrowPath(file), line, c, srcLocation(p))
 }

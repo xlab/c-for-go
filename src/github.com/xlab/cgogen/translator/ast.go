@@ -118,13 +118,20 @@ func walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CTypeDecl) (next *cc
 	case 1: // '(' Declarator ')'
 		walkPointers(declr.Declarator.PointerOpt, decl)
 		next = declr.Declarator.DirectDeclarator
-	case 2, 3, 4, 5:
-		// DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'        // Case 2
-		// DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'  // Case 3
-		// DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'     // Case 4
-		// DirectDeclarator '[' TypeQualifierListOpt '*' ']'                            // Case 5
+	case 2, // DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'
+		3, // DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'
+		4, // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
+		5: // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
+		var n int64
+		if declr.AssignmentExpressionOpt != nil {
+			primary := walkAssigmentExperessionToPrimary(declr.AssignmentExpressionOpt.AssignmentExpression)
+			n = walkPrimaryExpressionToInt64(primary)
+			if n < 0 {
+				n = 0
+			}
+		}
+		decl.AddArray(uint64(n))
 		next = declr.DirectDeclarator
-		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		next = declr.DirectDeclarator
 		decl.Spec = &CFunctionSpec{
