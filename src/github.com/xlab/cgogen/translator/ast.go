@@ -33,29 +33,25 @@ func walkUnit(unit *cc.TranslationUnit) (next *cc.TranslationUnit, declarations 
 }
 
 func walkDeclaration(declr *cc.Declaration) ([]CTypeDecl, error) {
-	if declr == nil {
-		return nil, nil
-	}
-
-	// read type spec
-	spec := &CTypeSpec{}
-	nextSpec := walkDeclarationSpec(declr.DeclarationSpecifiers, spec)
+	// read type spec into a reference type declaration
+	refDecl := &CTypeDecl{Spec: &CTypeSpec{}}
+	nextSpec := walkDeclarationSpec(declr.DeclarationSpecifiers, refDecl)
 	for nextSpec != nil {
-		nextSpec = walkDeclarationSpec(nextSpec, spec)
+		nextSpec = walkDeclarationSpec(nextSpec, refDecl)
 	}
 
 	// prepare to collect declarations
 	var declarations []CTypeDecl
 
-	cdecl := &CTypeDecl{Spec: spec.Copy()}
+	decl := &CTypeDecl{Spec: refDecl.Spec.Copy()}
 	if declr.InitDeclaratorListOpt != nil {
-		nextList := walkInitDeclaratorList(declr.InitDeclaratorListOpt.InitDeclaratorList, cdecl)
-		declarations = append(declarations, *cdecl)
+		nextList := walkInitDeclaratorList(declr.InitDeclaratorListOpt.InitDeclaratorList, decl)
+		declarations = append(declarations, *decl)
 
 		for nextList != nil {
-			cdecl = &CTypeDecl{Spec: spec.Copy()}
-			nextList = walkInitDeclaratorList(nextList, cdecl)
-			declarations = append(declarations, *cdecl)
+			decl = &CTypeDecl{Spec: refDecl.Spec.Copy()}
+			nextList = walkInitDeclaratorList(nextList, decl)
+			declarations = append(declarations, *decl)
 		}
 	}
 
@@ -78,13 +74,12 @@ func walkParameterList(list *cc.ParameterList) (next *cc.ParameterList, decl *CT
 	declr := list.ParameterDeclaration
 	switch declr.Case {
 	case 0: // DeclarationSpecifiers Declarator
-		spec := &CTypeSpec{}
-		nextDeclr := walkDeclarationSpec(declr.DeclarationSpecifiers, spec)
+		decl = &CTypeDecl{Spec: &CTypeSpec{}}
+		nextDeclr := walkDeclarationSpec(declr.DeclarationSpecifiers, decl)
 		for nextDeclr != nil {
-			nextDeclr = walkDeclarationSpec(nextDeclr, spec)
+			nextDeclr = walkDeclarationSpec(nextDeclr, decl)
 		}
 
-		decl = &CTypeDecl{Spec: spec}
 		walkPointers(declr.Declarator.PointerOpt, decl)
 		nextDeclarator := walkDirectDeclarator(declr.Declarator.DirectDeclarator, decl)
 		for nextDeclarator != nil {
@@ -120,6 +115,16 @@ func walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CTypeDecl) (next *cc
 	switch declr.Case {
 	case 0: // IDENTIFIER
 		decl.Name = string(declr.Token.S())
+	case 1: // '(' Declarator ')'
+		walkPointers(declr.Declarator.PointerOpt, decl)
+		next = declr.Declarator.DirectDeclarator
+	case 2, 3, 4, 5:
+		// DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'        // Case 2
+		// DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'  // Case 3
+		// DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'     // Case 4
+		// DirectDeclarator '[' TypeQualifierListOpt '*' ']'                            // Case 5
+		next = declr.DirectDeclarator
+		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		next = declr.DirectDeclarator
 		decl.Spec = &CFunctionSpec{
@@ -129,13 +134,6 @@ func walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CTypeDecl) (next *cc
 			},
 		}
 		walkDirectDeclarator2(declr.DirectDeclarator2, decl)
-	default:
-		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
-		//	|       '(' Declarator ')'                                                           // Case 1
-		//	|       DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'        // Case 2
-		//	|       DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'  // Case 3
-		//	|       DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'     // Case 4
-		//	|       DirectDeclarator '[' TypeQualifierListOpt '*' ']'                            // Case 5
 	}
 	return
 }
@@ -153,28 +151,119 @@ func walkPointers(popt *cc.PointerOpt, decl *CTypeDecl) {
 	decl.SetPointers(pointers)
 }
 
-func walkDeclarationSpec(declr *cc.DeclarationSpecifiers, spec *CTypeSpec) (next *cc.DeclarationSpecifiers) {
+func walkDeclarationSpec(declr *cc.DeclarationSpecifiers, decl *CTypeDecl) (next *cc.DeclarationSpecifiers) {
 	switch declr.Case {
 	case 0: // StorageClassSpecifier DeclarationSpecifiersOpt
 		next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
-	case 2: // TypeQualifier DeclarationSpecifiersOpt
-		spec.Const = (declr.TypeQualifier.Case == 0)
-		next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
 	case 1: // TypeSpecifier DeclarationSpecifiersOpt
-		walkTypeSpec(declr.TypeSpecifier, spec)
+		walkTypeSpec(declr.TypeSpecifier, decl)
 		if declr.DeclarationSpecifiersOpt != nil {
 			next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
 		}
-	case 3:
+	case 2: // TypeQualifier DeclarationSpecifiersOpt
+		if spec, ok := decl.Spec.(*CTypeSpec); ok {
+			spec.Const = (declr.TypeQualifier.Case == 0)
+		}
+		next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
+	case 3: // FunctionSpecifier DeclarationSpecifiersOpt
 		unmanagedCaseWarn(declr.Case, declr.FunctionSpecifier.Token.Pos())
 	}
 	return
 }
 
-func walkTypeSpec(typeSpec *cc.TypeSpecifier, spec *CTypeSpec) {
+func walkSpecifierQualifierList(declr *cc.SpecifierQualifierList, decl *CTypeDecl) (next *cc.SpecifierQualifierList) {
+	if declr.SpecifierQualifierListOpt != nil {
+		next = declr.SpecifierQualifierListOpt.SpecifierQualifierList
+	}
+	switch declr.Case {
+	case 0:
+		walkTypeSpec(declr.TypeSpecifier, decl)
+	case 1:
+		if spec, ok := decl.Spec.(*CTypeSpec); ok {
+			spec.Const = (declr.TypeQualifier.Case == 0)
+		}
+	}
+	return
+}
+
+func walkStructDeclarator(declr *cc.StructDeclarator, decl *CTypeDecl) {
+	switch declr.Case {
+	case 0: // Declarator
+		walkPointers(declr.Declarator.PointerOpt, decl)
+		nextDeclr := declr.Declarator.DirectDeclarator
+		for nextDeclr != nil {
+			nextDeclr = walkDirectDeclarator(nextDeclr, decl)
+		}
+	case 1: // DeclaratorOpt ':' ConstantExpression
+		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
+	}
+}
+
+func walkStructDeclaration(declr *cc.StructDeclaration) []CTypeDecl {
+	refDecl := &CTypeDecl{Spec: &CTypeSpec{}}
+	nextList := declr.SpecifierQualifierList
+	for nextList != nil {
+		nextList = walkSpecifierQualifierList(nextList, refDecl)
+	}
+
+	// prepare to collect declarations
+	var declarations []CTypeDecl
+
+	nextDeclaratorList := declr.StructDeclaratorListOpt.StructDeclaratorList
+	for nextDeclaratorList != nil {
+		decl := &CTypeDecl{Spec: refDecl.Spec.Copy()}
+		walkStructDeclarator(nextDeclaratorList.StructDeclarator, decl)
+		nextDeclaratorList = nextDeclaratorList.StructDeclaratorList
+		declarations = append(declarations, *decl)
+	}
+
+	return declarations
+}
+
+func walkSUSpecifier(suSpec *cc.StructOrUnionSpecifier, decl *CTypeDecl) {
+	switch suSpec.Case {
+	case 0: // StructOrUnionSpecifier0 '{' StructDeclarationList '}'
+		walkSUSpecifier0(suSpec.StructOrUnionSpecifier0, decl)
+		structSpec := decl.Spec.(*CStructSpec)
+		nextList := suSpec.StructDeclarationList
+		for nextList != nil {
+			declarations := walkStructDeclaration(nextList.StructDeclaration)
+			structSpec.Members = append(structSpec.Members, declarations...)
+			nextList = nextList.StructDeclarationList
+		}
+	case 1: // StructOrUnion IDENTIFIER
+		switch suSpec.StructOrUnion.Case {
+		case 0: // struct
+			decl.Spec = &CStructSpec{}
+		case 1: // union
+			decl.Spec = &CStructSpec{
+				Union: true,
+			}
+		}
+	}
+}
+
+func walkSUSpecifier0(suSpec *cc.StructOrUnionSpecifier0, decl *CTypeDecl) {
+	switch suSpec.StructOrUnion.Case {
+	case 0: // struct
+		decl.Spec = &CStructSpec{}
+	case 1: // union
+		decl.Spec = &CStructSpec{
+			Union: true,
+		}
+	}
+	if suSpec.IdentifierOpt != nil {
+		decl.Spec.(*CStructSpec).Tag = string(suSpec.IdentifierOpt.Token.S())
+	}
+}
+
+func walkTypeSpec(typeSpec *cc.TypeSpecifier, decl *CTypeDecl) {
 	if typeSpec == nil {
 		return
 	}
+
+	spec := decl.Spec.(*CTypeSpec)
+
 	switch typeSpec.Case {
 	case 0:
 		spec.Base = "void"
@@ -194,7 +283,7 @@ func walkTypeSpec(typeSpec *cc.TypeSpecifier, spec *CTypeSpec) {
 		spec.Base = "float"
 	case 6:
 		spec.Base = "double"
-	// case 7: signed
+	case 7: // IGNORE: signed
 	case 8:
 		spec.Unsigned = true
 	case 9:
@@ -202,8 +291,8 @@ func walkTypeSpec(typeSpec *cc.TypeSpecifier, spec *CTypeSpec) {
 	case 10:
 		spec.Base = "_Complex"
 	case 11:
-		spec.Struct = true
-	// case 12: TODO enums
+		walkSUSpecifier(typeSpec.StructOrUnionSpecifier, decl)
+	case 12: // TODO: enums
 	case 13:
 		spec.Base = string(typeSpec.Token.S())
 	}

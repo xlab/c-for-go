@@ -36,6 +36,10 @@
 · · · · · InitDeclarator: &cc.InitDeclarator{
 · · · · · · Declarator: &cc.Declarator{
 · · · · · · · IsTypedef: true,
+· · · · · · · align: cc.align{
+· · · · · · · },
+· · · · · · · size: cc.size{
+· · · · · · · },
 · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · Token: test/parser_test.h:1:21: IDENTIFIER "int8_t",
 · · · · · · · },
@@ -63,6 +67,10 @@
 · · · · · InitDeclaratorList: &cc.InitDeclaratorList{
 · · · · · · InitDeclarator: &cc.InitDeclarator{
 · · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · align: cc.align{
+· · · · · · · · },
+· · · · · · · · size: cc.size{
+· · · · · · · · },
 · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · Case: 6,
 · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
@@ -81,6 +89,10 @@
 · · · · · · · · · · · · · },
 · · · · · · · · · · · · · Declarator: &cc.Declarator{
 · · · · · · · · · · · · · · IsDefinition: true,
+· · · · · · · · · · · · · · align: cc.align{
+· · · · · · · · · · · · · · },
+· · · · · · · · · · · · · · size: cc.size{
+· · · · · · · · · · · · · · },
 · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · · · · · · · Token: test/parser_test.h:2:21: IDENTIFIER "a",
 · · · · · · · · · · · · · · },
@@ -98,6 +110,10 @@
 · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · · Declarator: &cc.Declarator{
 · · · · · · · · · · · · · · · IsDefinition: true,
+· · · · · · · · · · · · · · · align: cc.align{
+· · · · · · · · · · · · · · · },
+· · · · · · · · · · · · · · · size: cc.size{
+· · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · · · · · · · · Token: test/parser_test.h:2:31: IDENTIFIER "b",
 · · · · · · · · · · · · · · · },

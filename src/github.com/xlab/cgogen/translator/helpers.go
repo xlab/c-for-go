@@ -5,6 +5,7 @@ import (
 	"go/token"
 	"log"
 	"path/filepath"
+	"runtime"
 
 	"github.com/cznic/c/internal/xc"
 )
@@ -50,5 +51,6 @@ func srcLocation(p token.Pos) string {
 }
 
 func unmanagedCaseWarn(c int, p token.Pos) {
-	log.Printf("unmanaged ParameterDeclaration case %d at %s\n", c, srcLocation(p))
+	_, file, line, _ := runtime.Caller(1)
+	log.Printf("%s:%d unmanaged case %d at %s\n", narrowPath(file), line, c, srcLocation(p))
 }

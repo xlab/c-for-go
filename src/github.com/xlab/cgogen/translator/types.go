@@ -26,9 +26,10 @@ type CType interface {
 }
 
 type CTypeDecl struct {
-	Spec CType
-	Name string
-	Pos  token.Pos
+	Spec   CType
+	Name   string
+	Arrays []uint64
+	Pos    token.Pos
 }
 
 func (c CTypeDecl) String() string {
@@ -40,6 +41,10 @@ func (c CTypeDecl) String() string {
 
 func (c *CTypeDecl) SetPointers(n uint8) {
 	c.Spec.SetPointers(n)
+}
+
+func (c *CTypeDecl) AddArray(size uint64) {
+	c.Arrays = append(c.Arrays, size)
 }
 
 type CFunctionSpec struct {
@@ -83,8 +88,27 @@ func (c CStructSpec) Kind() CTypeKind {
 	return StructDef
 }
 
-func (c CStructSpec) String() string {
-	return "// TODO: struct spec"
+func (css CStructSpec) String() string {
+	var members []string
+	for _, m := range css.Members {
+		members = append(members, m.String())
+	}
+	membersColumn := strings.Join(members, ", ")
+
+	str := "struct"
+	if css.Union {
+		str = "union"
+	}
+	if len(css.Tag) > 0 {
+		str = fmt.Sprintf("%s %s", str, css.Tag)
+	}
+	if len(members) > 0 {
+		str = fmt.Sprintf("%s {%s}", str, membersColumn)
+	}
+	if css.Pointers > 0 {
+		str += strings.Repeat("*", int(css.Pointers))
+	}
+	return str
 }
 
 func (c CStructSpec) Copy() CType {
@@ -97,7 +121,6 @@ type CTypeSpec struct {
 	Unsigned bool
 	Short    bool
 	Long     bool
-	Struct   bool
 	Pointers uint8
 }
 
@@ -114,11 +137,8 @@ func (cts CTypeSpec) String() string {
 	if cts.Const {
 		str += "const "
 	}
-	switch {
-	case cts.Unsigned:
+	if cts.Unsigned {
 		str += "unsigned "
-	case cts.Struct:
-		str += "struct "
 	}
 	switch {
 	case cts.Long:
@@ -206,12 +226,7 @@ func (cts *CTypeSpec) UnmarshalJSON(b []byte) error {
 			// read specifiers and qualifiers
 			switch {
 			case bytes.Equal(part, specStruct), bytes.Equal(part, specUnion):
-				ts.Struct = true
-				if len(ts.Base) == 0 {
-					return errors.New("ctype: no base type name specified")
-				}
-				*cts = ts
-				return nil
+				return errors.New("struct is not a simple C type")
 			case bytes.Equal(part, specShort):
 				ts.Short = true
 			case bytes.Equal(part, specLong):

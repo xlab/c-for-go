@@ -2,6 +2,7 @@ package parser
 
 import (
 	"io/ioutil"
+	"log"
 	"testing"
 
 	"github.com/cznic/c/internal/cc"
@@ -30,6 +31,7 @@ func testUnit(t *testing.T, u *cc.TranslationUnit) {
 		t.Fatal("no translation unit returned")
 	}
 	if u.String() != string(buf) {
+		log.Println(u)
 		t.Error("output doesn't match reference")
 	}
 }
