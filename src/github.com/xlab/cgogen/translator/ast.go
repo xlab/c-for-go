@@ -129,15 +129,12 @@ func walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CTypeDecl) (next *cc
 		3, // DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'
 		4, // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
 		5: // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
-		var n int64
+		assignmentExpr := declr.AssignmentExpression
 		if declr.AssignmentExpressionOpt != nil {
-			primary := walkAssigmentExperessionToPrimary(declr.AssignmentExpressionOpt.AssignmentExpression)
-			n = walkPrimaryExpressionToInt64(primary)
-			if n < 0 {
-				n = 0
-			}
+			assignmentExpr = declr.AssignmentExpressionOpt.AssignmentExpression
 		}
-		decl.AddArray(uint64(n))
+		val := (*assignmentExpression)(assignmentExpr).Eval()
+		decl.AddArray(val)
 		next = declr.DirectDeclarator
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		next = declr.DirectDeclarator

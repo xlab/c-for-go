@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"bytes"
 	"fmt"
 	"go/token"
 	"path/filepath"
@@ -8,6 +9,44 @@ import (
 
 	"github.com/cznic/c/internal/xc"
 )
+
+var (
+	qualConst       = []byte("const")
+	specStruct      = []byte("struct")
+	specUnion       = []byte("union")
+	specUnsigned    = []byte("unsigned")
+	specSigned      = []byte("signed")
+	specLong        = []byte("long")
+	specShort       = []byte("short")
+	ptrStr          = []byte("*")
+	sliceStr        = []byte("[]")
+	spaceStr        = []byte(" ")
+	emptyStr        = []byte{}
+	restrictedNames = bytes.Join([][]byte{
+		qualConst, specStruct, specUnion, specUnsigned, specSigned, specShort,
+	}, spaceStr)
+)
+
+type Evaler interface {
+	Eval() []byte
+}
+
+func evalAndJoin(ex1, ex2 Evaler, sep string) []byte {
+	buf1 := ex1.Eval()
+	if len(buf1) == 0 {
+		return ex2.Eval()
+	}
+	buf2 := ex2.Eval()
+	if len(buf2) == 0 {
+		return buf1
+	}
+	// both are not empty
+	return bytes.Join([][]byte{buf1, buf2}, []byte(sep))
+}
+
+func isRestrictedBase(b []byte) bool {
+	return bytes.Contains(restrictedNames, b)
+}
 
 // narrowPath reduces full path to file name and parent dir only.
 func narrowPath(fp string) string {

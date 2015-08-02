@@ -25,10 +25,12 @@ type CType interface {
 	Copy() CType
 }
 
+type ArraySizeSpec []byte
+
 type CTypeDecl struct {
 	Spec   CType
 	Name   string
-	Arrays []uint64
+	Arrays []ArraySizeSpec
 	Pos    token.Pos
 }
 
@@ -40,8 +42,8 @@ func (c CTypeDecl) String() string {
 		str = c.Spec.String()
 	}
 	for _, size := range c.Arrays {
-		if size > 0 {
-			str += fmt.Sprintf("[%d]", size)
+		if size != nil {
+			str += fmt.Sprintf("[%s]", size)
 		} else {
 			str += "[]"
 		}
@@ -53,7 +55,7 @@ func (c *CTypeDecl) SetPointers(n uint8) {
 	c.Spec.SetPointers(n)
 }
 
-func (c *CTypeDecl) AddArray(size uint64) {
+func (c *CTypeDecl) AddArray(size []byte) {
 	c.Arrays = append(c.Arrays, size)
 }
 
@@ -183,23 +185,6 @@ func (s bytesSlice) Len() int           { return len(s) }
 func (s bytesSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s bytesSlice) Less(i, j int) bool { return bytes.Compare(s[i], s[j]) < 0 }
 
-var (
-	qualConst       = []byte("const")
-	specStruct      = []byte("struct")
-	specUnion       = []byte("union")
-	specUnsigned    = []byte("unsigned")
-	specSigned      = []byte("signed")
-	specLong        = []byte("long")
-	specShort       = []byte("short")
-	ptrStr          = []byte("*")
-	sliceStr        = []byte("[]")
-	spaceStr        = []byte(" ")
-	emptyStr        = []byte{}
-	restrictedNames = bytes.Join([][]byte{
-		qualConst, specStruct, specUnion, specUnsigned, specSigned, specShort,
-	}, spaceStr)
-)
-
 func (cts *CTypeSpec) UnmarshalJSON(b []byte) error {
 	parts := bytes.Split(b, spaceStr)
 	if len(parts) == 0 {
@@ -227,7 +212,7 @@ func (cts *CTypeSpec) UnmarshalJSON(b []byte) error {
 			state = 1
 		case 1:
 			// read the base name
-			if bytes.Contains(restrictedNames, part) {
+			if isRestrictedBase(part) {
 				return errors.New("ctype: can't use keyword as a base type name: " + string(part))
 			}
 			ts.Base = string(part)

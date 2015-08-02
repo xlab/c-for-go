@@ -17,17 +17,17 @@
 // 	short b;
 // } ulol_t;
 
-// typedef char pad[128 - sizeof(int)];
+typedef char pad[128 - sizeof(int)];
 
-enum Security_Levels{
-	first, second
-};
+// enum Security_Levels{
+// 	first, second
+// };
 
-#define VPX_ADDRESS_SIZE 4
+// #define VPX_ADDRESS_SIZE 4
 
- enum Security_Levels2 {
- 	first = VPX_ADDRESS_SIZE, second = 8
- };
+//  enum Security_Levels2 {
+//  	first = VPX_ADDRESS_SIZE, second = 8
+//  };
 
 // void fun(int a, void ( *holop ) (void *agent, int32_t call_idx));
 
