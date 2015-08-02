@@ -178,7 +178,9 @@ func walkDeclarationSpec(declr *cc.DeclarationSpecifiers, decl *CTypeDecl) (next
 		if spec, ok := decl.Spec.(*CTypeSpec); ok {
 			spec.Const = (declr.TypeQualifier.Case == 0)
 		}
-		next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
+		if declr.DeclarationSpecifiersOpt != nil {
+			next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
+		}
 	case 3: // FunctionSpecifier DeclarationSpecifiersOpt
 		unmanagedCaseWarn(declr.Case, declr.FunctionSpecifier.Token.Pos())
 	}

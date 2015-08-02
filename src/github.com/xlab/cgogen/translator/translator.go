@@ -126,7 +126,7 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	}
 
 	sort.Sort(defineLines(t.defines))
-	// log.Println(unit)
+	log.Println(unit)
 	decl, err := t.walkAST(unit)
 	if err != nil {
 		return err
