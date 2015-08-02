@@ -3150,7 +3150,9 @@ yynewstate:
 				Initializer: yyS[yypt-0].item.(*Initializer),
 			}
 			yyVAL.item = lhs
-			lhs.Declarator.insert(lx.scope, NSIdentifiers, true)
+			d := lhs.Declarator
+			d.Initializer = lhs.Initializer
+			d.insert(lx.scope, NSIdentifiers, true)
 		}
 	case 108:
 		{
@@ -3348,6 +3350,7 @@ yynewstate:
 			lhs.isUnion = lhs.StructOrUnion.Token.Val == idUnion
 			lhs.align.set(maxAlignment)
 			lhs.size.set(0)
+			lhs.bindings = lx.scope
 		}
 	case 130:
 		{
@@ -3484,11 +3487,12 @@ yynewstate:
 			lhs.offset.pos = pos
 			lhs.size.pos = pos
 			sc := lx.scope
-			sz := d.Sizeof()
+			t := d.Type()
+			sz := t.Sizeof()
 			sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
 			lhs.size.set(sz)
-			al := d.Alignof()
-			sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, sz)
+			al := t.Alignof()
+			sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, al)
 			lhs.align.set(al)
 			fldOffset := fieldOffset(sc.fldOffset, al)
 			if sc.isUnion {
@@ -3513,18 +3517,23 @@ yynewstate:
 			//TODO compute real bitfields
 			sc := lx.scope
 			pos := lhs.Token.Pos()
-			al := model[Int].Align
-			if o := lhs.DeclaratorOpt; o != nil {
-				pos = o.Declarator.Ident().Pos()
-				o.Declarator.insert(sc, NSMembers, true)
-			}
 			lhs.align.pos = pos
 			lhs.offset.pos = pos
 			lhs.size.pos = pos
-			sz := model[Int].Size
+			var t Type
+			if o := lhs.DeclaratorOpt; o != nil {
+				d := o.Declarator
+				pos = d.Ident().Pos()
+				d.insert(sc, NSMembers, true)
+				t = d.Type()
+			}
+			t = newBitField(t, int(intT(lhs.ConstantExpression.eval()).(int32)))
+			lhs.bits = t
+			al := t.Alignof()
+			sz := t.Sizeof()
 			sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
 			lhs.size.set(sz)
-			sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, sz)
+			sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, al)
 			lhs.align.set(al)
 			fldOffset := fieldOffset(sc.fldOffset, al)
 			if sc.isUnion {
@@ -3652,12 +3661,6 @@ yynewstate:
 			sc := lx.scope
 			lhs.IsTypedef = sc.isTypedef
 			lhs.SUSpecifier0 = sc.SUSpecifier0
-			pos := lhs.DirectDeclarator.ident().Pos()
-			lhs.align.pos = pos
-			lhs.size.pos = pos
-			t := lhs.Type()
-			lhs.align.set(t.Alignof())
-			lhs.size.set(t.Sizeof())
 		}
 	case 159:
 		{

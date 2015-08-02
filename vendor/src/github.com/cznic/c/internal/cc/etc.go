@@ -17,7 +17,7 @@ import (
 )
 
 type Type interface {
-	// Alignof return the required alignment of a type in bytes. Calling
+	// Alignof returns the required alignment of a type in bytes. Calling
 	// Alignof of a FunctionType will panic.
 	Alignof() int
 
@@ -49,8 +49,8 @@ type Type interface {
 	// for other type kinds will panic.
 	ResultType() Type
 
-	// Sizeof return the size of a type in bytes. Calling Sizeof of a
-	// FunctionType will panic.
+	// Sizeof returns the size of a type in bytes. Calling Sizeof of a
+	// FunctionType, VoidType will panic.
 	Sizeof() int
 
 	// StructOrUnionType returns the struct or union specification of a
@@ -655,6 +655,102 @@ func (i *indirectType) Sizeof() int { return model[Ptr].Size }
 // StructOrUnionType implements Type.
 func (i *indirectType) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }
 
+type bitField ScalarType
+
+func newBitField(t Type, bits int) bitField {
+	st := Int
+	if t != nil {
+		switch t.Kind() {
+		case UIntType:
+			st = UInt
+		case NamedType:
+			var ts *TypeSpecifier
+			switch n := t.(type) {
+			case *specifierQualifierList:
+				ts = n.typeSpecification()
+			default:
+				panic("TODO")
+			}
+			b, _ := ts.bindings.Lookup(NSIdentifiers, ts.Token.Val)
+			d := b.Node.(*Declarator)
+			return newBitField(d.Type(), bits)
+		default:
+			panic(t.Kind())
+		}
+	}
+
+	switch {
+	case bits <= 8:
+		switch st {
+		case Int:
+			return bitField(Char)
+		case UInt:
+			return bitField(UChar)
+		default:
+			panic("internal error")
+		}
+	case bits <= 16:
+		switch st {
+		case Int:
+			return bitField(Short)
+		case UInt:
+			return bitField(UShort)
+		default:
+			panic("internal error")
+		}
+	case bits <= 32:
+		switch st {
+		case Int:
+			return bitField(Int)
+		case UInt:
+			return bitField(UInt)
+		default:
+			panic("internal error")
+		}
+	case bits <= 64:
+		switch st {
+		case Int:
+			return bitField(LongLong)
+		case UInt:
+			return bitField(ULongLong)
+		default:
+			panic("internal error")
+		}
+	default:
+		panic(bits)
+	}
+}
+
+// Alignof implements Type.
+func (b bitField) Alignof() int { return model[ScalarType(b)].Align }
+
+// BaseType implements Type.
+func (b bitField) BaseType() Type { panic("internal error") }
+
+// ElementType implements Type.
+func (b bitField) ElementType() Type { panic("internal error") }
+
+// Kind implements Type.
+func (b bitField) Kind() Kind { return scalar2Kind[ScalarType(b)] }
+
+// Len implements Type.
+func (b bitField) Len() (int, bool) { panic("internal error") }
+
+// Name implements Type.
+func (b bitField) Name() xc.Token { panic("internal error") }
+
+// ParameterTypeList implements Type.
+func (b bitField) ParameterTypeList() *ParameterTypeList { panic("internal error") }
+
+// ResultType implements Type.
+func (b bitField) ResultType() Type { panic("internal error") }
+
+// Sizeof implements Type.
+func (b bitField) Sizeof() int { return model[ScalarType(b)].Size }
+
+// StructOrUnionType implements Type.
+func (b bitField) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }
+
 func fieldOffset(off, align int) int {
 	d := off % align
 	if d != 0 {
@@ -665,12 +761,27 @@ func fieldOffset(off, align int) int {
 
 func szAlign(t Type) ModelItem {
 	switch t.Kind() {
-	case VoidType:
-		return ModelItem{Size: 0, Align: 1}
+	case ArrayType:
+		switch ln, ok := t.Len(); {
+		case ok:
+			v := szAlign(t.ElementType())
+			v.Size *= ln
+			return v
+		default:
+			return model[Ptr]
+		}
 	case BoolType:
 		return model[Bool]
+	case CharType:
+		return model[Char]
+	case DoubleType:
+		return model[Double]
 	case IntType:
 		return model[Int]
+	case LongType:
+		return model[Long]
+	case LongLongType:
+		return model[LongLong]
 	case NamedType:
 		var ts *TypeSpecifier
 		switch n := t.(type) {
@@ -684,33 +795,22 @@ func szAlign(t Type) ModelItem {
 		b, _ := ts.bindings.Lookup(NSIdentifiers, ts.Token.Val)
 		d := b.Node.(*Declarator)
 		return szAlign(d.Type())
-	case CharType:
-		return model[Char]
+	case PtrType:
+		return model[Ptr]
+	case ShortType:
+		return model[Short]
 	case StructType, UnionType:
 		sus := t.StructOrUnionType()
 		return ModelItem{Size: sus.Sizeof(), Align: sus.Alignof()}
-	case LongLongType:
-		return model[LongLong]
-	case ULongLongType:
-		return model[ULongLong]
 	case UCharType:
 		return model[UChar]
-	case DoubleType:
-		return model[Double]
+	case ULongLongType:
+		return model[ULongLong]
 	case UIntType:
 		return model[UInt]
 	case UShortType:
 		return model[UShort]
-	case ShortType:
-		return model[Short]
-	case LongType:
-		return model[Long]
-	case PtrType, FunctionType:
-		return model[Ptr]
-	case ArrayType:
-		return szAlign(t.ElementType()) //TODO This is not correct
 	default:
-		//panic(PrettyString(t))//TODO-
 		panic(t.Kind())
 	}
 }

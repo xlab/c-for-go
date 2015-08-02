@@ -2104,6 +2104,8 @@ func (c *CastExpression) eval() interface{} {
 	switch c.Case {
 	case 0: // UnaryExpression
 		return c.UnaryExpression.eval()
+	case 1: // '(' TypeName ')' CastExpression
+		return c.CastExpression.eval()
 	default:
 		panic("TODO")
 	}

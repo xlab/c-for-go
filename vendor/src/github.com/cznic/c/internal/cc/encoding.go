@@ -74,6 +74,26 @@ var (
 		ccUCNNonDigit: "ccUCNNonDigit",
 	}
 
+	scalar2Kind = map[ScalarType]Kind{
+		Ptr:       PtrType,
+		Void:      VoidType,
+		Char:      CharType,
+		UChar:     UCharType,
+		Short:     ShortType,
+		UShort:    UShortType,
+		Int:       IntType,
+		UInt:      UIntType,
+		Long:      LongType,
+		ULong:     ULongType,
+		LongLong:  LongLongType,
+		ULongLong: ULongLongType,
+		Float:     FloatType,
+		Double:    DoubleType,
+		Bool:      BoolType,
+		Complex:   ComplexType,
+		Enum:      EnumType,
+	}
+
 	typeSums = map[int]int{
 		typeSum4(tsVoid):                            tsVoid,
 		typeSum4(tsChar):                            tsChar,

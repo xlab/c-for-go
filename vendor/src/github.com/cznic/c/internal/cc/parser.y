@@ -261,11 +261,11 @@ Start:
 	}
 |	MACRO_ARGS '(' MacroArgsList ')'
 
-// (6.4.4.3)
+// [0](6.4.4.3)
 EnumerationConstant:
 	IDENTIFIER
 
-// (6.5.1)
+// [0](6.5.1)
 PrimaryExpression:
 	IDENTIFIER
 |	Constant
@@ -279,7 +279,7 @@ Constant:
 |	LONGSTRINGLITERAL
 |	STRINGLITERAL
 
-// (6.5.2)
+// [0](6.5.2)
 PostfixExpression:
 	PrimaryExpression
 |	PostfixExpression '[' ExpressionList ']'
@@ -291,7 +291,7 @@ PostfixExpression:
 |	'(' TypeName ')' '{' InitializerList '}'
 |	'(' TypeName ')' '{' InitializerList ',' '}'
 
-// (6.5.2)
+// [0](6.5.2)
 ArgumentExpressionList:
 	AssignmentExpression
 |	ArgumentExpressionList ',' AssignmentExpression
@@ -301,7 +301,7 @@ ArgumentExpressionListOpt:
 	}
 |	ArgumentExpressionList
 
-// (6.5.3)
+// [0](6.5.3)
 UnaryExpression:
 	PostfixExpression
 |	"++" UnaryExpression
@@ -312,7 +312,7 @@ UnaryExpression:
 |	"defined" IDENTIFIER
 |	"defined" '(' IDENTIFIER ')'
 
-// (6.5.3)
+// [0](6.5.3)
 UnaryOperator:
 	'&'
 |	'*'
@@ -321,31 +321,31 @@ UnaryOperator:
 |	'~'
 |	'!'
 
-// (6.5.4)
+// [0](6.5.4)
 CastExpression:
 	UnaryExpression
 |	'(' TypeName ')' CastExpression
 
-// (6.5.5)
+// [0](6.5.5)
 MultiplicativeExpression:
 	CastExpression
 |	MultiplicativeExpression '*' CastExpression
 |	MultiplicativeExpression '/' CastExpression
 |	MultiplicativeExpression '%' CastExpression
 
-// (6.5.6)
+// [0](6.5.6)
 AdditiveExpression:
 	MultiplicativeExpression
 |	AdditiveExpression '+' MultiplicativeExpression
 |	AdditiveExpression '-' MultiplicativeExpression
 
-// (6.5.7)
+// [0](6.5.7)
 ShiftExpression:
 	AdditiveExpression
 |	ShiftExpression "<<" AdditiveExpression
 |	ShiftExpression ">>" AdditiveExpression
 
-// (6.5.8)
+// [0](6.5.8)
 RelationalExpression:
 	ShiftExpression
 |	RelationalExpression '<' ShiftExpression
@@ -353,43 +353,43 @@ RelationalExpression:
 |	RelationalExpression "<=" ShiftExpression
 |	RelationalExpression ">=" ShiftExpression
 
-// (6.5.9)
+// [0](6.5.9)
 EqualityExpression:
 	RelationalExpression
 |	EqualityExpression "==" RelationalExpression
 |	EqualityExpression "!=" RelationalExpression
 
-// (6.5.10)
+// [0](6.5.10)
 AndExpression:
 	EqualityExpression
 |	AndExpression '&' EqualityExpression
 
-// (6.5.11)
+// [0](6.5.11)
 ExclusiveOrExpression:
 	AndExpression
 |	ExclusiveOrExpression '^' AndExpression
 
-// (6.5.12)
+// [0](6.5.12)
 InclusiveOrExpression:
 	ExclusiveOrExpression
 |	InclusiveOrExpression '|' ExclusiveOrExpression
 
-// (6.5.13)
+// [0](6.5.13)
 LogicalAndExpression:
 	InclusiveOrExpression
 |	LogicalAndExpression "&&" InclusiveOrExpression
 
-// (6.5.14)
+// [0](6.5.14)
 LogicalOrExpression:
 	LogicalAndExpression
 |	LogicalOrExpression "||" LogicalAndExpression
 
-// (6.5.15)
+// [0](6.5.15)
 ConditionalExpression:
 	LogicalOrExpression
 |	LogicalOrExpression '?' ExpressionList ':' ConditionalExpression
 
-// (6.5.16)
+// [0](6.5.16)
 AssignmentExpression:
 	ConditionalExpression
 |	UnaryExpression AssignmentOperator AssignmentExpression
@@ -399,7 +399,7 @@ AssignmentExpressionOpt:
 	}
 |	AssignmentExpression
 
-// (6.5.16)
+// [0](6.5.16)
 AssignmentOperator:
 	'='
 |	"*="
@@ -413,7 +413,7 @@ AssignmentOperator:
 |	"^="
 |	"|="
 
-// (6.5.17)
+// [0](6.5.17)
 ExpressionList:
 	AssignmentExpression
 |	ExpressionList ',' AssignmentExpression
@@ -423,11 +423,11 @@ ExpressionOpt:
 	}
 |	ExpressionList
 
-// (6.6)
+// [0](6.6)
 ConstantExpression:
 	ConditionalExpression
 
-// (6.7)
+// [0](6.7)
 //yy:field	IsFileScope	bool
 //yy:field	IsTypedef	bool
 Declaration:
@@ -446,7 +446,7 @@ Declaration:
 		}
 	}
 
-// (6.7)
+// [0](6.7)
 //yy:field	IsAuto bool               // StorageClassSpecifier "auto" is present.
 //yy:field	IsConst bool              // TypeQualifier "const" is present.
 //yy:field	IsExtern bool             // StorageClassSpecifier "extern" is present.
@@ -527,7 +527,7 @@ DeclarationSpecifiersOpt:
 	}
 |	DeclarationSpecifiers
 
-// (6.7)
+// [0](6.7)
 InitDeclaratorList:
 	InitDeclarator
 |	InitDeclaratorList ',' InitDeclarator
@@ -537,7 +537,7 @@ InitDeclaratorListOpt:
 	}
 |	InitDeclaratorList
 
-// (6.7)
+// [0](6.7)
 InitDeclarator:
 	Declarator
 	{
@@ -545,10 +545,12 @@ InitDeclarator:
 	}
 |	Declarator '=' Initializer
 	{
-		lhs.Declarator.insert(lx.scope, NSIdentifiers, true)
+		d := lhs.Declarator
+		d.Initializer = lhs.Initializer
+		d.insert(lx.scope, NSIdentifiers, true)
 	}
 
-// (6.7.1)
+// [0](6.7.1)
 StorageClassSpecifier:
 	"typedef"
 	{
@@ -559,7 +561,7 @@ StorageClassSpecifier:
 |	"auto"
 |	"register"
 
-// (6.7.2)
+// [0](6.7.2)
 //yy:field	bindings	*Bindings
 //yy:field	case2		int 	// {tsStruct,tsUnion}
 TypeSpecifier:
@@ -597,11 +599,12 @@ StructOrUnionSpecifier0:
 		lx.scope.maxFldAlign = 1
 	}
 
-// (6.7.2.1)
-//yy:field	Members	*Bindings
+// [0](6.7.2.1)
+//yy:field	Members		*Bindings
 //yy:field	align
+//yy:field	bindings	*Bindings
+//yy:field	isUnion		bool
 //yy:field	size
-//yy:field	isUnion	bool
 StructOrUnionSpecifier:
 	StructOrUnionSpecifier0 '{' StructDeclarationList '}'
 	{
@@ -631,29 +634,30 @@ StructOrUnionSpecifier:
 		lhs.isUnion = lhs.StructOrUnion.Token.Val == idUnion
 		lhs.align.set(maxAlignment)
 		lhs.size.set(0)
+		lhs.bindings = lx.scope
 	}
 
-// (6.7.2.1)
+// [0](6.7.2.1)
 StructOrUnion:
 	"struct"
 |	"union"
 
-// (6.7.2.1)
+// [0](6.7.2.1)
 StructDeclarationList:
 	StructDeclaration
 |	StructDeclarationList StructDeclaration
 
 /*
-// (6.7.2.1)
+// [0](6.7.2.1)
 StructDeclaration:
 	SpecifierQualifierList StructDeclaratorList ';'
 */
 
-// (6.7.2.1) extended, see [1]
+// [0](6.7.2.1) extended, see [1]
 StructDeclaration:
 	SpecifierQualifierList StructDeclaratorListOpt ';'
 
-// (6.7.2.1)
+// [0](6.7.2.1)
 //yy:field	IsConst bool              // TypeQualifier "const" is present.
 //yy:field	IsRestrict bool           // TypeQualifier "restrict" is present.
 //yy:field	IsVolatile bool           // TypeQualifier "volatile" is present.
@@ -704,7 +708,7 @@ SpecifierQualifierListOpt:
 	}
 |	SpecifierQualifierList
 
-// (6.7.2.1)
+// [0](6.7.2.1)
 StructDeclaratorList:
 	StructDeclarator
 |	StructDeclaratorList ',' StructDeclarator
@@ -712,10 +716,11 @@ StructDeclaratorList:
 StructDeclaratorListOpt:
 |	StructDeclaratorList
 
-// (6.7.2.1)
+// [0](6.7.2.1)
 //yy:field	align
 //yy:field	offset
 //yy:field	size 
+//yy:field	bits	Type
 StructDeclarator:
 	Declarator
 	{
@@ -725,11 +730,12 @@ StructDeclarator:
 		lhs.offset.pos = pos
 		lhs.size.pos = pos
 		sc := lx.scope
-		sz := d.Sizeof()
+		t := d.Type()
+		sz := t.Sizeof()
 		sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
 		lhs.size.set(sz)
-		al := d.Alignof()
-		sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, sz)
+		al := t.Alignof()
+		sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, al)
 		lhs.align.set(al)
 		fldOffset := fieldOffset(sc.fldOffset, al)
 		if sc.isUnion {
@@ -741,23 +747,29 @@ StructDeclarator:
 		}
 		lhs.Declarator.insert(sc, NSMembers, true)
 	}
+	//yy:example "\U00100002 struct { _Bool : 1 ,"
 |	DeclaratorOpt ':' ConstantExpression
 	{
 		//TODO compute real bitfields
 		sc := lx.scope
 		pos := lhs.Token.Pos()
-		al := model[Int].Align
-		if o := lhs.DeclaratorOpt; o != nil {
-			pos = o.Declarator.Ident().Pos()
-			o.Declarator.insert(sc, NSMembers, true)
-		}
 		lhs.align.pos = pos
 		lhs.offset.pos = pos
 		lhs.size.pos = pos
-		sz := model[Int].Size 
+		var t Type
+		if o := lhs.DeclaratorOpt; o != nil {
+			d := o.Declarator
+			pos = d.Ident().Pos()
+			d.insert(sc, NSMembers, true)
+			t = d.Type()
+		}
+		t = newBitField(t, int(intT(lhs.ConstantExpression.eval()).(int32)))
+		lhs.bits = t
+		al := t.Alignof()
+		sz := t.Sizeof()
 		sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
 		lhs.size.set(sz)
-		sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, sz)
+		sc.maxFldAlign = mathutil.Max(sc.maxFldAlign, al)
 		lhs.align.set(al)
 		fldOffset := fieldOffset(sc.fldOffset, al)
 		if sc.isUnion {
@@ -775,7 +787,7 @@ EnumSpecifier0:
 		lx.pushScope(ScopeMembers)
 	}
 
-// (6.7.2.2)
+// [0](6.7.2.2)
 EnumSpecifier:
 	EnumSpecifier0 '{' EnumeratorList '}'
 	{
@@ -793,32 +805,31 @@ EnumSpecifier:
 	}
 |	"enum" IDENTIFIER
 
-// (6.7.2.2)
+// [0](6.7.2.2)
 EnumeratorList:
 	Enumerator
 |	EnumeratorList ',' Enumerator
 
-// (6.7.2.2)
+// [0](6.7.2.2)
 Enumerator:
 	EnumerationConstant //TODO declare enum const
 |	EnumerationConstant '=' ConstantExpression //TODO declare enum const
 
-// (6.7.3)
+// [0](6.7.3)
 TypeQualifier:
 	"const"
 |	"restrict"
 |	"volatile"
 
-// (6.7.4)
+// [0](6.7.4)
 FunctionSpecifier:
 	"inline"
 
-// (6.7.5)
+// [0](6.7.5)
+//yy:field	Initializer	*Initializer			// Non nil if Declarator is part of InitDeclarator with Initializer.
 //yy:field	IsDefinition	bool				// Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
 //yy:field	IsTypedef	bool
-//yy:field	SUSpecifier0	*StructOrUnionSpecifier0	// Non nil if d declares a field.
-//yy:field	align
-//yy:field	size
+//yy:field	SUSpecifier0	*StructOrUnionSpecifier0	// Non nil if Declarator declares a field.
 Declarator:
 	PointerOpt DirectDeclarator
 	{
@@ -826,12 +837,6 @@ Declarator:
 		sc := lx.scope
 		lhs.IsTypedef = sc.isTypedef
 		lhs.SUSpecifier0 = sc.SUSpecifier0
-		pos := lhs.DirectDeclarator.ident().Pos()
-		lhs.align.pos = pos
-		lhs.size.pos = pos
-		t := lhs.Type()
-		lhs.align.set(t.Alignof())
-		lhs.size.set(t.Sizeof())
 	}
 
 DeclaratorOpt:
@@ -839,7 +844,7 @@ DeclaratorOpt:
 	}
 |	Declarator
 
-// (6.7.5)
+// [0](6.7.5)
 //yy:field	indirection	int	// 'int **i': 2.
 //yy:field	specifier	Type	// 'int i': specifier is 'int'
 DirectDeclarator:
@@ -878,7 +883,7 @@ DirectDeclarator2:
 	ParameterTypeList ')'
 |	IdentifierListOpt ')'
 
-// (6.7.5)
+// [0](6.7.5)
 //yy:field	indirection int
 Pointer:
 	'*' TypeQualifierListOpt
@@ -895,7 +900,7 @@ PointerOpt:
 	}
 |	Pointer
 
-// (6.7.5)
+// [0](6.7.5)
 TypeQualifierList:
 	TypeQualifier
 |	TypeQualifierList TypeQualifier
@@ -905,7 +910,7 @@ TypeQualifierListOpt:
 	}
 |	TypeQualifierList
 
-// (6.7.5)
+// [0](6.7.5)
 ParameterTypeList:
 	ParameterList
 |	ParameterList ',' "..."
@@ -915,12 +920,12 @@ ParameterTypeListOpt:
 	}
 |	ParameterTypeList
 
-// (6.7.5)
+// [0](6.7.5)
 ParameterList:
 	ParameterDeclaration
 |	ParameterList ',' ParameterDeclaration
 
-// (6.7.5)
+// [0](6.7.5)
 ParameterDeclaration:
 	DeclarationSpecifiers Declarator
 	{
@@ -928,7 +933,7 @@ ParameterDeclaration:
 	}
 |	DeclarationSpecifiers AbstractDeclaratorOpt
 
-// (6.7.5)
+// [0](6.7.5)
 IdentifierList:
 	IDENTIFIER
 |	IdentifierList ',' IDENTIFIER
@@ -943,7 +948,7 @@ IdentifierOpt:
 	}
 |	IDENTIFIER
 
-// (6.7.6)
+// [0](6.7.6)
 TypeName:
 	SpecifierQualifierList AbstractDeclaratorOpt
 	{
@@ -952,7 +957,7 @@ TypeName:
 		}
 	}
 
-// (6.7.6)
+// [0](6.7.6)
 //yy:field	indirection	int	// 'int **i': 2.
 //yy:field	specifier	Type	// 'int i': specifier is 'int'
 AbstractDeclarator:
@@ -973,7 +978,7 @@ AbstractDeclaratorOpt:
 	}
 |	AbstractDeclarator
 
-// (6.7.6)
+// [0](6.7.6)
 //yy:field	indirection	int	// 'int **i': 2.
 //yy:field	specifier	Type	// 'int i': specifier is 'int'
 DirectAbstractDeclarator:
@@ -1033,21 +1038,21 @@ DirectAbstractDeclaratorOpt:
 	}
 |	DirectAbstractDeclarator
 
-// (6.7.7) typedef-name: //TODO
+// [0](6.7.7) typedef-name: //TODO
 // identifier
 
-// (6.7.8)
+// [0](6.7.8)
 Initializer:
 	AssignmentExpression
 |	'{' InitializerList '}'
 |	'{' InitializerList ',' '}'
 
-// (6.7.8)
+// [0](6.7.8)
 InitializerList:
 	DesignationOpt Initializer
 |	InitializerList ',' DesignationOpt Initializer
 
-// (6.7.8)
+// [0](6.7.8)
 Designation:
 	DesignatorList '='
 
@@ -1056,17 +1061,17 @@ DesignationOpt:
 	}
 |	Designation
 
-// (6.7.8)
+// [0](6.7.8)
 DesignatorList:
 	Designator
 |	DesignatorList Designator
 
-// (6.7.8)
+// [0](6.7.8)
 Designator:
 	'[' ConstantExpression ']'
 |	'.' IDENTIFIER
 
-// (6.8)
+// [0](6.8)
 Statement:
 	LabeledStatement
 |	CompoundStatement
@@ -1075,13 +1080,13 @@ Statement:
 |	IterationStatement
 |	JumpStatement
 
-// (6.8.1)
+// [0](6.8.1)
 LabeledStatement:
 	IDENTIFIER ':' Statement
 |	"case" ConstantExpression ':' Statement
 |	"default" ':' Statement
 
-// (6.8.2)
+// [0](6.8.2)
 //yy:field	Declarations	*Bindings
 CompoundStatement:
 	'{'
@@ -1093,7 +1098,7 @@ CompoundStatement:
 		lhs.Declarations = lx.popScope($4)
 	}
 
-// (6.8.2)
+// [0](6.8.2)
 BlockItemList:
 	BlockItem
 |	BlockItemList BlockItem
@@ -1103,48 +1108,48 @@ BlockItemListOpt:
 	}
 |	BlockItemList
 
-// (6.8.2)
+// [0](6.8.2)
 BlockItem:
 	Declaration
 |	Statement
 
-// (6.8.3)
+// [0](6.8.3)
 ExpressionStatement:
 	ExpressionOpt ';'
 
-// (6.8.4)
+// [0](6.8.4)
 SelectionStatement:
 	"if" '(' ExpressionList ')' Statement %prec NOELSE
 |	"if" '(' ExpressionList ')' Statement "else" Statement
 |	"switch" '(' ExpressionList ')' Statement
 
-// (6.8.5)
+// [0](6.8.5)
 IterationStatement:
 	"while" '(' ExpressionList ')' Statement
 |	"do" Statement "while" '(' ExpressionList ')' ';'
 |	"for" '(' ExpressionOpt ';' ExpressionOpt ';' ExpressionOpt ')' Statement
 |	"for" '(' Declaration ExpressionOpt ';' ExpressionOpt ')' Statement
 
-// (6.8.6)
+// [0](6.8.6)
 JumpStatement:
 	"goto" IDENTIFIER ';'
 |	"continue" ';'
 |	"break" ';'
 |	"return" ExpressionOpt ';'
 
-// (6.9)
+// [0](6.9)
 //yy:field	Declarations	*Bindings
 //yy:list
 TranslationUnit:
 	ExternalDeclaration
 |	TranslationUnit ExternalDeclaration
 
-// (6.9)
+// [0](6.9)
 ExternalDeclaration:
 	FunctionDefinition
 |	Declaration
 
-// (6.9.1)
+// [0](6.9.1)
 //yy:field	fnScope	*Bindings
 FunctionDefinition:
 	DeclarationSpecifiers Declarator
@@ -1159,7 +1164,7 @@ FunctionDefinition:
 		lx.scope.insert(NSIdentifiers, d.Ident(), lhs)
 	}
 
-// (6.9.1)
+// [0](6.9.1)
 DeclarationList:
 	Declaration
 |	DeclarationList Declaration
@@ -1171,7 +1176,7 @@ DeclarationListOpt:
 
 // ========================================================== PreprocessingFile
 
-// (6.10)
+// [0](6.10)
 //yy:example	"\U00100000 #if 0\n#endif"
 //yy:field	file	*token.File
 PreprocessingFile:
@@ -1181,7 +1186,7 @@ PreprocessingFile:
 		lhs.file = lx.file
 	}
 
-// (6.10)
+// [0](6.10)
 //yy:ignore
 GroupList:
 	GroupPart
@@ -1214,7 +1219,7 @@ GroupListOpt:
 	//yy:example	"\U00100000 \n#if 1 \n a \n#elif"
 |	GroupList
 
-// (6.10)
+// [0](6.10)
 //yy:ignore
 GroupPart:
 	ControlLine
@@ -1258,7 +1263,7 @@ IfGroup:
 |	PPIFDEF IDENTIFIER '\n' GroupListOpt
 |	PPIFNDEF IDENTIFIER '\n' GroupListOpt
 
-// (6.10)
+// [0](6.10)
 ElifGroupList:
 	ElifGroup
 |	ElifGroupList ElifGroup
@@ -1268,11 +1273,11 @@ ElifGroupListOpt:
 	}
 |	ElifGroupList
 
-// (6.10)
+// [0](6.10)
 ElifGroup:
 	PPELIF PpTokenList GroupListOpt
 
-// (6.10)
+// [0](6.10)
 ElseGroup:
 	PPELSE '\n' GroupListOpt
 
@@ -1281,11 +1286,11 @@ ElseGroupOpt:
 	}
 |	ElseGroup
 
-// (6.10)
+// [0](6.10)
 EndifLine:
 	PPENDIF PpTokenListOpt //TODO Option enabling the non std PpTokenListOpt part.
 
-// (6.10)
+// [0](6.10)
 ControlLine:
 	PPDEFINE IDENTIFIER ReplacementList
 |	PPDEFINE IDENTIFIER_LPAREN "..." ')' ReplacementList
@@ -1309,17 +1314,17 @@ ControlLine:
 |	PPUNASSERT PpTokenList
 |	PPWARNING PpTokenList
 
-// (6.10)
+// [0](6.10)
 //yy:ignore
 TextLine:
 	PpTokenListOpt
 
-// (6.10)
+// [0](6.10)
 //yy:ignore
 ReplacementList:
 	PpTokenListOpt
 
-// (6.10)
+// [0](6.10)
 //yy:ignore
 PpTokenList:
 	PpTokens '\n'

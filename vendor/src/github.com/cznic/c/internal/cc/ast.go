@@ -534,11 +534,10 @@ func (d *DeclarationSpecifiersOpt) String() string {
 //	Declarator:
 //	        PointerOpt DirectDeclarator
 type Declarator struct {
-	IsDefinition bool // Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
-	IsTypedef    bool
-	SUSpecifier0 *StructOrUnionSpecifier0 // Non nil if d declares a field.
-	align
-	size
+	Initializer      *Initializer // Non nil if Declarator is part of InitDeclarator with Initializer.
+	IsDefinition     bool         // Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
+	IsTypedef        bool
+	SUSpecifier0     *StructOrUnionSpecifier0 // Non nil if Declarator declares a field.
 	DirectDeclarator *DirectDeclarator
 	PointerOpt       *PointerOpt
 }
@@ -1953,6 +1952,7 @@ type StructDeclarator struct {
 	align
 	offset
 	size
+	bits               Type
 	Case               int
 	ConstantExpression *ConstantExpression
 	Declarator         *Declarator
@@ -2044,8 +2044,9 @@ func (s *StructOrUnion) String() string {
 type StructOrUnionSpecifier struct {
 	Members *Bindings
 	align
+	bindings *Bindings
+	isUnion  bool
 	size
-	isUnion                 bool
 	Case                    int
 	StructDeclarationList   *StructDeclarationList
 	StructOrUnion           *StructOrUnion

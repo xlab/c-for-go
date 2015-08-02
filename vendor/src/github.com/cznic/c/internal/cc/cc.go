@@ -49,8 +49,8 @@ func YyDebug(n int) Opt {
 	return func(*lexer) { yyDebug = n }
 }
 
-// Cpp registers a cpp hook function which is called for every line the
-// preprocessor produces before it is consumed by the parser.
+// Cpp registers a preprocessor hook function which is called for every line
+// the preprocessor produces before it is consumed by the parser.
 func Cpp(f func([]xc.Token)) Opt {
 	return func(lx *lexer) { lx.cpp = f }
 }
