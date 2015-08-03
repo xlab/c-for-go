@@ -31,12 +31,10 @@ type Evaler interface {
 	Eval() []byte
 }
 
-func evalAndJoin(ex1, ex2 Evaler, sep string) []byte {
-	buf1 := ex1.Eval()
+func bytesJoin(buf1, buf2 []byte, sep string) []byte {
 	if len(buf1) == 0 {
-		return ex2.Eval()
+		return buf2
 	}
-	buf2 := ex2.Eval()
 	if len(buf2) == 0 {
 		return buf1
 	}

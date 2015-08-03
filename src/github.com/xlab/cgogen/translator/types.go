@@ -27,14 +27,16 @@ type CType interface {
 
 type ArraySizeSpec []byte
 
-type CTypeDecl struct {
-	Spec   CType
-	Name   string
-	Arrays []ArraySizeSpec
-	Pos    token.Pos
+type CDecl struct {
+	Spec       CType
+	Name       string
+	Value      Value
+	Expression []byte
+	Arrays     []ArraySizeSpec
+	Pos        token.Pos
 }
 
-func (c CTypeDecl) String() string {
+func (c CDecl) String() string {
 	var str string
 	if len(c.Name) > 0 {
 		str = c.Spec.String() + " " + c.Name
@@ -48,20 +50,23 @@ func (c CTypeDecl) String() string {
 			str += "[]"
 		}
 	}
+	if len(c.Expression) > 0 {
+		str += " = " + string(c.Expression)
+	}
 	return str
 }
 
-func (c *CTypeDecl) SetPointers(n uint8) {
+func (c *CDecl) SetPointers(n uint8) {
 	c.Spec.SetPointers(n)
 }
 
-func (c *CTypeDecl) AddArray(size []byte) {
+func (c *CDecl) AddArray(size []byte) {
 	c.Arrays = append(c.Arrays, size)
 }
 
 type CFunctionSpec struct {
-	Returns   CTypeDecl
-	ParamList []CTypeDecl
+	Returns   CDecl
+	ParamList []CDecl
 	Pointers  uint8
 }
 
@@ -88,7 +93,7 @@ func (c CFunctionSpec) Copy() CType {
 type CStructSpec struct {
 	Tag      string
 	Union    bool
-	Members  []CTypeDecl
+	Members  []CDecl
 	Pointers uint8
 }
 

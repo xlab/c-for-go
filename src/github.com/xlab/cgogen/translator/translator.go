@@ -21,6 +21,8 @@ type Translator struct {
 	rules       Rules
 	defines     []*defineLine
 	compiledRxs map[RuleAction]RxMap
+
+	valueMap map[string]Value
 }
 
 type RxMap map[RuleTarget][]Rx
@@ -37,6 +39,7 @@ func New(rules Rules, typemap CTypeMap, out io.Writer) (*Translator, error) {
 		rules:       rules,
 		out:         out,
 		compiledRxs: make(map[RuleAction]RxMap),
+		valueMap:    make(map[string]Value),
 	}
 	for _, action := range ruleActions {
 		if rxMap, err := getRuleActionRxs(rules, action); err != nil {
