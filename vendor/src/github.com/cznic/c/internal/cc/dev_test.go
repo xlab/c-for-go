@@ -371,10 +371,4 @@ func TestDevParseTmp(t *testing.T) {
 	tu.Declarations = nil
 	t.Log(PrettyString(tu))
 	t.Log(PrettyString(d))
-	b, _ := d.Lookup(NSIdentifiers, dict.SID("f"))
-	if b != nil {
-		t.Log(PrettyString(b.Node))
-		d := b.Node.(*Declarator)
-		t.Log(PrettyString(d.DirectDeclarator.specifier))
-	}
 }

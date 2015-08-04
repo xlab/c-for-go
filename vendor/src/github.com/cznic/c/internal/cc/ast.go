@@ -534,12 +534,15 @@ func (d *DeclarationSpecifiersOpt) String() string {
 //	Declarator:
 //	        PointerOpt DirectDeclarator
 type Declarator struct {
-	Initializer      *Initializer // Non nil if Declarator is part of InitDeclarator with Initializer.
-	IsDefinition     bool         // Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
-	IsTypedef        bool
-	SUSpecifier0     *StructOrUnionSpecifier0 // Non nil if Declarator declares a field.
-	DirectDeclarator *DirectDeclarator
-	PointerOpt       *PointerOpt
+	DeclarationSpecifiers *DeclarationSpecifiers   // Non nil if Declarator is a part of a Declaration.
+	Initializer           *Initializer             // Non nil if Declarator is part of InitDeclarator with Initializer.
+	IsDefinition          bool                     // Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
+	IsTypedef             bool                     // Declarator defines a type.
+	SUSpecifier0          *StructOrUnionSpecifier0 // Non nil if Declarator declares a field.
+	Serial                int                      // Translation unit wise unique, non-zero numeric Declarator id.
+	Scope                 *Bindings                // Resilution scope.
+	DirectDeclarator      *DirectDeclarator
+	PointerOpt            *PointerOpt
 }
 
 func (d *Declarator) fragment() interface{} { return d }
@@ -1109,7 +1112,7 @@ func (e *ExternalDeclaration) String() string {
 //	FunctionDefinition:
 //	        DeclarationSpecifiers Declarator DeclarationListOpt CompoundStatement
 type FunctionDefinition struct {
-	fnScope               *Bindings
+	Declarations          *Bindings
 	CompoundStatement     *CompoundStatement
 	DeclarationListOpt    *DeclarationListOpt
 	DeclarationSpecifiers *DeclarationSpecifiers
@@ -1949,10 +1952,10 @@ func (s *StructDeclarationList) String() string {
 //	        Declarator
 //	|       DeclaratorOpt ':' ConstantExpression  // Case 1
 type StructDeclarator struct {
+	Bits Type // Non nil if StructDeclarator is a bit field.
 	align
 	offset
 	size
-	bits               Type
 	Case               int
 	ConstantExpression *ConstantExpression
 	Declarator         *Declarator

@@ -2197,7 +2197,7 @@ func (p *PostfixExpression) eval() (v interface{}) {
 	case 0: // PrimaryExpression
 		return p.PrimaryExpression.eval()
 	default:
-		panic("TODO")
+		panic(PrettyString(p))
 	}
 	//for {
 	//	switch p.Case {
@@ -2236,7 +2236,7 @@ func (c *Constant) eval() interface{} {
 	case INTCONST:
 		return intConst(c.Token)
 	default:
-		compilation.Err(c.Token.Pos(), "invalid preprocessor constant")
+		compilation.Err(c.Token.Pos(), "invalid constant")
 		return intT(0)
 	}
 }

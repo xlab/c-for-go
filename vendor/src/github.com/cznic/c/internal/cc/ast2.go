@@ -618,15 +618,6 @@ func (s *SpecifierQualifierList) typeSum() {
 	return
 }
 
-// Bits returns the type of a bit field. Bits will panic if s is not a bit field.
-func (s *StructDeclarator) Bits() Type {
-	if s.Case != 1 { // DeclaratorOpt ':' ConstantExpression
-		panic("internal error")
-	}
-
-	return s.bits
-}
-
 func (s *StructOrUnionSpecifier) Type() Type { return (*structOrUnionSpecifier)(s) }
 
 // Tag returns (tag name of s, true) or (zero-value, false) if s has no

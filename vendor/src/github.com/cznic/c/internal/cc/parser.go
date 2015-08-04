@@ -2308,7 +2308,7 @@ yynewstate:
 			tu := yyS[yypt-0].item.(*TranslationUnit).reverse()
 			tu.Declarations = lx.tu.Declarations
 			lx.tu = tu
-			if compilation.Errors(false) == nil && lx.scope.Type != ScopeFile {
+			if compilation.Errors(false) == nil && (lx.scope.Type != ScopeFile || lx.compoundStmt != 0) {
 				panic("internal error")
 			}
 		}
@@ -3003,7 +3003,9 @@ yynewstate:
 			}
 
 			for l := o.InitDeclaratorList; l != nil; l = l.InitDeclaratorList {
-				lhs.IsTypedef = l.InitDeclarator.Declarator.IsTypedef
+				d := l.InitDeclarator.Declarator
+				d.DeclarationSpecifiers = lhs.DeclarationSpecifiers
+				lhs.IsTypedef = d.IsTypedef
 			}
 		}
 	case 95:
@@ -3514,7 +3516,6 @@ yynewstate:
 				ConstantExpression: yyS[yypt-0].item.(*ConstantExpression),
 			}
 			yyVAL.item = lhs
-			//TODO compute real bitfields
 			sc := lx.scope
 			pos := lhs.Token.Pos()
 			lhs.align.pos = pos
@@ -3528,7 +3529,7 @@ yynewstate:
 				t = d.Type()
 			}
 			t = newBitField(t, int(intT(lhs.ConstantExpression.eval()).(int32)))
-			lhs.bits = t
+			lhs.Bits = t
 			al := t.Alignof()
 			sz := t.Sizeof()
 			sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
@@ -3657,10 +3658,13 @@ yynewstate:
 				DirectDeclarator: yyS[yypt-0].item.(*DirectDeclarator),
 			}
 			yyVAL.item = lhs
+			lx.declaratorSerial++
+			lhs.Serial = lx.declaratorSerial
 			lhs.DirectDeclarator.indirection = lhs.PointerOpt.indirection()
 			sc := lx.scope
 			lhs.IsTypedef = sc.isTypedef
 			lhs.SUSpecifier0 = sc.SUSpecifier0
+			lhs.Scope = lx.scope
 		}
 	case 159:
 		{
@@ -3763,7 +3767,9 @@ yynewstate:
 				DirectDeclarator2: yyS[yypt-0].item.(*DirectDeclarator2),
 			}
 			yyVAL.item = lhs
+			p := lx.scope
 			lx.popScope(lhs.DirectDeclarator2.Token)
+			lx.scope.params = p
 			lhs.postProc(lx.scope)
 		}
 	case 169:
@@ -4259,7 +4265,10 @@ yynewstate:
 	case 229:
 		{
 			lx := yylex.(*lexer)
-			lx.pushScope(ScopeBlock)
+			lx.compoundStmt++
+			if lx.compoundStmt != 1 {
+				lx.pushScope(ScopeBlock)
+			}
 		}
 	case 230:
 		{
@@ -4270,7 +4279,12 @@ yynewstate:
 				Token2:           yyS[yypt-0].Token,
 			}
 			yyVAL.item = lhs
-			lhs.Declarations = lx.popScope(yyS[yypt-0].Token)
+			lhs.Declarations = lx.scope
+			lx.compoundStmt--
+			if lx.compoundStmt != 0 {
+				lx.popScope(yyS[yypt-0].Token)
+			}
+
 		}
 	case 231:
 		{
@@ -4465,7 +4479,9 @@ yynewstate:
 	case 253:
 		{
 			lx := yylex.(*lexer)
-			lx.pushScope(ScopeFunction)
+			parScope := lx.scope.params
+			lx.pushScope(ScopeFunction).copy(parScope)
+			lx.compoundStmt = 0
 		}
 	case 254:
 		{
@@ -4477,7 +4493,7 @@ yynewstate:
 				CompoundStatement:     yyS[yypt-0].item.(*CompoundStatement),
 			}
 			yyVAL.item = lhs
-			lhs.fnScope = lx.popScope(lhs.CompoundStatement.Token2)
+			lhs.Declarations = lx.popScope(lhs.CompoundStatement.Token2)
 			d := lhs.Declarator
 			d.IsDefinition = true
 			lx.scope.insert(NSIdentifiers, d.Ident(), lhs)

@@ -353,6 +353,7 @@ type Bindings struct {
 	isUnion      bool
 	maxFldAlign  int
 	maxFldSize   int
+	params       *Bindings
 	specifier    Type
 }
 
@@ -389,6 +390,37 @@ func (s *Bindings) boot(ns Namespace) map[int]*binding {
 	}
 }
 
+func (s *Bindings) copy(src *Bindings) {
+	if src == nil {
+		return
+	}
+
+	if sm := src.labels; len(sm) != 0 {
+		dm := s.boot(NSLabels)
+		for k, v := range sm {
+			dm[k] = v
+		}
+	}
+	if sm := src.tags; len(sm) != 0 {
+		dm := s.boot(NSTags)
+		for k, v := range sm {
+			dm[k] = v
+		}
+	}
+	if sm := src.members; len(sm) != 0 {
+		dm := s.boot(NSMembers)
+		for k, v := range sm {
+			dm[k] = v
+		}
+	}
+	if sm := src.identifiers; len(sm) != 0 {
+		dm := s.boot(NSIdentifiers)
+		for k, v := range sm {
+			dm[k] = v
+		}
+	}
+}
+
 func (s *Bindings) insert(ns Namespace, tok xc.Token, node interface{}) {
 	if tok.Rune != IDENTIFIER || ns == NSTags && s.Type != ScopeFile {
 		panic("internal error")
@@ -408,8 +440,6 @@ func (s *Bindings) insert(ns Namespace, tok xc.Token, node interface{}) {
 				case !exn.IsDefinition && n.IsDefinition:
 					m[nm] = newBinding(tok, node)
 					return
-				default:
-					panic("internal error")
 				}
 			default:
 				panic("internal error")
@@ -492,7 +522,6 @@ func (s *Bindings) IsTypedefName(nm int) bool {
 	case *FunctionDefinition:
 		return false
 	default:
-		//dbg("", PrettyString(b))
 		panic("TODO")
 		//return false
 	}

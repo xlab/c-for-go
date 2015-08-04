@@ -807,7 +807,7 @@ func ExampleCompoundStatement() {
 	// Output:
 	// &cc.CompoundStatement{
 	// · Declarations: &cc.Bindings{
-	// · · Type: 3,
+	// · · Type: 2,
 	// · },
 	// · Token: example230.c:1:13: '{',
 	// · Token2: example230.c:1:15: '}',
@@ -1433,6 +1433,10 @@ func ExampleDeclarator() {
 	fmt.Println(exampleAST(158, "\U00100002 auto a )"))
 	// Output:
 	// &cc.Declarator{
+	// · Serial: 1,
+	// · Scope: &cc.Bindings{
+	// · · Type: 1,
+	// · },
 	// · DirectDeclarator: &cc.DirectDeclarator{
 	// · · Token: example158.c:1:11: IDENTIFIER "a",
 	// · },
@@ -1454,6 +1458,11 @@ func ExampleDeclaratorOpt_case1() {
 	// · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · Token: example160.c:1:6: STRUCT "struct",
 	// · · · },
+	// · · },
+	// · · Serial: 1,
+	// · · Scope: &cc.Bindings{
+	// · · · Type: 4,
+	// · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
 	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example160.c:1:21: IDENTIFIER "a",
@@ -1793,6 +1802,10 @@ func ExampleDirectDeclarator_case1() {
 	// &cc.DirectDeclarator{
 	// · Case: 1,
 	// · Declarator: &cc.Declarator{
+	// · · Serial: 1,
+	// · · Scope: &cc.Bindings{
+	// · · · Type: 1,
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example162.c:1:13: IDENTIFIER "a",
 	// · · },
@@ -2648,10 +2661,11 @@ func ExampleExternalDeclaration() {
 	// Output:
 	// &cc.ExternalDeclaration{
 	// · FunctionDefinition: &cc.FunctionDefinition{
+	// · · Declarations: &cc.Bindings{
+	// · · · Type: 2,
+	// · · },
 	// · · CompoundStatement: &cc.CompoundStatement{
-	// · · · Declarations: &cc.Bindings{
-	// · · · · Type: 3,
-	// · · · },
+	// · · · Declarations: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
 	// · · · Token: example251.c:1:13: '{',
 	// · · · Token2: example251.c:1:15: '}',
 	// · · },
@@ -2664,6 +2678,10 @@ func ExampleExternalDeclaration() {
 	// · · },
 	// · · Declarator: &cc.Declarator{
 	// · · · IsDefinition: true,
+	// · · · Serial: 1,
+	// · · · Scope: &cc.Bindings{
+	// · · · · Type: 1,
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example251.c:1:11: IDENTIFIER "a",
 	// · · · },
@@ -2695,10 +2713,11 @@ func ExampleFunctionDefinition() {
 	fmt.Println(exampleAST(254, "\U00100002 auto a { }"))
 	// Output:
 	// &cc.FunctionDefinition{
+	// · Declarations: &cc.Bindings{
+	// · · Type: 2,
+	// · },
 	// · CompoundStatement: &cc.CompoundStatement{
-	// · · Declarations: &cc.Bindings{
-	// · · · Type: 3,
-	// · · },
+	// · · Declarations: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
 	// · · Token: example254.c:1:13: '{',
 	// · · Token2: example254.c:1:15: '}',
 	// · },
@@ -2711,6 +2730,10 @@ func ExampleFunctionDefinition() {
 	// · },
 	// · Declarator: &cc.Declarator{
 	// · · IsDefinition: true,
+	// · · Serial: 1,
+	// · · Scope: &cc.Bindings{
+	// · · · Type: 1,
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example254.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -2947,6 +2970,10 @@ func ExampleInitDeclarator() {
 	// Output:
 	// &cc.InitDeclarator{
 	// · Declarator: &cc.Declarator{
+	// · · Serial: 1,
+	// · · Scope: &cc.Bindings{
+	// · · · Type: 1,
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example106.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -2999,6 +3026,10 @@ func ExampleInitDeclarator_case1() {
 	// · · · },
 	// · · },
 	// · · IsDefinition: true,
+	// · · Serial: 1,
+	// · · Scope: &cc.Bindings{
+	// · · · Type: 1,
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example107.c:1:11: IDENTIFIER "a",
 	// · · },
@@ -3014,6 +3045,10 @@ func ExampleInitDeclaratorList() {
 	// &cc.InitDeclaratorList{
 	// · InitDeclarator: &cc.InitDeclarator{
 	// · · Declarator: &cc.Declarator{
+	// · · · Serial: 1,
+	// · · · Scope: &cc.Bindings{
+	// · · · · Type: 1,
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example102.c:1:11: IDENTIFIER "a",
 	// · · · },
@@ -3028,6 +3063,10 @@ func ExampleInitDeclaratorList_case1() {
 	// &cc.InitDeclaratorList{
 	// · InitDeclarator: &cc.InitDeclarator{
 	// · · Declarator: &cc.Declarator{
+	// · · · Serial: 1,
+	// · · · Scope: &cc.Bindings{
+	// · · · · Type: 1,
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example103.c:1:11: IDENTIFIER "a",
 	// · · · },
@@ -3037,6 +3076,8 @@ func ExampleInitDeclaratorList_case1() {
 	// · · Case: 1,
 	// · · InitDeclarator: &cc.InitDeclarator{
 	// · · · Declarator: &cc.Declarator{
+	// · · · · Serial: 2,
+	// · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example103.c:1:15: IDENTIFIER "b",
 	// · · · · },
@@ -3060,6 +3101,10 @@ func ExampleInitDeclaratorListOpt_case1() {
 	// · InitDeclaratorList: &cc.InitDeclaratorList{
 	// · · InitDeclarator: &cc.InitDeclarator{
 	// · · · Declarator: &cc.Declarator{
+	// · · · · Serial: 1,
+	// · · · · Scope: &cc.Bindings{
+	// · · · · · Type: 1,
+	// · · · · },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example105.c:1:11: IDENTIFIER "a",
 	// · · · · },
@@ -3973,6 +4018,10 @@ func ExampleParameterDeclaration() {
 	// · },
 	// · Declarator: &cc.Declarator{
 	// · · IsDefinition: true,
+	// · · Serial: 1,
+	// · · Scope: &cc.Bindings{
+	// · · · Type: 1,
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example185.c:1:21: IDENTIFIER "a",
 	// · · },
@@ -5339,6 +5388,11 @@ func ExampleStructDeclarator() {
 	// · · · · Token: example144.c:1:6: STRUCT "struct",
 	// · · · },
 	// · · },
+	// · · Serial: 1,
+	// · · Scope: &cc.Bindings{
+	// · · · Type: 4,
+	// · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
+	// · · },
 	// · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · Token: example144.c:1:21: IDENTIFIER "a",
 	// · · },
@@ -5350,6 +5404,7 @@ func ExampleStructDeclarator_case1() {
 	fmt.Println(exampleAST(145, "\U00100002 struct { _Bool : 1 ,"))
 	// Output:
 	// &cc.StructDeclarator{
+	// · Bits: 3,
 	// · align: cc.align{
 	// · },
 	// · offset: cc.offset{
@@ -5416,6 +5471,11 @@ func ExampleStructDeclaratorList() {
 	// · · · · · Token: example140.c:1:6: STRUCT "struct",
 	// · · · · },
 	// · · · },
+	// · · · Serial: 1,
+	// · · · Scope: &cc.Bindings{
+	// · · · · Type: 4,
+	// · · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example140.c:1:21: IDENTIFIER "a",
 	// · · · },
@@ -5442,6 +5502,11 @@ func ExampleStructDeclaratorList_case1() {
 	// · · · · · Token: example141.c:1:6: STRUCT "struct",
 	// · · · · },
 	// · · · },
+	// · · · Serial: 1,
+	// · · · Scope: &cc.Bindings{
+	// · · · · Type: 4,
+	// · · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
+	// · · · },
 	// · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · Token: example141.c:1:21: IDENTIFIER "a",
 	// · · · },
@@ -5459,6 +5524,8 @@ func ExampleStructDeclaratorList_case1() {
 	// · · · Declarator: &cc.Declarator{
 	// · · · · IsDefinition: true,
 	// · · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
+	// · · · · Serial: 2,
+	// · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example141.c:1:25: IDENTIFIER "b",
 	// · · · · },
@@ -5493,6 +5560,11 @@ func ExampleStructDeclaratorListOpt_case1() {
 	// · · · · · StructOrUnion: &cc.StructOrUnion{
 	// · · · · · · Token: example143.c:1:6: STRUCT "struct",
 	// · · · · · },
+	// · · · · },
+	// · · · · Serial: 1,
+	// · · · · Scope: &cc.Bindings{
+	// · · · · · Type: 4,
+	// · · · · · SUSpecifier0: &cc.StructOrUnionSpecifier0{ /* recursive/repetitive pointee not shown */ },
 	// · · · · },
 	// · · · · DirectDeclarator: &cc.DirectDeclarator{
 	// · · · · · Token: example143.c:1:21: IDENTIFIER "a",

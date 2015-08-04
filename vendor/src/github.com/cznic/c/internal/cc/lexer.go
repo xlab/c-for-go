@@ -178,36 +178,38 @@ func (l *lexer0) unget(c ...lex.Char) {
 }
 
 type lexer struct {
-	ast             *PreprocessingFile  //
-	ch              chan []xc.Token     //
-	commentPos0     token.Pos           // /*-style comment start position.
-	constExpr       *ConstantExpression //
-	constExprTok    int                 //
-	constExprToks   []xc.Token          //
-	cpp             func([]xc.Token)    //
-	encBuf          []byte              //
-	fileScope       *Bindings           //
-	lexer0                              //
-	line            []xc.Token          //
-	macroArg        []xc.Token          //
-	macroArgs       [][]xc.Token        //
-	macroArgsCommas []xc.Token          //
-	macroArgsLevel  int                 // Nesting.
-	macroArgsTok    int                 //
-	macroArgsToks   []xc.Token          //
-	macroMore       int                 //
-	pgl             **GroupList         // Multiline macro invocation hook.
-	predefines      bool                //
-	prev            rune                //
-	runeEnc         []byte              //
-	scope           *Bindings           //
-	seenPrefix      bool                // Seen one of PREPROCESSING_FILE, CONSTANT_EXPRESSION, TRANSLATION_UNIT, MACRO_ARGS.
-	state           int                 //
-	tok2            xc.Token            //
-	tok2r           int                 //
-	tokValLen       int                 //
-	tu              *TranslationUnit    //
-	zipToks         []xc.Token          //
+	ast              *PreprocessingFile  //
+	ch               chan []xc.Token     //
+	commentPos0      token.Pos           // /*-style comment start position.
+	compoundStmt     int                 // Nesting level.
+	constExpr        *ConstantExpression //
+	constExprTok     int                 //
+	constExprToks    []xc.Token          //
+	cpp              func([]xc.Token)    //
+	declaratorSerial int                 //
+	encBuf           []byte              //
+	fileScope        *Bindings           //
+	lexer0                               //
+	line             []xc.Token          //
+	macroArg         []xc.Token          //
+	macroArgs        [][]xc.Token        //
+	macroArgsCommas  []xc.Token          //
+	macroArgsLevel   int                 // Nesting.
+	macroArgsTok     int                 //
+	macroArgsToks    []xc.Token          //
+	macroMore        int                 //
+	pgl              **GroupList         // Multiline macro invocation hook.
+	predefines       bool                //
+	prev             rune                //
+	runeEnc          []byte              //
+	scope            *Bindings           //
+	seenPrefix       bool                // Seen one of PREPROCESSING_FILE, CONSTANT_EXPRESSION, TRANSLATION_UNIT, MACRO_ARGS.
+	state            int                 //
+	tok2             xc.Token            //
+	tok2r            int                 //
+	tokValLen        int                 //
+	tu               *TranslationUnit    //
+	zipToks          []xc.Token          //
 }
 
 func newTULexer() *lexer {

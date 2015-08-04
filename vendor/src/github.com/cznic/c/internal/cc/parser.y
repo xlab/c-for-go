@@ -255,7 +255,7 @@ Start:
 		tu := $2.(*TranslationUnit).reverse()
 		tu.Declarations = lx.tu.Declarations
 		lx.tu = tu
-		if compilation.Errors(false) == nil && lx.scope.Type != ScopeFile {
+		if compilation.Errors(false) == nil && (lx.scope.Type != ScopeFile || lx.compoundStmt != 0 ) {
 			panic("internal error")
 		}
 	}
@@ -442,7 +442,9 @@ Declaration:
 		}
 
 		for l := o.InitDeclaratorList; l != nil; l = l.InitDeclaratorList {
-			lhs.IsTypedef = l.InitDeclarator.Declarator.IsTypedef
+			d := l.InitDeclarator.Declarator
+			d.DeclarationSpecifiers = lhs.DeclarationSpecifiers
+			lhs.IsTypedef = d.IsTypedef
 		}
 	}
 
@@ -586,7 +588,7 @@ TypeSpecifier:
 		lhs.case2 = tsStruct
 	}
 |	EnumSpecifier
-	//yy:example "\U00100002 typedef int i; i j;"
+//yy:example "\U00100002 typedef int i; i j;"
 |	TYPEDEFNAME
 
 //yy:field	SUSpecifier	*StructOrUnionSpecifier
@@ -717,10 +719,10 @@ StructDeclaratorListOpt:
 |	StructDeclaratorList
 
 // [0](6.7.2.1)
+//yy:field	Bits	Type	// Non nil if StructDeclarator is a bit field.
 //yy:field	align
 //yy:field	offset
 //yy:field	size 
-//yy:field	bits	Type
 StructDeclarator:
 	Declarator
 	{
@@ -747,10 +749,9 @@ StructDeclarator:
 		}
 		lhs.Declarator.insert(sc, NSMembers, true)
 	}
-	//yy:example "\U00100002 struct { _Bool : 1 ,"
+//yy:example "\U00100002 struct { _Bool : 1 ,"
 |	DeclaratorOpt ':' ConstantExpression
 	{
-		//TODO compute real bitfields
 		sc := lx.scope
 		pos := lhs.Token.Pos()
 		lhs.align.pos = pos
@@ -764,7 +765,7 @@ StructDeclarator:
 			t = d.Type()
 		}
 		t = newBitField(t, int(intT(lhs.ConstantExpression.eval()).(int32)))
-		lhs.bits = t
+		lhs.Bits = t
 		al := t.Alignof()
 		sz := t.Sizeof()
 		sc.maxFldSize = mathutil.Max(sc.maxFldSize, sz)
@@ -826,17 +827,23 @@ FunctionSpecifier:
 	"inline"
 
 // [0](6.7.5)
-//yy:field	Initializer	*Initializer			// Non nil if Declarator is part of InitDeclarator with Initializer.
-//yy:field	IsDefinition	bool				// Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
-//yy:field	IsTypedef	bool
-//yy:field	SUSpecifier0	*StructOrUnionSpecifier0	// Non nil if Declarator declares a field.
+//yy:field	DeclarationSpecifiers	*DeclarationSpecifiers		// Non nil if Declarator is a part of a Declaration.
+//yy:field	Initializer		*Initializer			// Non nil if Declarator is part of InitDeclarator with Initializer.
+//yy:field	IsDefinition		bool				// Whether Declarator is part of an InitDeclarator with Initializer or part of a FunctionDefinition.
+//yy:field	IsTypedef		bool				// Declarator defines a type.
+//yy:field	SUSpecifier0		*StructOrUnionSpecifier0	// Non nil if Declarator declares a field.
+//yy:field	Serial			int				// Translation unit wise unique, non-zero numeric Declarator id.
+//yy:field	Scope			*Bindings			// Resilution scope.
 Declarator:
 	PointerOpt DirectDeclarator
 	{
+		lx.declaratorSerial++
+		lhs.Serial = lx.declaratorSerial
 		lhs.DirectDeclarator.indirection = lhs.PointerOpt.indirection()
 		sc := lx.scope
 		lhs.IsTypedef = sc.isTypedef
 		lhs.SUSpecifier0 = sc.SUSpecifier0
+		lhs.Scope = lx.scope
 	}
 
 DeclaratorOpt:
@@ -875,7 +882,9 @@ DirectDeclarator:
 	}
 	DirectDeclarator2
 	{
+		p := lx.scope
 		lx.popScope(lhs.DirectDeclarator2.Token)
+		lx.scope.params = p
 		lhs.postProc(lx.scope)
 	}
 
@@ -1091,11 +1100,19 @@ LabeledStatement:
 CompoundStatement:
 	'{'
 	{
-		lx.pushScope(ScopeBlock)
+		lx.compoundStmt++
+		if lx.compoundStmt != 1 {
+			lx.pushScope(ScopeBlock)
+		}
 	}
 	BlockItemListOpt '}'
 	{
-		lhs.Declarations = lx.popScope($4)
+		lhs.Declarations = lx.scope
+		lx.compoundStmt--
+		if lx.compoundStmt != 0 {
+			lx.popScope($4)
+		}
+
 	}
 
 // [0](6.8.2)
@@ -1150,15 +1167,17 @@ ExternalDeclaration:
 |	Declaration
 
 // [0](6.9.1)
-//yy:field	fnScope	*Bindings
+//yy:field	Declarations	*Bindings
 FunctionDefinition:
 	DeclarationSpecifiers Declarator
 	{
-		lx.pushScope(ScopeFunction)
+		parScope := lx.scope.params
+		lx.pushScope(ScopeFunction).copy(parScope)
+		lx.compoundStmt = 0
 	}
 	DeclarationListOpt CompoundStatement
 	{
-		lhs.fnScope = lx.popScope(lhs.CompoundStatement.Token2)
+		lhs.Declarations = lx.popScope(lhs.CompoundStatement.Token2)
 		d := lhs.Declarator
 		d.IsDefinition = true
 		lx.scope.insert(NSIdentifiers, d.Ident(), lhs)
@@ -1216,7 +1235,7 @@ GroupList:
 GroupListOpt:
 	{
 	}
-	//yy:example	"\U00100000 \n#if 1 \n a \n#elif"
+//yy:example	"\U00100000 \n#if 1 \n a \n#elif"
 |	GroupList
 
 // [0](6.10)
