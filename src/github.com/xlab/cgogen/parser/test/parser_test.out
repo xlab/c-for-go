@@ -35,7 +35,10 @@
 · · · · InitDeclaratorList: &cc.InitDeclaratorList{
 · · · · · InitDeclarator: &cc.InitDeclarator{
 · · · · · · Declarator: &cc.Declarator{
+· · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{ /* recursive/repetitive pointee not shown */ },
 · · · · · · · IsTypedef: true,
+· · · · · · · Serial: 1,
+· · · · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
 · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · Token: test/parser_test.h:1:21: IDENTIFIER "int8_t",
 · · · · · · · },
@@ -63,6 +66,9 @@
 · · · · · InitDeclaratorList: &cc.InitDeclaratorList{
 · · · · · · InitDeclarator: &cc.InitDeclarator{
 · · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{ /* recursive/repetitive pointee not shown */ },
+· · · · · · · · Serial: 4,
+· · · · · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
 · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · Case: 6,
 · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
@@ -81,6 +87,10 @@
 · · · · · · · · · · · · · },
 · · · · · · · · · · · · · Declarator: &cc.Declarator{
 · · · · · · · · · · · · · · IsDefinition: true,
+· · · · · · · · · · · · · · Serial: 2,
+· · · · · · · · · · · · · · Scope: &cc.Bindings{
+· · · · · · · · · · · · · · · Type: 5,
+· · · · · · · · · · · · · · },
 · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · · · · · · · Token: test/parser_test.h:2:21: IDENTIFIER "a",
 · · · · · · · · · · · · · · },
@@ -98,6 +108,8 @@
 · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · · Declarator: &cc.Declarator{
 · · · · · · · · · · · · · · · IsDefinition: true,
+· · · · · · · · · · · · · · · Serial: 3,
+· · · · · · · · · · · · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
 · · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · · · · · · · · Token: test/parser_test.h:2:31: IDENTIFIER "b",
 · · · · · · · · · · · · · · · },
