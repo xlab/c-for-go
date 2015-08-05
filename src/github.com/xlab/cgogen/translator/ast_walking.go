@@ -3,17 +3,25 @@ package translator
 import "github.com/cznic/c/internal/cc"
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
-	switch unit.ExternalDeclaration.Case {
+	t.walkExternalDeclaration(unit.ExternalDeclaration)
+	if unit.TranslationUnit != nil {
+		t.walkTranslationUnit(unit.TranslationUnit)
+	}
+}
+
+func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
+	switch declr.Case {
 	case 0: // FunctionDefinition
 		// (not an API definition)
 	case 1: // Declaration
-		declarations := t.walkDeclaration(unit.ExternalDeclaration.Declaration)
-		t.declarations = append(t.declarations, declarations...)
-	}
-	next := unit.TranslationUnit
-	for next != nil {
-		t.walkTranslationUnit(next)
-		next = next.TranslationUnit
+		declarations := t.walkDeclaration(declr.Declaration)
+		for _, decl := range declarations {
+			if decl.IsTypedef {
+				t.typedefs = append(t.typedefs, decl)
+				continue
+			}
+			t.declarations = append(t.declarations, decl)
+		}
 	}
 }
 
@@ -22,24 +30,29 @@ func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
 	refDecl := CDecl{Spec: &CTypeSpec{}}
 	nextSpec := declr.DeclarationSpecifiers
 	for nextSpec != nil {
-		nextSpec = t.walkDeclarationSpec(nextSpec, &refDecl)
+		nextSpec = t.walkDeclarationSpecifiers(nextSpec, &refDecl)
 	}
 
 	switch refDecl.Spec.Kind() {
-	case EnumDef:
-		t.tagMap[refDecl.Spec.(*CEnumSpec).Tag] = refDecl
-	case StructDef:
-		t.tagMap[refDecl.Spec.(*CStructSpec).Tag] = refDecl
+	case EnumKind:
+		spec := refDecl.Spec.(*CEnumSpec)
+		if len(spec.Tag) != 0 {
+			t.tagMap[spec.Tag] = refDecl
+		}
+	case StructKind:
+		spec := refDecl.Spec.(*CStructSpec)
+		if len(spec.Tag) != 0 {
+			t.tagMap[spec.Tag] = refDecl
+		}
 	}
 
 	// prepare to collect declarations
 	var declarations []CDecl
 
-	decl := CDecl{Spec: refDecl.Spec.Copy()}
 	if declr.InitDeclaratorListOpt != nil {
 		nextList := declr.InitDeclaratorListOpt.InitDeclaratorList
 		for nextList != nil {
-			decl = CDecl{Spec: refDecl.Spec.Copy()}
+			decl := CDecl{Spec: refDecl.Spec.Copy(), IsTypedef: refDecl.IsTypedef}
 			nextList = t.walkInitDeclaratorList(nextList, &decl)
 			declarations = append(declarations, decl)
 			t.valueMap[decl.Name] = decl.Value
@@ -82,9 +95,9 @@ func (t *Translator) walkParameterList(list *cc.ParameterList) (next *cc.Paramet
 	switch declr.Case {
 	case 0: // DeclarationSpecifiers Declarator
 		decl = &CDecl{Spec: &CTypeSpec{}}
-		nextDeclr := t.walkDeclarationSpec(declr.DeclarationSpecifiers, decl)
+		nextDeclr := t.walkDeclarationSpecifiers(declr.DeclarationSpecifiers, decl)
 		for nextDeclr != nil {
-			nextDeclr = t.walkDeclarationSpec(nextDeclr, decl)
+			nextDeclr = t.walkDeclarationSpecifiers(nextDeclr, decl)
 		}
 
 		walkPointers(declr.Declarator.PointerOpt, decl)
@@ -159,9 +172,13 @@ func walkPointers(popt *cc.PointerOpt, decl *CDecl) {
 	decl.SetPointers(pointers)
 }
 
-func (t *Translator) walkDeclarationSpec(declr *cc.DeclarationSpecifiers, decl *CDecl) (next *cc.DeclarationSpecifiers) {
+func (t *Translator) walkDeclarationSpecifiers(declr *cc.DeclarationSpecifiers, decl *CDecl) (next *cc.DeclarationSpecifiers) {
 	switch declr.Case {
 	case 0: // StorageClassSpecifier DeclarationSpecifiersOpt
+		switch declr.StorageClassSpecifier.Case {
+		case 0: // "typedef"
+			decl.IsTypedef = true
+		}
 		next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
 	case 1: // TypeSpecifier DeclarationSpecifiersOpt
 		t.walkTypeSpec(declr.TypeSpecifier, decl)

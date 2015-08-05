@@ -21,7 +21,7 @@ func (c *CTypeSpec) SetPointers(n uint8) {
 }
 
 func (c CTypeSpec) Kind() CTypeKind {
-	return TypeDef
+	return TypeKind
 }
 
 func (cts CTypeSpec) String() string {

@@ -8,10 +8,10 @@ import (
 type CTypeKind int
 
 const (
-	TypeDef CTypeKind = iota
-	StructDef
-	FunctionDef
-	EnumDef
+	TypeKind CTypeKind = iota
+	StructKind
+	FunctionKind
+	EnumKind
 )
 
 type CType interface {
@@ -32,6 +32,7 @@ type CDecl struct {
 	Name       string
 	Value      Value
 	Expression Expression
+	IsTypedef  bool
 	Arrays     []ArraySizeSpec
 	Pos        token.Pos
 }

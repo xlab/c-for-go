@@ -26,6 +26,7 @@ type Translator struct {
 	exprMap      map[string]Expression
 	tagMap       map[string]CDecl
 	defines      []*defineLine
+	typedefs     []CDecl
 	declarations []CDecl
 }
 
@@ -136,18 +137,24 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 
 	sort.Sort(defineLines(t.defines))
 	t.walkTranslationUnit(unit)
+	log.Println(unit)
 	return xc.Compilation.Errors(true)
 }
 
 func (t *Translator) Report() {
-	log.Println("[!] DECLARATIONS:")
-	for _, decl := range t.declarations {
+	log.Println("[!] TAGS:")
+	for tag, decl := range t.tagMap {
+		log.Println(tag, "refers to", decl)
+	}
+
+	log.Println("[!] TYPEDEFs:")
+	for _, decl := range t.typedefs {
 		log.Println(decl)
 	}
 
-	log.Println("[!] TAGS:")
-	for tag, decl := range t.tagMap {
-		log.Println(tag, "defines", decl)
+	log.Println("[!] DECLARATIONS:")
+	for _, decl := range t.declarations {
+		log.Println(decl)
 	}
 
 	t.Printf("[!] const (")

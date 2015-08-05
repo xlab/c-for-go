@@ -81,7 +81,7 @@ func (c *CEnumSpec) SetPointers(n uint8) {
 }
 
 func (c CEnumSpec) Kind() CTypeKind {
-	return EnumDef
+	return EnumKind
 }
 
 func (c CEnumSpec) Copy() CType {

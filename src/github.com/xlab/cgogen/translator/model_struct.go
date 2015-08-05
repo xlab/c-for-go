@@ -17,7 +17,7 @@ func (c *CStructSpec) SetPointers(n uint8) {
 }
 
 func (c CStructSpec) Kind() CTypeKind {
-	return StructDef
+	return StructKind
 }
 
 func (c CStructSpec) Copy() CType {

@@ -16,7 +16,7 @@ func (c *CFunctionSpec) SetPointers(n uint8) {
 }
 
 func (c CFunctionSpec) Kind() CTypeKind {
-	return FunctionDef
+	return FunctionKind
 }
 
 func (c CFunctionSpec) Copy() CType {

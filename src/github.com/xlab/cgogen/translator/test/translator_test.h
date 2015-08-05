@@ -30,6 +30,13 @@ enum securityLevels {
 	first = AB, second
 };
 
+// typedef enum
+// {
+// 	GFX_LEFT = 0, ///< Left eye framebuffer
+// 	GFX_RIGHT = 1,///< Right eye framebuffer
+// 	// GFX_BOTTOM = 0
+// }gfx3dSide_t;
+
 // enum Security_Levels{
 // 	first, second
 // } se_t;
