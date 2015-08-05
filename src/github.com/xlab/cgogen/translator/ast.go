@@ -1,68 +1,52 @@
 package translator
 
-import (
-	"log"
+import "github.com/cznic/c/internal/cc"
 
-	"github.com/cznic/c/internal/cc"
-)
-
-func (t *Translator) walkAST(unit *cc.TranslationUnit) ([]CDecl, error) {
-	var declarations []CDecl
-
-	next, cdecls, err := t.walkUnit(unit)
-	if err != nil {
-		return nil, err
+func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
+	switch unit.ExternalDeclaration.Case {
+	case 0: // FunctionDefinition
+		// (not an API definition)
+	case 1: // Declaration
+		declarations := t.walkDeclaration(unit.ExternalDeclaration.Declaration)
+		t.declarations = append(t.declarations, declarations...)
 	}
-	declarations = append(declarations, cdecls...)
-
+	next := unit.TranslationUnit
 	for next != nil {
-		next, cdecls, err = t.walkUnit(next)
-		if err != nil {
-			return nil, err
-		}
-		declarations = append(declarations, cdecls...)
+		t.walkTranslationUnit(next)
+		next = next.TranslationUnit
 	}
-	return declarations, nil
 }
 
-func (t *Translator) walkUnit(unit *cc.TranslationUnit) (next *cc.TranslationUnit, declarations []CDecl, err error) {
-	if unit == nil {
-		return
-	}
-	if unit.ExternalDeclaration != nil {
-		declarations, err = t.walkDeclaration(unit.ExternalDeclaration.Declaration)
-	}
-	next = unit.TranslationUnit
-	return
-}
-
-func (t *Translator) walkDeclaration(declr *cc.Declaration) ([]CDecl, error) {
+func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
 	// read type spec into a reference type declaration
-	refDecl := &CDecl{Spec: &CTypeSpec{}}
-	nextSpec := t.walkDeclarationSpec(declr.DeclarationSpecifiers, refDecl)
+	refDecl := CDecl{Spec: &CTypeSpec{}}
+	nextSpec := declr.DeclarationSpecifiers
 	for nextSpec != nil {
-		nextSpec = t.walkDeclarationSpec(nextSpec, refDecl)
+		nextSpec = t.walkDeclarationSpec(nextSpec, &refDecl)
+	}
+
+	switch refDecl.Spec.Kind() {
+	case EnumDef:
+		t.tagMap[refDecl.Spec.(*CEnumSpec).Tag] = refDecl
+	case StructDef:
+		t.tagMap[refDecl.Spec.(*CStructSpec).Tag] = refDecl
 	}
 
 	// prepare to collect declarations
 	var declarations []CDecl
 
-	decl := &CDecl{Spec: refDecl.Spec.Copy()}
+	decl := CDecl{Spec: refDecl.Spec.Copy()}
 	if declr.InitDeclaratorListOpt != nil {
 		nextList := declr.InitDeclaratorListOpt.InitDeclaratorList
 		for nextList != nil {
-			decl = &CDecl{Spec: refDecl.Spec.Copy()}
-			nextList = t.walkInitDeclaratorList(nextList, decl)
-			declarations = append(declarations, *decl)
+			decl = CDecl{Spec: refDecl.Spec.Copy()}
+			nextList = t.walkInitDeclaratorList(nextList, &decl)
+			declarations = append(declarations, decl)
 			t.valueMap[decl.Name] = decl.Value
 			t.exprMap[decl.Name] = decl.Expression
 		}
 	}
-	if len(declarations) == 0 {
-		log.Println("EMPTY declaration of type", refDecl.Spec)
-	}
-
-	return declarations, nil
+	return declarations
 }
 
 func (t *Translator) walkInitializer(init *cc.Initializer, decl *CDecl) {
@@ -85,7 +69,7 @@ func (t *Translator) walkInitDeclaratorList(declr *cc.InitDeclaratorList, decl *
 		t.walkInitializer(declr.InitDeclarator.Initializer, decl)
 	}
 
-	nextDeclarator := t.walkDirectDeclarator(declr.InitDeclarator.Declarator.DirectDeclarator, decl)
+	nextDeclarator := declr.InitDeclarator.Declarator.DirectDeclarator
 	for nextDeclarator != nil {
 		nextDeclarator = t.walkDirectDeclarator(nextDeclarator, decl)
 	}
@@ -104,7 +88,7 @@ func (t *Translator) walkParameterList(list *cc.ParameterList) (next *cc.Paramet
 		}
 
 		walkPointers(declr.Declarator.PointerOpt, decl)
-		nextDeclarator := t.walkDirectDeclarator(declr.Declarator.DirectDeclarator, decl)
+		nextDeclarator := declr.Declarator.DirectDeclarator
 		for nextDeclarator != nil {
 			nextDeclarator = t.walkDirectDeclarator(nextDeclarator, decl)
 		}
@@ -118,13 +102,10 @@ func (t *Translator) walkDirectDeclarator2(declr *cc.DirectDeclarator2, decl *CD
 	switch declr.Case {
 	case 0: // ParameterTypeList ')'
 		spec := decl.Spec.(*CFunctionSpec)
-		nextList, paramDecl := t.walkParameterList(declr.ParameterTypeList.ParameterList)
-		if paramDecl != nil {
-			spec.ParamList = append(spec.ParamList, *paramDecl)
-		}
+		nextList := declr.ParameterTypeList.ParameterList
+		var paramDecl *CDecl
 		for nextList != nil {
-			nextList, paramDecl = t.walkParameterList(nextList)
-			if paramDecl != nil {
+			if nextList, paramDecl = t.walkParameterList(nextList); paramDecl != nil {
 				spec.ParamList = append(spec.ParamList, *paramDecl)
 			}
 		}

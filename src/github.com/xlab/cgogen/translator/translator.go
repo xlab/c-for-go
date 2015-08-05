@@ -22,12 +22,14 @@ type Expression []byte
 type Translator struct {
 	out         io.Writer
 	rules       Rules
-	defines     []*defineLine
 	compiledRxs map[RuleAction]RxMap
+	constRule   ConstRule
 
-	constRule ConstRule
-	valueMap  map[string]Value
-	exprMap   map[string]Expression
+	valueMap     map[string]Value
+	exprMap      map[string]Expression
+	tagMap       map[string]CDecl
+	defines      []*defineLine
+	declarations []CDecl
 }
 
 type RxMap map[RuleTarget][]Rx
@@ -46,6 +48,7 @@ func New(rules Rules, typemap CTypeMap, out io.Writer) (*Translator, error) {
 		compiledRxs: make(map[RuleAction]RxMap),
 		valueMap:    make(map[string]Value),
 		exprMap:     make(map[string]Expression),
+		tagMap:      make(map[string]CDecl),
 	}
 	for _, action := range ruleActions {
 		if rxMap, err := getRuleActionRxs(rules, action); err != nil {
@@ -135,31 +138,34 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	}
 
 	sort.Sort(defineLines(t.defines))
-	log.Println(unit)
-	decl, err := t.walkAST(unit)
-	if err != nil {
-		return err
-	}
-	log.Println("DECLARATIONS:")
-	for _, d := range decl {
-		log.Println(d)
+	t.walkTranslationUnit(unit)
+	return xc.Compilation.Errors(true)
+}
+
+func (t *Translator) Report() {
+	log.Println("[!] DECLARATIONS:")
+	for _, decl := range t.declarations {
+		log.Println(decl)
 	}
 
-	t.Printf("const (")
+	log.Println("[!] TAGS:")
+	for tag, decl := range t.tagMap {
+		log.Println(tag, "defines", decl)
+	}
+
+	t.Printf("[!] const (")
 	for _, line := range t.defines {
 		t.Printf("\n// %s\n//   > define %s %v\n%s = %s",
 			srcLocation(line.Pos), line.Name, line.Src,
 			t.TransformName(TargetConst, string(line.Name)), line.Value)
 	}
 	t.Printf("\n)\n\n")
-
-	return xc.Compilation.Errors(true)
 }
 
 func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 	var name []byte
 	if target != TargetGlobal {
-		// apply global rules
+		// apply global rules first
 		name = t.TransformName(TargetGlobal, str)
 	} else {
 		name = []byte(str)

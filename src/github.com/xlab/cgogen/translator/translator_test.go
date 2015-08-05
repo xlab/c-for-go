@@ -46,4 +46,5 @@ func TestLearn(t *testing.T) {
 	if err := tl.Learn(unit, macros); err != nil {
 		t.Fatal(err)
 	}
+	tl.Report()
 }
