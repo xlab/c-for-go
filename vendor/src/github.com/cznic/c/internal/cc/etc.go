@@ -780,70 +780,8 @@ func (b bitField) Sizeof() int { return model[ScalarType(b)].Size }
 // StructOrUnionType implements Type.
 func (b bitField) StructOrUnionType() *StructOrUnionSpecifier { panic("internal error") }
 
-func fieldOffset(off, align int) int {
-	d := off % align
-	if d != 0 {
-		off += align - d
-	}
-	return off
-}
+func fieldOffset(off, align int) int { return 0 }
 
-func szAlign(t Type) ModelItem {
-	switch t.Kind() {
-	case ArrayType:
-		switch ln, ok := t.Len(); {
-		case ok:
-			v := szAlign(t.ElementType())
-			v.Size *= ln
-			return v
-		default:
-			return model[Ptr]
-		}
-	case BoolType:
-		return model[Bool]
-	case CharType:
-		return model[Char]
-	case DoubleType:
-		return model[Double]
-	case IntType:
-		return model[Int]
-	case LongType:
-		return model[Long]
-	case LongLongType:
-		return model[LongLong]
-	case NamedType:
-		var ts *TypeSpecifier
-		switch n := t.(type) {
-		case *declarationSpecifiers:
-			ts = n.typeSpecification()
-		case *specifierQualifierList:
-			ts = n.typeSpecification()
-		default:
-			panic("TODO")
-		}
-		b, _ := ts.bindings.Lookup(NSIdentifiers, ts.Token.Val)
-		d := b.Node.(*Declarator)
-		return szAlign(d.Type())
-	case PtrType:
-		return model[Ptr]
-	case ShortType:
-		return model[Short]
-	case StructType, UnionType:
-		sus := t.StructOrUnionType()
-		return ModelItem{Size: sus.Sizeof(), Align: sus.Alignof()}
-	case UCharType:
-		return model[UChar]
-	case ULongLongType:
-		return model[ULongLong]
-	case UIntType:
-		return model[UInt]
-	case UShortType:
-		return model[UShort]
-	default:
-		panic(t.Kind())
-	}
-}
+func alignof(t Type) int { return 0 }
 
-func alignof(t Type) int { return szAlign(t).Align }
-
-func sizeof(t Type) int { return szAlign(t).Size }
+func sizeof(t Type) int { return 0 }
