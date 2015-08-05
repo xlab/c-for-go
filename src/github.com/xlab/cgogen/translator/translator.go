@@ -16,13 +16,18 @@ import (
 	"github.com/cznic/c/internal/xc"
 )
 
+type Value interface{}
+type Expression []byte
+
 type Translator struct {
 	out         io.Writer
 	rules       Rules
 	defines     []*defineLine
 	compiledRxs map[RuleAction]RxMap
 
-	valueMap map[string]Value
+	constRule ConstRule
+	valueMap  map[string]Value
+	exprMap   map[string]Expression
 }
 
 type RxMap map[RuleTarget][]Rx
@@ -40,6 +45,7 @@ func New(rules Rules, typemap CTypeMap, out io.Writer) (*Translator, error) {
 		out:         out,
 		compiledRxs: make(map[RuleAction]RxMap),
 		valueMap:    make(map[string]Value),
+		exprMap:     make(map[string]Expression),
 	}
 	for _, action := range ruleActions {
 		if rxMap, err := getRuleActionRxs(rules, action); err != nil {

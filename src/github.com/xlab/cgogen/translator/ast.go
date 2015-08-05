@@ -55,10 +55,11 @@ func (t *Translator) walkDeclaration(declr *cc.Declaration) ([]CDecl, error) {
 			nextList = t.walkInitDeclaratorList(nextList, decl)
 			declarations = append(declarations, *decl)
 			t.valueMap[decl.Name] = decl.Value
+			t.exprMap[decl.Name] = decl.Expression
 		}
 	}
 	if len(declarations) == 0 {
-		log.Println("EMPTY declaration:", refDecl)
+		log.Println("EMPTY declaration of type", refDecl.Spec)
 	}
 
 	return declarations, nil
@@ -262,10 +263,13 @@ func (t *Translator) walkSUSpecifier(suSpec *cc.StructOrUnionSpecifier, decl *CD
 	case 1: // StructOrUnion IDENTIFIER
 		switch suSpec.StructOrUnion.Case {
 		case 0: // struct
-			decl.Spec = &CStructSpec{}
+			decl.Spec = &CStructSpec{
+				Tag: string(suSpec.Token.S()),
+			}
 		case 1: // union
 			decl.Spec = &CStructSpec{
 				Union: true,
+				Tag:   string(suSpec.Token.S()),
 			}
 		}
 	}
@@ -285,11 +289,64 @@ func walkSUSpecifier0(suSpec *cc.StructOrUnionSpecifier0, decl *CDecl) {
 	}
 }
 
-func (t *Translator) walkTypeSpec(typeSpec *cc.TypeSpecifier, decl *CDecl) {
-	if typeSpec == nil {
-		return
-	}
+func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
+	switch enSpec.Case {
+	case 0, // EnumSpecifier0 '{' EnumeratorList '}'
+		1: // EnumSpecifier0 '{' EnumeratorList ',' '}'
+		decl.Spec = &CEnumSpec{}
+		enumSpec := decl.Spec.(*CEnumSpec)
+		if enSpec.EnumSpecifier0.IdentifierOpt != nil {
+			enumSpec.Tag = string(enSpec.EnumSpecifier0.IdentifierOpt.Token.S())
+		}
 
+		enumIdx := len(enumSpec.Enumerators)
+		nextList := enSpec.EnumeratorList
+		for nextList != nil {
+			enumDecl := t.walkEnumerator(nextList.Enumerator)
+			if enumDecl.Value == nil {
+				if enumIdx > 0 {
+					// get previous enumerator from the list
+					prevEnum := enumSpec.Enumerators[enumIdx-1]
+					enumDecl.Value = incVal(prevEnum.Value)
+					switch t.constRule {
+					case ConstExpandFull:
+						enumDecl.Expression = append(prevEnum.Expression, '+', '1')
+					default:
+						enumDecl.Expression = []byte(prevEnum.Name + "+1")
+					}
+					enumDecl.Spec = prevEnum.Spec.Copy()
+				} else {
+					enumDecl.Value = int32(0)
+					enumDecl.Expression = []byte("0")
+				}
+			}
+			enumIdx++
+			enumDecl.Spec = enumSpec.PromoteType(enumDecl.Value)
+			enumSpec.Enumerators = append(enumSpec.Enumerators, enumDecl)
+			t.valueMap[enumDecl.Name] = enumDecl.Value
+			t.exprMap[enumDecl.Name] = enumDecl.Expression
+			nextList = nextList.EnumeratorList
+		}
+	case 2: // "enum" IDENTIFIER
+		decl.Spec = &CEnumSpec{
+			Tag: string(enSpec.Token.S()),
+		}
+	}
+}
+
+func (t *Translator) walkEnumerator(enSpec *cc.Enumerator) (decl CDecl) {
+	switch enSpec.Case {
+	case 0: // EnumerationConstant
+		decl.Name = string(enSpec.EnumerationConstant.Token.S())
+	case 1: // EnumerationConstant '=' ConstantExpression
+		decl.Name = string(enSpec.EnumerationConstant.Token.S())
+		decl.Value = t.EvalConditionalExpression(enSpec.ConstantExpression.ConditionalExpression)
+		decl.Expression = t.ExpandConditionalExpression(enSpec.ConstantExpression.ConditionalExpression)
+	}
+	return
+}
+
+func (t *Translator) walkTypeSpec(typeSpec *cc.TypeSpecifier, decl *CDecl) {
 	spec := decl.Spec.(*CTypeSpec)
 
 	switch typeSpec.Case {
@@ -320,7 +377,8 @@ func (t *Translator) walkTypeSpec(typeSpec *cc.TypeSpecifier, decl *CDecl) {
 		spec.Base = "_Complex"
 	case 11:
 		t.walkSUSpecifier(typeSpec.StructOrUnionSpecifier, decl)
-	case 12: // TODO: enums
+	case 12:
+		t.walkEnumSpecifier(typeSpec.EnumSpecifier, decl)
 	case 13:
 		spec.Base = string(typeSpec.Token.S())
 	}

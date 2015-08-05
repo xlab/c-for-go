@@ -37,3 +37,13 @@ const (
 	TargetConst               = "const"
 	TargetFunction            = "function"
 )
+
+type ConstRule string
+
+const (
+	ConstCGOAlias   ConstRule = "cgo_alias"
+	ConstExpand               = "expand"
+	ConstExpandFull           = "expand_full"
+	ConstEval                 = "eval"
+	ConstEvalFull             = "eval_full"
+)

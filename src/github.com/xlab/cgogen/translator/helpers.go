@@ -42,6 +42,17 @@ func bytesJoin(buf1, buf2 []byte, sep string) []byte {
 	return bytes.Join([][]byte{buf1, buf2}, []byte(sep))
 }
 
+func bytesWrap(buf []byte, w1, w2 string) []byte {
+	if len(buf) == 0 {
+		return nil
+	}
+	res := make([]byte, 0, len(buf)+2)
+	res = append(res, []byte(w1)...)
+	res = append(res, buf...)
+	res = append(res, []byte(w2)...)
+	return res
+}
+
 func isRestrictedBase(b []byte) bool {
 	return bytes.Contains(restrictedNames, b)
 }
@@ -94,4 +105,19 @@ func unresolvedIdentifierWarn(name string, p token.Pos) {
 func unmanagedCaseWarn(c int, p token.Pos) {
 	_, file, line, _ := runtime.Caller(1)
 	fmt.Printf("WARN: %s:%d unmanaged case %d at %s\n", narrowPath(file), line, c, srcLocation(p))
+}
+
+func incVal(v Value) Value {
+	switch v := v.(type) {
+	case int32:
+		return v + 1
+	case int64:
+		return v + 1
+	case uint32:
+		return v + 1
+	case uint64:
+		return v + 1
+	default:
+		return v
+	}
 }

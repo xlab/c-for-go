@@ -24,15 +24,17 @@ enum LOL {
   Three
 };
 
-const int AB = One + 4;
+const int AB = One << 4;
+
+enum securityLevels {
+	first = AB, second
+};
 
 // enum Security_Levels{
 // 	first, second
 // } se_t;
 
-enum Security_Levels2 {
-	first = ABC, second = 8
-};
+
 
 // #define VPX_ADDRESS_SIZE 4
 

@@ -3,7 +3,6 @@ package translator
 import (
 	"bytes"
 	"fmt"
-	"log"
 
 	"github.com/cznic/c/internal/cc"
 	"github.com/cznic/c/internal/xc"
@@ -15,7 +14,7 @@ type (
 	constantValue      cc.Constant
 )
 
-func (t *Translator) ExpandAssignmentExpression(ex *cc.AssignmentExpression) []byte {
+func (t *Translator) ExpandAssignmentExpression(ex *cc.AssignmentExpression) Expression {
 	switch ex.Case {
 	case 0: // ConditionalExpression
 		return t.ExpandConditionalExpression(ex.ConditionalExpression)
@@ -29,7 +28,7 @@ func (t *Translator) ExpandAssignmentExpression(ex *cc.AssignmentExpression) []b
 	}
 }
 
-func (t *Translator) ExpandConditionalExpression(ex *cc.ConditionalExpression) []byte {
+func (t *Translator) ExpandConditionalExpression(ex *cc.ConditionalExpression) Expression {
 	switch ex.Case {
 	case 0: // LogicalOrExpression
 		return t.ExpandLogicalOrExpression(ex.LogicalOrExpression)
@@ -41,7 +40,7 @@ func (t *Translator) ExpandConditionalExpression(ex *cc.ConditionalExpression) [
 	}
 }
 
-func (t *Translator) ExpandLogicalOrExpression(ex *cc.LogicalOrExpression) []byte {
+func (t *Translator) ExpandLogicalOrExpression(ex *cc.LogicalOrExpression) Expression {
 	switch ex.Case {
 	case 0: // LogicalAndExpression
 		return t.ExpandLogicalAndExpression(ex.LogicalAndExpression)
@@ -55,7 +54,7 @@ func (t *Translator) ExpandLogicalOrExpression(ex *cc.LogicalOrExpression) []byt
 	}
 }
 
-func (t *Translator) ExpandLogicalAndExpression(ex *cc.LogicalAndExpression) []byte {
+func (t *Translator) ExpandLogicalAndExpression(ex *cc.LogicalAndExpression) Expression {
 	switch ex.Case {
 	case 0: // InclusiveOrExpression
 		return t.ExpandInclusiveOrExpression(ex.InclusiveOrExpression)
@@ -68,7 +67,7 @@ func (t *Translator) ExpandLogicalAndExpression(ex *cc.LogicalAndExpression) []b
 	}
 }
 
-func (t *Translator) ExpandInclusiveOrExpression(ex *cc.InclusiveOrExpression) []byte {
+func (t *Translator) ExpandInclusiveOrExpression(ex *cc.InclusiveOrExpression) Expression {
 	switch ex.Case {
 	case 0: // ExclusiveOrExpression
 		return t.ExpandExclusiveOrExpression(ex.ExclusiveOrExpression)
@@ -81,7 +80,7 @@ func (t *Translator) ExpandInclusiveOrExpression(ex *cc.InclusiveOrExpression) [
 	}
 }
 
-func (t *Translator) ExpandExclusiveOrExpression(ex *cc.ExclusiveOrExpression) []byte {
+func (t *Translator) ExpandExclusiveOrExpression(ex *cc.ExclusiveOrExpression) Expression {
 	switch ex.Case {
 	case 0: // AndExpression
 		return t.ExpandAndExpression(ex.AndExpression)
@@ -94,7 +93,7 @@ func (t *Translator) ExpandExclusiveOrExpression(ex *cc.ExclusiveOrExpression) [
 	}
 }
 
-func (t *Translator) ExpandAndExpression(ex *cc.AndExpression) []byte {
+func (t *Translator) ExpandAndExpression(ex *cc.AndExpression) Expression {
 	switch ex.Case {
 	case 0: // EqualityExpression
 		return t.ExpandEqualityExpression(ex.EqualityExpression)
@@ -107,7 +106,7 @@ func (t *Translator) ExpandAndExpression(ex *cc.AndExpression) []byte {
 	}
 }
 
-func (t *Translator) ExpandEqualityExpression(ex *cc.EqualityExpression) []byte {
+func (t *Translator) ExpandEqualityExpression(ex *cc.EqualityExpression) Expression {
 	switch ex.Case {
 	case 0: // RelationalExpression
 		return t.ExpandRelationalExpression(ex.RelationalExpression)
@@ -124,7 +123,7 @@ func (t *Translator) ExpandEqualityExpression(ex *cc.EqualityExpression) []byte 
 	}
 }
 
-func (t *Translator) ExpandRelationalExpression(ex *cc.RelationalExpression) []byte {
+func (t *Translator) ExpandRelationalExpression(ex *cc.RelationalExpression) Expression {
 	switch ex.Case {
 	case 0: // ShiftExpression
 		return t.ExpandShiftExpression(ex.ShiftExpression)
@@ -149,7 +148,7 @@ func (t *Translator) ExpandRelationalExpression(ex *cc.RelationalExpression) []b
 	}
 }
 
-func (t *Translator) ExpandShiftExpression(ex *cc.ShiftExpression) []byte {
+func (t *Translator) ExpandShiftExpression(ex *cc.ShiftExpression) Expression {
 	switch ex.Case {
 	case 0: // AdditiveExpression
 		return t.ExpandAdditiveExpression(ex.AdditiveExpression)
@@ -166,7 +165,7 @@ func (t *Translator) ExpandShiftExpression(ex *cc.ShiftExpression) []byte {
 	}
 }
 
-func (t *Translator) ExpandAdditiveExpression(ex *cc.AdditiveExpression) []byte {
+func (t *Translator) ExpandAdditiveExpression(ex *cc.AdditiveExpression) Expression {
 	switch ex.Case {
 	case 0: // MultiplicativeExpression
 		return t.ExpandMultiplicativeExpression(ex.MultiplicativeExpression)
@@ -183,7 +182,7 @@ func (t *Translator) ExpandAdditiveExpression(ex *cc.AdditiveExpression) []byte 
 	}
 }
 
-func (t *Translator) ExpandMultiplicativeExpression(ex *cc.MultiplicativeExpression) []byte {
+func (t *Translator) ExpandMultiplicativeExpression(ex *cc.MultiplicativeExpression) Expression {
 	switch ex.Case {
 	case 0: // CastExpression
 		return t.ExpandCastExpression(ex.CastExpression)
@@ -204,7 +203,7 @@ func (t *Translator) ExpandMultiplicativeExpression(ex *cc.MultiplicativeExpress
 	}
 }
 
-func (t *Translator) ExpandCastExpression(ex *cc.CastExpression) []byte {
+func (t *Translator) ExpandCastExpression(ex *cc.CastExpression) Expression {
 	switch ex.Case {
 	case 0: // UnaryExpression
 		return t.ExpandUnaryExpression(ex.UnaryExpression)
@@ -216,7 +215,7 @@ func (t *Translator) ExpandCastExpression(ex *cc.CastExpression) []byte {
 	}
 }
 
-func (t *Translator) ExpandUnaryExpression(ex *cc.UnaryExpression) []byte {
+func (t *Translator) ExpandUnaryExpression(ex *cc.UnaryExpression) Expression {
 	switch ex.Case {
 	case 0: // PostfixExpression
 		return t.ExpandPostfixExpression(ex.PostfixExpression)
@@ -241,7 +240,7 @@ func (t *Translator) ExpandUnaryExpression(ex *cc.UnaryExpression) []byte {
 	}
 }
 
-func (t *Translator) ExpandPostfixExpression(ex *cc.PostfixExpression) []byte {
+func (t *Translator) ExpandPostfixExpression(ex *cc.PostfixExpression) Expression {
 	switch ex.Case {
 	case 0: // PrimaryExpression
 		return t.ExpandPrimaryExpression(ex.PrimaryExpression)
@@ -264,8 +263,7 @@ func (t *Translator) ExpandPostfixExpression(ex *cc.PostfixExpression) []byte {
 	case 3, // PostfixExpression '.' IDENTIFIER
 		4: // PostfixExpression "->" IDENTIFIER
 		return bytesJoin(
-			t.ExpandPostfixExpression(ex.PostfixExpression),
-			t.ExpandPostfixExpression(ex.PostfixExpression), ".")
+			t.ExpandPostfixExpression(ex.PostfixExpression), ex.Token.S(), ".")
 	case 5, // PostfixExpression "++"
 		6: // PostfixExpression "--"
 		// not present in golang
@@ -281,12 +279,30 @@ func (t *Translator) ExpandPostfixExpression(ex *cc.PostfixExpression) []byte {
 	}
 }
 
-func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) []byte {
+func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) Expression {
 	switch ex.Case {
 	case 0: // IDENTIFIER
-		log.Println("lookup of", string(ex.Token.S()), "in valueMap", t.valueMap)
-		if v, ok := t.valueMap[string(ex.Token.S())]; ok {
-			return []byte(fmt.Sprintf("%#v", v))
+		name := ex.Token.S()
+		switch t.constRule {
+		case ConstExpandFull:
+			if expr, ok := t.exprMap[string(name)]; ok {
+				return bytesWrap(expr, "(", ")")
+			}
+		case ConstEval:
+			if v, ok := t.valueMap[string(name)]; ok {
+				switch v := v.(type) {
+				case int32, uint32, int64, uint64:
+					return []byte(fmt.Sprintf("%d", v))
+				case float32, float64:
+					return []byte(fmt.Sprintf("%f", v))
+				case string:
+					return []byte(v)
+				}
+			}
+		default:
+			if _, ok := t.exprMap[string(name)]; ok {
+				return name
+			}
 		}
 		// just skip undefined
 		return nil
@@ -300,7 +316,7 @@ func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) []byte {
 	}
 }
 
-func (t *Translator) ExpandExpressionList(ex *cc.ExpressionList) []byte {
+func (t *Translator) ExpandExpressionList(ex *cc.ExpressionList) Expression {
 	switch ex.Case {
 	case 0, // AssignmentExpression
 		1: // ExpressionList ',' AssignmentExpression
@@ -311,7 +327,7 @@ func (t *Translator) ExpandExpressionList(ex *cc.ExpressionList) []byte {
 	}
 }
 
-func (t *Translator) ExpandArgumentExpressionList(ex *cc.ArgumentExpressionList) []byte {
+func (t *Translator) ExpandArgumentExpressionList(ex *cc.ArgumentExpressionList) Expression {
 	switch ex.Case {
 	case 0, // AssignmentExpression
 		1: // ExpressionList ',' AssignmentExpression
@@ -322,7 +338,7 @@ func (t *Translator) ExpandArgumentExpressionList(ex *cc.ArgumentExpressionList)
 	}
 }
 
-func (cv *constantValue) Expand() []byte {
+func (cv *constantValue) Expand() Expression {
 	switch cv.Case {
 	case 0: // CHARCONST
 		return cv.Token.S()
@@ -341,36 +357,31 @@ func (cv *constantValue) Expand() []byte {
 	}
 }
 
-func (op *assignmentOperator) Expand() []byte {
+func (op *assignmentOperator) Expand() Expression {
 	switch op.Case {
 	case 0: // "="
-		return op.Token.S()
-	case 1: // "*="
-		return op.Token.S()
-	case 2: // "/="
-		return op.Token.S()
-	case 3: // "%="
-		return op.Token.S()
-	case 4: // "+="
-		return op.Token.S()
-	case 5: // "-="
-		return op.Token.S()
-	case 6: // "<<="
-		return op.Token.S()
-	case 7: // ">>="
-		return op.Token.S()
-	case 8: // "&="
-		return op.Token.S()
-	case 9: // "^="
-		return op.Token.S()
-	case 10: // "|="
-		return op.Token.S()
+		return []byte{'='}
 	default:
+		unmanagedCaseWarn(op.Case, op.Token.Pos())
 		return nil
 	}
 }
 
-func (op *unaryOperator) Expand() []byte {
-	// no caveats -> return it as-is
-	return op.Token.S()
+func (op *unaryOperator) Expand() Expression {
+	switch op.Case {
+	case 0: // '&'
+		return []byte{'&'}
+	case 1: // '*'
+		return []byte{'*'}
+	case 2: // '+'
+		return []byte{'+'}
+	case 3: // '-'
+		return []byte{'-'}
+	case 4: // '~'
+		return []byte{'~'}
+	case 5: // '!'
+		return []byte{'!'}
+	default:
+		return nil
+	}
 }

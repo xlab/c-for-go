@@ -1,36 +1,12 @@
 package translator
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/cznic/c/internal/cc"
 	"github.com/cznic/c/internal/xc"
 )
-
-type Value interface{}
-
-func (t *Translator) TypeOf(ex *cc.AssignmentExpression) (GoTypeSpec, error) {
-	switch x := t.EvalAssignmentExpression(ex).(type) {
-	case int32:
-		return Int32Spec, nil
-	case int64:
-		return Int64Spec, nil
-	case uint32:
-		return Uint32Spec, nil
-	case uint64:
-		return Uint64Spec, nil
-	case float32:
-		return Float32Spec, nil
-	case float64:
-		return Float64Spec, nil
-	case string:
-		return StringSpec, nil
-	default:
-		return GoTypeSpec{}, errors.New(fmt.Sprintf("cannot resolve type %T", x))
-	}
-}
 
 func (t *Translator) EvalAssignmentExpression(ex *cc.AssignmentExpression) Value {
 	switch ex.Case {

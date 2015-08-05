@@ -44,6 +44,6 @@ func TestLearn(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := tl.Learn(unit, macros); err != nil {
-		// t.Fatal(err)
+		t.Fatal(err)
 	}
 }

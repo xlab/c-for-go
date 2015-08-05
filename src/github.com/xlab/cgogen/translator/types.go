@@ -16,6 +16,7 @@ const (
 	TypeDef CTypeKind = iota
 	StructDef
 	FunctionDef
+	EnumDef
 )
 
 type CType interface {
@@ -31,7 +32,7 @@ type CDecl struct {
 	Spec       CType
 	Name       string
 	Value      Value
-	Expression []byte
+	Expression Expression
 	Arrays     []ArraySizeSpec
 	Pos        token.Pos
 }
@@ -78,6 +79,10 @@ func (c CFunctionSpec) Kind() CTypeKind {
 	return FunctionDef
 }
 
+func (c CFunctionSpec) Copy() CType {
+	return &c
+}
+
 func (c CFunctionSpec) String() string {
 	var params []string
 	for _, param := range c.ParamList {
@@ -86,8 +91,107 @@ func (c CFunctionSpec) String() string {
 	return fmt.Sprintf("%s (%s)", c.Returns, strings.Join(params, ", "))
 }
 
-func (c CFunctionSpec) Copy() CType {
+type CEnumSpec struct {
+	Tag         string
+	Enumerators []CDecl
+	Pointers    uint8
+	Type        CTypeSpec
+}
+
+func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
+	var (
+		uint32Spec = CTypeSpec{Base: "int", Unsigned: true}
+		int32Spec  = CTypeSpec{Base: "int"}
+		uint64Spec = CTypeSpec{Base: "long", Unsigned: true}
+		int64Spec  = CTypeSpec{Base: "long"}
+	)
+	switch c.Type {
+	case uint32Spec:
+		switch v := v.(type) {
+		case int32:
+			if v < 0 {
+				c.Type = int32Spec
+			}
+		case uint64:
+			c.Type = uint64Spec
+		case int64:
+			if v < 0 {
+				c.Type = int64Spec
+			} else {
+				c.Type = uint64Spec
+			}
+		}
+	case int32Spec:
+		switch v := v.(type) {
+		case uint64:
+			c.Type = uint64Spec
+		case int64:
+			if v < 0 {
+				c.Type = int64Spec
+			} else {
+				c.Type = uint64Spec
+			}
+		}
+	case uint64Spec:
+		switch v := v.(type) {
+		case int64:
+			if v < 0 {
+				c.Type = int64Spec
+			}
+		}
+	default:
+		switch v := v.(type) {
+		case uint32:
+			c.Type = uint32Spec
+		case int32:
+			if v < 0 {
+				c.Type = int32Spec
+			} else {
+				c.Type = uint32Spec
+			}
+		case uint64:
+			c.Type = uint64Spec
+		case int64:
+			if v < 0 {
+				c.Type = int64Spec
+			} else {
+				c.Type = uint64Spec
+			}
+		}
+	}
+	return &c.Type
+}
+
+func (c *CEnumSpec) SetPointers(n uint8) {
+	c.Pointers = n
+}
+
+func (c CEnumSpec) Kind() CTypeKind {
+	return EnumDef
+}
+
+func (c CEnumSpec) Copy() CType {
 	return &c
+}
+
+func (ces CEnumSpec) String() string {
+	var members []string
+	for _, m := range ces.Enumerators {
+		members = append(members, m.String())
+	}
+	membersColumn := strings.Join(members, ", ")
+
+	str := "enum"
+	if len(ces.Tag) > 0 {
+		str = fmt.Sprintf("%s %s", str, ces.Tag)
+	}
+	if len(members) > 0 {
+		str = fmt.Sprintf("%s {%s}", str, membersColumn)
+	}
+	if ces.Pointers > 0 {
+		str += strings.Repeat("*", int(ces.Pointers))
+	}
+	return str
 }
 
 type CStructSpec struct {
@@ -103,6 +207,10 @@ func (c *CStructSpec) SetPointers(n uint8) {
 
 func (c CStructSpec) Kind() CTypeKind {
 	return StructDef
+}
+
+func (c CStructSpec) Copy() CType {
+	return &c
 }
 
 func (css CStructSpec) String() string {
@@ -126,10 +234,6 @@ func (css CStructSpec) String() string {
 		str += strings.Repeat("*", int(css.Pointers))
 	}
 	return str
-}
-
-func (c CStructSpec) Copy() CType {
-	return &c
 }
 
 type CTypeSpec struct {
@@ -371,6 +475,27 @@ var builtinGoTypeMap = GoTypeMap{
 	Float64Spec.String():     Float64Spec,
 	PointerSpec.String():     PointerSpec,
 	UintptrSpec.String():     UintptrSpec,
+}
+
+func CTypeOf(v interface{}) (*CTypeSpec, error) {
+	switch x := v.(type) {
+	case int32:
+		return &CTypeSpec{Base: "int"}, nil
+	case int64:
+		return &CTypeSpec{Base: "long"}, nil
+	case uint32:
+		return &CTypeSpec{Base: "int", Unsigned: true}, nil
+	case uint64:
+		return &CTypeSpec{Base: "long", Unsigned: true}, nil
+	case float32:
+		return &CTypeSpec{Base: "float"}, nil
+	case float64:
+		return &CTypeSpec{Base: "double"}, nil
+	case string:
+		return &CTypeSpec{Base: "char", Pointers: 1, Const: true}, nil
+	default:
+		return nil, errors.New(fmt.Sprintf("cannot resolve type %T", x))
+	}
 }
 
 var builtinCTypeMap = CTypeMap{
