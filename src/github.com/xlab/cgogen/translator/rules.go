@@ -32,10 +32,12 @@ const (
 type RuleTarget string
 
 const (
-	TargetGlobal   RuleTarget = "global"
-	TargetType                = "type"
-	TargetConst               = "const"
-	TargetFunction            = "function"
+	TargetGlobal      RuleTarget = "global"
+	TargetDefine                 = "define"
+	TargetEnum                   = "enum"
+	TargetDeclaration            = "declaration"
+	TargetStruct                 = "struct"
+	TargetFunction               = "function"
 )
 
 type ConstRule string

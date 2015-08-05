@@ -116,7 +116,7 @@ func (t *Translator) Printf(format string, args ...interface{}) {
 func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	for _, id := range macros {
 		name := xc.Dict.S(id)
-		if !t.isAcceptableName(TargetConst, name) {
+		if !t.isAcceptableName(TargetDefine, name) {
 			continue
 		}
 		pos, tokList, uTokList, ok := cc.ExpandDefine(id)
@@ -161,7 +161,7 @@ func (t *Translator) Report() {
 	for _, line := range t.defines {
 		t.Printf("\n// %s\n//   > define %s %v\n%s = %s",
 			srcLocation(line.Pos), line.Name, line.Src,
-			t.TransformName(TargetConst, string(line.Name)), line.Value)
+			t.TransformName(TargetDefine, string(line.Name)), line.Value)
 	}
 	t.Printf("\n)\n\n")
 }
