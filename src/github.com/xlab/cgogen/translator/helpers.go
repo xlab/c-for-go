@@ -27,9 +27,11 @@ var (
 	}, spaceStr)
 )
 
-type Evaler interface {
-	Eval() []byte
-}
+type bytesSlice [][]byte
+
+func (s bytesSlice) Len() int           { return len(s) }
+func (s bytesSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s bytesSlice) Less(i, j int) bool { return bytes.Compare(s[i], s[j]) < 0 }
 
 func bytesJoin(buf1, buf2 []byte, sep string) []byte {
 	if len(buf1) == 0 {

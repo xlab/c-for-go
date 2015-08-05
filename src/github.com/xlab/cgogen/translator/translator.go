@@ -16,9 +16,6 @@ import (
 	"github.com/cznic/c/internal/xc"
 )
 
-type Value interface{}
-type Expression []byte
-
 type Translator struct {
 	out         io.Writer
 	rules       Rules

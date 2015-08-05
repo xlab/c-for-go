@@ -34,8 +34,6 @@ enum securityLevels {
 // 	first, second
 // } se_t;
 
-
-
 // #define VPX_ADDRESS_SIZE 4
 
 // void fun(int a, void ( *holop ) (void *agent, int32_t call_idx));
