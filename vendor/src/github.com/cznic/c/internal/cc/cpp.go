@@ -566,12 +566,16 @@ func stringify(toks []xc.Token, paste bool) xc.Token {
 type evalCtx struct {
 	ch chan []xc.Token //
 	lx *lexer          // For constant expression parse and eval
+	// for #pragma once
+	onceMap map[string]struct{}
 }
 
 func newEvalCtx(lx *lexer, ch chan []xc.Token) *evalCtx {
 	return &evalCtx{
 		lx: lx,
 		ch: ch,
+		//
+		onceMap: make(map[string]struct{}),
 	}
 }
 
@@ -710,6 +714,10 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 			dir := filepath.Dir(fileset.Position(c.Token.Pos()).Filename)
 			for _, v := range includePaths {
 				fn := filepath.Join(dir, v, s)
+				if _, ok := ctx.onceMap[fn]; ok {
+					// skip this file
+					return
+				}
 				_, err := os.Stat(fn)
 				if err != nil {
 					if os.IsNotExist(err) {
@@ -736,6 +744,10 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 
 			for _, v := range sysIncludePaths {
 				fn := filepath.Join(v, s)
+				if _, ok := ctx.onceMap[fn]; ok {
+					// skip this file
+					return
+				}
 				_, err := os.Stat(fn)
 				if err != nil {
 					if os.IsNotExist(err) {
@@ -758,7 +770,14 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 		}
 	case 7: //TODO PPLINE PpTokenList
 	case 8: // PPPRAGMA PpTokenListOpt
-		//s := stringify(db.tokens(c.PpTokenListOpt), false)
+		var once bool
+		if toks := db.tokens(c.PpTokenListOpt); len(toks) > 0 {
+			once = bytes.Equal(toks[0].S(), []byte("once"))
+		}
+		if once {
+			name := fileset.Position(c.Token.Pos()).Filename
+			ctx.onceMap[name] = struct{}{}
+		}
 	case 9: // PPUNDEF IDENTIFIER '\n'
 		cppUndef(c.Token, c.Token2)
 	case 10: //TODO PPASSERT PpTokenList
