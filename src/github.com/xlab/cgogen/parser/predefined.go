@@ -15,10 +15,9 @@ var predefinedBase = `
 #define __STDC__ 1
 #define __signed signed
 #define __GNUC__ 0
-#undef __asm__
 #define __asm__(x)
-#undef __inline
 #define __inline
+#define __attribute__(x)
 `
 
 var predefines = map[TargetArch]string{
