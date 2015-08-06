@@ -15,6 +15,9 @@ type (
 )
 
 func (t *Translator) ExpandAssignmentExpression(ex *cc.AssignmentExpression) Expression {
+	if ex == nil {
+		return nil
+	}
 	switch ex.Case {
 	case 0: // ConditionalExpression
 		return t.ExpandConditionalExpression(ex.ConditionalExpression)
@@ -283,7 +286,7 @@ func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) Expressio
 	switch ex.Case {
 	case 0: // IDENTIFIER
 		name := ex.Token.S()
-		switch t.constRule {
+		switch t.constRules[ConstDeclaration] {
 		case ConstExpandFull:
 			if expr, ok := t.exprMap[string(name)]; ok {
 				return bytesWrap(expr, "(", ")")

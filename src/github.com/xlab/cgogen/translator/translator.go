@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -20,7 +19,7 @@ type Translator struct {
 	out         io.Writer
 	rules       Rules
 	compiledRxs map[RuleAction]RxMap
-	constRule   ConstRule
+	constRules  ConstRules
 
 	valueMap     map[string]Value
 	exprMap      map[string]Expression
@@ -39,9 +38,10 @@ type Rx struct {
 	Transform RuleTransform
 }
 
-func New(rules Rules, typemap CTypeMap, out io.Writer) (*Translator, error) {
+func New(rules Rules, constRules ConstRules, typemap CTypeMap, out io.Writer) (*Translator, error) {
 	t := &Translator{
 		rules:       rules,
+		constRules:  constRules,
 		out:         out,
 		compiledRxs: make(map[RuleAction]RxMap),
 		valueMap:    make(map[string]Value),
@@ -116,7 +116,7 @@ func (t *Translator) Printf(format string, args ...interface{}) {
 func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	for _, id := range macros {
 		name := xc.Dict.S(id)
-		if !t.isAcceptableName(TargetDefine, name) {
+		if !t.IsAcceptableName(TargetDefine, name) {
 			continue
 		}
 		pos, tokList, uTokList, ok := cc.ExpandDefine(id)
@@ -136,28 +136,30 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	}
 
 	sort.Sort(defineLines(t.defines))
-	t.walkTranslationUnit(unit)
-	log.Println(unit)
+	for unit != nil {
+		unit = t.walkTranslationUnit(unit)
+	}
+	// log.Println(unit)
 	return xc.Compilation.Errors(true)
 }
 
 func (t *Translator) Report() {
-	log.Println("[!] TAGS:")
+	t.Printf("[!] TAGS:\n")
 	for tag, decl := range t.tagMap {
-		log.Println(tag, "refers to", decl)
+		t.Printf("%s refers to %v\n", tag, decl)
 	}
 
-	log.Println("[!] TYPEDEFs:")
+	t.Printf("\n\n\n[!] TYPEDEFs:\n")
 	for _, decl := range t.typedefs {
-		log.Println(decl)
+		t.Printf("%v\n", decl)
 	}
 
-	log.Println("[!] DECLARATIONS:")
+	t.Printf("\n\n\n[!] DECLARATIONS:\n")
 	for _, decl := range t.declarations {
-		log.Println(decl)
+		t.Printf("%v\n", decl)
 	}
 
-	t.Printf("[!] const (")
+	t.Printf("\n\n\n[!] const (")
 	for _, line := range t.defines {
 		t.Printf("\n// %s\n//   > define %s %v\n%s = %s",
 			srcLocation(line.Pos), line.Name, line.Src,
@@ -210,14 +212,10 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 	return name
 }
 
-func (t *Translator) isAcceptableName(target RuleTarget, name []byte) bool {
+func (t *Translator) IsAcceptableName(target RuleTarget, name []byte) bool {
 	if rxs, ok := t.compiledRxs[ActionIgnore][target]; ok {
 		for _, rx := range rxs {
 			if rx.From.Match(name) {
-				if target != TargetGlobal {
-					// fallback to global rules
-					return t.isAcceptableName(TargetGlobal, name)
-				}
 				return false
 			}
 		}
@@ -231,7 +229,7 @@ func (t *Translator) isAcceptableName(target RuleTarget, name []byte) bool {
 	}
 	if target != TargetGlobal {
 		// fallback to global rules
-		return t.isAcceptableName(TargetGlobal, name)
+		return t.IsAcceptableName(TargetGlobal, name)
 	}
 	return false
 }

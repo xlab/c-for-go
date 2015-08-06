@@ -1,12 +1,14 @@
 package translator
 
-import "github.com/cznic/c/internal/cc"
+import (
+	"fmt"
 
-func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
+	"github.com/cznic/c/internal/cc"
+)
+
+func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) (next *cc.TranslationUnit) {
 	t.walkExternalDeclaration(unit.ExternalDeclaration)
-	if unit.TranslationUnit != nil {
-		t.walkTranslationUnit(unit.TranslationUnit)
-	}
+	return unit.TranslationUnit
 }
 
 func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
@@ -95,7 +97,7 @@ func (t *Translator) walkParameterList(list *cc.ParameterList) (next *cc.Paramet
 	switch declr.Case {
 	case 0: // DeclarationSpecifiers Declarator
 		decl = &CDecl{Spec: &CTypeSpec{}}
-		nextDeclr := t.walkDeclarationSpecifiers(declr.DeclarationSpecifiers, decl)
+		nextDeclr := declr.DeclarationSpecifiers
 		for nextDeclr != nil {
 			nextDeclr = t.walkDeclarationSpecifiers(nextDeclr, decl)
 		}
@@ -106,7 +108,14 @@ func (t *Translator) walkParameterList(list *cc.ParameterList) (next *cc.Paramet
 			nextDeclarator = t.walkDirectDeclarator(nextDeclarator, decl)
 		}
 	case 1: // DeclarationSpecifiers AbstractDeclaratorOpt
-		unmanagedCaseWarn(declr.Case, list.Token.Pos())
+		decl = &CDecl{Spec: &CTypeSpec{}}
+		nextDeclr := declr.DeclarationSpecifiers
+		for nextDeclr != nil {
+			nextDeclr = t.walkDeclarationSpecifiers(nextDeclr, decl)
+		}
+		if declr.AbstractDeclaratorOpt != nil {
+			walkPointers(declr.AbstractDeclaratorOpt.AbstractDeclarator.PointerOpt, decl)
+		}
 	}
 	return
 }
@@ -123,7 +132,9 @@ func (t *Translator) walkDirectDeclarator2(declr *cc.DirectDeclarator2, decl *CD
 			}
 		}
 	case 1: // IdentifierListOpt ')'
-		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
+		if declr.IdentifierListOpt != nil {
+			unmanagedCaseWarn(declr.Case, declr.Token.Pos())
+		}
 	}
 }
 
@@ -222,6 +233,7 @@ func (t *Translator) walkStructDeclarator(declr *cc.StructDeclarator, decl *CDec
 			nextDeclr = t.walkDirectDeclarator(nextDeclr, decl)
 		}
 	case 1: // DeclaratorOpt ':' ConstantExpression
+		// TODO: bitfields
 		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
 	}
 }
@@ -236,12 +248,14 @@ func (t *Translator) walkStructDeclaration(declr *cc.StructDeclaration) []CDecl 
 	// prepare to collect declarations
 	var declarations []CDecl
 
-	nextDeclaratorList := declr.StructDeclaratorListOpt.StructDeclaratorList
-	for nextDeclaratorList != nil {
-		decl := &CDecl{Spec: refDecl.Spec.Copy()}
-		t.walkStructDeclarator(nextDeclaratorList.StructDeclarator, decl)
-		nextDeclaratorList = nextDeclaratorList.StructDeclaratorList
-		declarations = append(declarations, *decl)
+	if declr.StructDeclaratorListOpt != nil {
+		nextDeclaratorList := declr.StructDeclaratorListOpt.StructDeclaratorList
+		for nextDeclaratorList != nil {
+			decl := CDecl{Spec: refDecl.Spec.Copy()}
+			t.walkStructDeclarator(nextDeclaratorList.StructDeclarator, &decl)
+			nextDeclaratorList = nextDeclaratorList.StructDeclaratorList
+			declarations = append(declarations, decl)
+		}
 	}
 
 	return declarations
@@ -306,11 +320,13 @@ func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
 					// get previous enumerator from the list
 					prevEnum := enumSpec.Enumerators[enumIdx-1]
 					enumDecl.Value = incVal(prevEnum.Value)
-					switch t.constRule {
+					switch t.constRules[ConstEnum] {
 					case ConstExpandFull:
 						enumDecl.Expression = append(prevEnum.Expression, '+', '1')
-					default:
+					case ConstExpand:
 						enumDecl.Expression = []byte(prevEnum.Name + "+1")
+					default:
+						enumDecl.Expression = []byte(fmt.Sprintf("%d", enumDecl.Value))
 					}
 					enumDecl.Spec = prevEnum.Spec.Copy()
 				} else {

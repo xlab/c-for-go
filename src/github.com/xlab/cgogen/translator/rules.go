@@ -1,6 +1,7 @@
 package translator
 
 type Rules map[RuleTarget][]RuleSpec
+type ConstRules map[ConstScope]ConstRule
 
 type RuleSpec struct {
 	From, To  string
@@ -34,10 +35,9 @@ type RuleTarget string
 const (
 	TargetGlobal      RuleTarget = "global"
 	TargetDefine                 = "define"
-	TargetEnum                   = "enum"
+	TargetTag                    = "tag"
+	TargetTypedef                = "typedef"
 	TargetDeclaration            = "declaration"
-	TargetStruct                 = "struct"
-	TargetFunction               = "function"
 )
 
 type ConstRule string
@@ -48,4 +48,11 @@ const (
 	ConstExpandFull           = "expand_full"
 	ConstEval                 = "eval"
 	ConstEvalFull             = "eval_full"
+)
+
+type ConstScope string
+
+const (
+	ConstEnum        = "enum"
+	ConstDeclaration = "declaration"
 )

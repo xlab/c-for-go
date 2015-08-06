@@ -14,8 +14,8 @@ func init() {
 }
 
 func TestLearn(t *testing.T) {
-	pCfg := parser.NewConfig("test/translator_test.h")
-	pCfg.SysIncludePaths = []string{"/usr/include"}
+	pCfg := parser.NewConfig("/Users/xlab/Documents/dev/ctru/ctrulib/libctru/include/3ds.h")
+	pCfg.SysIncludePaths = []string{"/Users/xlab/Documents/dev/ctru/ctrulib/libctru/include", "/usr/include"}
 	p, err := parser.New(pCfg)
 	if err != nil {
 		t.Fatal(err)
@@ -32,6 +32,7 @@ func TestLearn(t *testing.T) {
 			RuleSpec{Transform: TransformLower},
 		},
 		TargetDefine: {
+			RuleSpec{From: "_INLINE$", Action: ActionIgnore},
 			RuleSpec{From: "vpx_", To: "_", Action: ActionReplace},
 			RuleSpec{From: "_abi", Transform: TransformUpper},
 			RuleSpec{From: "_img", To: "_image", Action: ActionReplace},
@@ -39,7 +40,11 @@ func TestLearn(t *testing.T) {
 			RuleSpec{From: "_([^_]+)", To: "$1", Action: ActionReplace, Transform: TransformTitle},
 		},
 	}
-	tl, err := New(rules, nil, buf)
+	constRules := ConstRules{
+		ConstEnum:        ConstEvalFull,
+		ConstDeclaration: ConstExpand,
+	}
+	tl, err := New(rules, constRules, nil, buf)
 	if err != nil {
 		t.Fatal(err)
 	}
