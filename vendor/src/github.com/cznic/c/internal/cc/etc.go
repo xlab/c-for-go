@@ -690,6 +690,7 @@ func newBitField(t Type, bits int) bitField {
 	st := Int
 	if t != nil {
 		switch t.Kind() {
+		case IntType:
 		case UIntType:
 			st = UInt
 		case NamedType:
