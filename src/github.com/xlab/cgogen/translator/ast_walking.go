@@ -233,8 +233,20 @@ func (t *Translator) walkStructDeclarator(declr *cc.StructDeclarator, decl *CDec
 			nextDeclr = t.walkDirectDeclarator(nextDeclr, decl)
 		}
 	case 1: // DeclaratorOpt ':' ConstantExpression
-		// TODO: bitfields
-		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		// C should not have bitfields. Don't use them. They are poorly
+		// specified, non-portable, inefficient, unsafe, and have poor semantics.
+		// They have no good properties to compensate.
+		//
+		// -Rob Pike
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		if declr.DeclaratorOpt != nil {
+			walkPointers(declr.DeclaratorOpt.Declarator.PointerOpt, decl)
+			nextDeclr := declr.DeclaratorOpt.Declarator.DirectDeclarator
+			for nextDeclr != nil {
+				nextDeclr = t.walkDirectDeclarator(nextDeclr, decl)
+			}
+		}
 	}
 }
 

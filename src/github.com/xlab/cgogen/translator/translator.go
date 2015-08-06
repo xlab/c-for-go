@@ -139,7 +139,6 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
 	for unit != nil {
 		unit = t.walkTranslationUnit(unit)
 	}
-	// log.Println(unit)
 	return xc.Compilation.Errors(true)
 }
 
