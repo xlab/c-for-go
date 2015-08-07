@@ -33,16 +33,16 @@ import (
 // Warning: this file has been altered by xlab.
 
 type ParseConfig struct {
-	Predefined        string
-	Input             []byte
-	Paths             []string
-	SysIncludePaths   []string
-	IncludePaths      []string
-	EnableWebIncludes bool
-	WebIncludePrefix  string
-	YyDebugLevel      int
-	OnPreprocessLine  func([]xc.Token)
-	SizeModel         Model
+	Predefined         string
+	Input              []byte
+	Paths              []string
+	SysIncludePaths    []string
+	IncludePaths       []string
+	WebIncludesEnabled bool
+	WebIncludePrefix   string
+	YyDebugLevel       int
+	OnPreprocessLine   func([]xc.Token)
+	SizeModel          Model
 }
 
 func CheckParseConfig(cfg *ParseConfig) error {
@@ -112,7 +112,7 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 	includePaths = cfg.IncludePaths
 	sysIncludePaths = cfg.SysIncludePaths
 	webIncludePrefix = cfg.WebIncludePrefix
-	enableWebIncludes = cfg.EnableWebIncludes
+	webIncludesEnabled = cfg.WebIncludesEnabled
 	yyDebug = cfg.YyDebugLevel
 
 	lx := newTULexer()
@@ -133,7 +133,7 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 				ppFileByPath(xc.Token{}, path).preprocess(ctx)
 			}
 		} else if len(cfg.Input) > 0 {
-			ppFileBySrc(cfg.Input, "<input>").preprocess(ctx)
+			ppFileBySrc(xc.Token{}, cfg.Input, "<input>").preprocess(ctx)
 		}
 	}()
 

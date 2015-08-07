@@ -14,9 +14,11 @@ import (
 	"bytes"
 	"fmt"
 	"go/token"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/cznic/c/internal/xc"
 	"github.com/cznic/golex/lex"
@@ -690,84 +692,124 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 	case 5: // PPHASH_NL
 		// nop
 	case 6: // PPINCLUDE PpTokenList
-		ts := cppExpand(ctx, c.PpTokenList, nil)
-		if len(ts) == 0 {
+		var refTok xc.Token
+		if tokList := cppExpand(ctx, c.PpTokenList, nil); len(tokList) == 0 {
 			compilation.Err(c.Token.Pos(), "invalid #include")
 			return
+		} else {
+			refTok = tokList[0]
 		}
 
-		t := ts[0]
-		s0 := dict.S(t.Val)
-		if len(s0) == 0 {
-			compilation.Err(t.Pos(), "invalid #include: %s", s0)
+		var refValue string
+		if refValue = string(dict.S(refTok.Val)); len(refValue) == 0 {
+			compilation.Err(refTok.Pos(), "invalid #include: %s", refValue)
 			return
 		}
 
-		switch s0[0] {
-		case '"':
-			s := string(s0[1 : len(s0)-1])
-			if len(s) == 0 {
-				compilation.Err(t.Pos(), "invalid #include: %s", s0)
-				return
-			}
-
-			dir := filepath.Dir(fileset.Position(c.Token.Pos()).Filename)
-			for _, v := range includePaths {
-				fn := filepath.Join(dir, v, s)
-				if _, ok := ctx.onceMap[fn]; ok {
-					// skip this file
-					return
-				}
-				_, err := os.Stat(fn)
-				if err != nil {
-					if os.IsNotExist(err) {
-						continue
-					}
-
-					compilation.Err(t.Pos(), err.Error())
-					continue
-				}
-
-				if pf := ppFileByPath(t, fn); pf != nil {
-					pf.preprocess(ctx)
-				}
-				return
-
-			}
-			fallthrough // Look for #include "foo" also as #include <foo>
-		case '<':
-			s := string(s0[1 : len(s0)-1])
-			if len(s) == 0 {
-				compilation.Err(t.Pos(), "invalid #include: %s", s0)
-				return
-			}
-
-			for _, v := range sysIncludePaths {
-				fn := filepath.Join(v, s)
-				if _, ok := ctx.onceMap[fn]; ok {
-					// skip this file
-					return
-				}
-				_, err := os.Stat(fn)
-				if err != nil {
-					if os.IsNotExist(err) {
-						continue
-					}
-
-					compilation.Err(t.Pos(), err.Error())
-					continue
-				}
-
-				if pf := ppFileByPath(t, fn); pf != nil {
-					pf.preprocess(ctx)
-				}
-				return
-
-			}
-			compilation.Err(t.Pos(), "include file not found: %s", s0)
+		var isSys bool
+		switch {
+		case strings.HasPrefix(refValue, `"`) && strings.HasSuffix(refValue, `"`):
+		case strings.HasPrefix(refValue, `<`) && strings.HasSuffix(refValue, `>`):
+			isSys = true
 		default:
-			compilation.Err(t.Pos(), "invalid #include")
+			compilation.Err(refTok.Pos(), "invalid #include: %s", refValue)
+			return
 		}
+
+		refPath := strings.Trim(refValue, `"<>`)
+		if likelyIsURL(refPath) {
+			if !webIncludesEnabled {
+				compilation.Err(refTok.Pos(), "forbidden #include: %s", refPath)
+				return
+			}
+			u, err := url.Parse(refPath)
+			if err != nil {
+				compilation.Err(refTok.Pos(), "malformed #include: %s", refPath)
+				return
+			}
+			if ppFile := ppFileByURL(refTok, u); ppFile != nil {
+				ppFile.preprocess(ctx)
+			}
+			return
+		}
+
+		searchSys := func(refTok xc.Token, refPath string) (found bool) {
+			for _, sysPath := range sysIncludePaths {
+				fn := filepath.Join(sysPath, refPath)
+				if _, ok := ctx.onceMap[fn]; ok {
+					// skip this file
+					return true
+				}
+				if _, err := os.Stat(fn); err != nil && !os.IsNotExist(err) {
+					compilation.Err(refTok.Pos(), err.Error())
+					return true
+				} else if os.IsNotExist(err) {
+					continue
+				}
+				if ppFile := ppFileByPath(refTok, fn); ppFile != nil {
+					ppFile.preprocess(ctx)
+				}
+				return true
+			}
+			// try to fetch this file from web
+			if webIncludesEnabled && len(webIncludePrefix) > 0 {
+				u, _ := url.Parse(webIncludePrefix)
+				u.Path = filepath.Join(u.Path, refPath)
+				if ppFile := ppFileByURL(refTok, u); ppFile != nil {
+					ppFile.preprocess(ctx)
+				}
+				return true
+			}
+			return false
+		}
+
+		if isSys {
+			if searchSys(refTok, refPath) {
+				return
+			}
+			compilation.Err(refTok.Pos(), "include file not found: %s", refPath)
+			return
+		}
+
+		srcDir := filepath.Dir(fileset.Position(c.Token.Pos()).Filename)
+		fn := filepath.Join(srcDir, refPath)
+		if _, ok := ctx.onceMap[fn]; ok {
+			// skip this file
+			return
+		}
+		if _, err := os.Stat(fn); err != nil && !os.IsNotExist(err) {
+			compilation.Err(refTok.Pos(), err.Error())
+			return
+		} else if err == nil {
+			if ppFile := ppFileByPath(refTok, fn); ppFile != nil {
+				ppFile.preprocess(ctx)
+			}
+			return
+		}
+
+		for _, relPath := range includePaths {
+			fn := filepath.Join(srcDir, relPath, refPath)
+			if _, ok := ctx.onceMap[fn]; ok {
+				// skip this file
+				return
+			}
+			if _, err := os.Stat(fn); err != nil && !os.IsNotExist(err) {
+				compilation.Err(refTok.Pos(), err.Error())
+				return
+			} else if os.IsNotExist(err) {
+				continue
+			}
+			if ppFile := ppFileByPath(refTok, fn); ppFile != nil {
+				ppFile.preprocess(ctx)
+			}
+			return
+		}
+		// try to search in sys include paths
+		if searchSys(refTok, refPath) {
+			return
+		}
+		compilation.Err(refTok.Pos(), "include file not found: %s", refPath)
+
 	case 7: //TODO PPLINE PpTokenList
 	case 8: // PPPRAGMA PpTokenListOpt
 		var once bool

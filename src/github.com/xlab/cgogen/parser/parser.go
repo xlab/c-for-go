@@ -11,13 +11,13 @@ import (
 )
 
 type Config struct {
-	Arch              TargetArch
-	CustomDefinesPath string
-	EnableWebIncludes bool
-	WebIncludePrefix  string
-	IncludePaths      []string
-	SysIncludePaths   []string
-	TargetPaths       []string
+	Arch               TargetArch
+	CustomDefinesPath  string
+	WebIncludesEnabled bool
+	WebIncludePrefix   string
+	IncludePaths       []string
+	SysIncludePaths    []string
+	TargetPaths        []string
 }
 
 func NewConfig(paths ...string) *Config {
@@ -69,9 +69,6 @@ func New(cfg *Config) (*Parser, error) {
 	} else {
 		p.predefined = def
 	}
-	if len(cfg.IncludePaths) == 0 {
-		cfg.IncludePaths = []string{"."}
-	}
 	if len(cfg.CustomDefinesPath) > 0 {
 		if buf, err := ioutil.ReadFile(cfg.CustomDefinesPath); err != nil {
 			return nil, errors.New("parser: custom defines file provided but can't be read")
@@ -89,12 +86,12 @@ func New(cfg *Config) (*Parser, error) {
 
 func (p *Parser) ccParserConfig() (*cc.ParseConfig, error) {
 	ccCfg := &cc.ParseConfig{
-		Predefined:        p.predefined,
-		Paths:             p.cfg.TargetPaths,
-		SysIncludePaths:   p.cfg.SysIncludePaths,
-		IncludePaths:      p.cfg.IncludePaths,
-		EnableWebIncludes: p.cfg.EnableWebIncludes,
-		WebIncludePrefix:  p.cfg.WebIncludePrefix,
+		Predefined:         p.predefined,
+		Paths:              p.cfg.TargetPaths,
+		SysIncludePaths:    p.cfg.SysIncludePaths,
+		IncludePaths:       p.cfg.IncludePaths,
+		WebIncludesEnabled: p.cfg.WebIncludesEnabled,
+		WebIncludePrefix:   p.cfg.WebIncludePrefix,
 	}
 	if err := cc.CheckParseConfig(ccCfg); err != nil {
 		return nil, err

@@ -44,8 +44,8 @@ var (
 	printHooks      = strutil.PrettyPrintHooks{}
 	sysIncludePaths []string
 
-	webIncludePrefix  string
-	enableWebIncludes bool
+	webIncludePrefix   string
+	webIncludesEnabled bool
 )
 
 func init() {

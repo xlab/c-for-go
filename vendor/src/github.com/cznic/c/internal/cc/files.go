@@ -7,6 +7,9 @@ package cc
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -63,9 +66,12 @@ func ppFileByPath(refTok xc.Token, path string) *PreprocessingFile {
 	}
 }
 
-func ppFileBySrc(src []byte, name string) *PreprocessingFile {
-	refTok := xc.Token{}
+func ppFileBySrc(refTok xc.Token, src []byte, name string) *PreprocessingFile {
 	once := compilation.Once(name, func() interface{} {
+		if len(src) == 0 {
+			compilation.ErrTok(refTok, "unexpeceted EOF: empty source")
+			return nil
+		}
 		fileToken := fileset.AddFile(name, -1, len(src))
 		scanner := newUtf8src(bytes.NewReader(src), fileToken)
 		lx := newLexer(scanner, false)
@@ -83,6 +89,21 @@ func ppFileBySrc(src []byte, name string) *PreprocessingFile {
 		compilation.ErrTok(refTok, "parsing error: %s", name)
 		return nil
 	}
+}
+
+func ppFileByURL(refTok xc.Token, u *url.URL) *PreprocessingFile {
+	resp, err := http.Get(u.String())
+	if err != nil {
+		compilation.ErrTok(refTok, err.Error())
+		return nil
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		compilation.ErrTok(refTok, err.Error())
+		return nil
+	}
+	return ppFileBySrc(refTok, body, u.String())
 }
 
 func parsePreprocessingFile(lx *lexer) *PreprocessingFile {
