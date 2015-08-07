@@ -13,7 +13,7 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unit, _, err := p.Parse()
+	unit, err := p.Parse()
 	if err != nil {
 		t.Fatal(err)
 	}

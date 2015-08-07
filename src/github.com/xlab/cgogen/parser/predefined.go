@@ -1,7 +1,5 @@
 package parser
 
-import "github.com/cznic/c/internal/cc"
-
 type TargetArch int
 
 const (
@@ -44,43 +42,4 @@ var archs = map[string]TargetArch{
 	"mips64p32":   Arch64,
 	"mips64p32le": Arch64,
 	"sparc64":     Arch64,
-}
-
-var models = map[TargetArch]cc.Model{
-	Arch32: cc.Model{
-		cc.Ptr:       {Size: 4, Align: 4, More: "__TODO_PTR"},
-		cc.Void:      {Size: 0, Align: 1, More: "__TODO_VOID"},
-		cc.Char:      {Size: 1, Align: 1, More: "int8"},
-		cc.UChar:     {Size: 1, Align: 1, More: "byte"},
-		cc.Short:     {Size: 2, Align: 2, More: "int16"},
-		cc.UShort:    {Size: 2, Align: 2, More: "uint16"},
-		cc.Int:       {Size: 4, Align: 4, More: "int32"},
-		cc.UInt:      {Size: 4, Align: 4, More: "uint32"},
-		cc.Long:      {Size: 4, Align: 4, More: "int32"},
-		cc.ULong:     {Size: 4, Align: 4, More: "uint32"},
-		cc.LongLong:  {Size: 8, Align: 8, More: "int64"},
-		cc.ULongLong: {Size: 8, Align: 8, More: "uint64"},
-		cc.Float:     {Size: 4, Align: 4, More: "float32"},
-		cc.Double:    {Size: 8, Align: 8, More: "float64"},
-		cc.Bool:      {Size: 1, Align: 1, More: "bool"},
-		cc.Complex:   {Size: 8, Align: 8, More: "complex128"},
-	},
-	Arch64: cc.Model{
-		cc.Ptr:       {Size: 8, Align: 8, More: "__TODO_PTR"},
-		cc.Void:      {Size: 0, Align: 1, More: "__TODO_VOID"},
-		cc.Char:      {Size: 1, Align: 1, More: "int8"},
-		cc.UChar:     {Size: 1, Align: 1, More: "byte"},
-		cc.Short:     {Size: 2, Align: 2, More: "int16"},
-		cc.UShort:    {Size: 2, Align: 2, More: "uint16"},
-		cc.Int:       {Size: 4, Align: 4, More: "int32"},
-		cc.UInt:      {Size: 4, Align: 4, More: "uint32"},
-		cc.Long:      {Size: 8, Align: 8, More: "int64"},
-		cc.ULong:     {Size: 8, Align: 8, More: "uint64"},
-		cc.LongLong:  {Size: 8, Align: 8, More: "int64"},
-		cc.ULongLong: {Size: 8, Align: 8, More: "uint64"},
-		cc.Float:     {Size: 4, Align: 4, More: "float32"},
-		cc.Double:    {Size: 8, Align: 8, More: "float64"},
-		cc.Bool:      {Size: 1, Align: 1, More: "bool"},
-		cc.Complex:   {Size: 8, Align: 8, More: "complex128"},
-	},
 }

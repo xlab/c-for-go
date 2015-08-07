@@ -20,7 +20,7 @@ func TestLearn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unit, macros, err := p.Parse()
+	unit, err := p.Parse()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestLearn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := tl.Learn(unit, macros); err != nil {
+	if err := tl.Learn(unit); err != nil {
 		t.Fatal(err)
 	}
 	tl.Report()

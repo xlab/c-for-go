@@ -113,8 +113,8 @@ func (t *Translator) Printf(format string, args ...interface{}) {
 	fmt.Fprintf(t.out, format, args...)
 }
 
-func (t *Translator) Learn(unit *cc.TranslationUnit, macros []int) error {
-	for _, id := range macros {
+func (t *Translator) Learn(unit *cc.TranslationUnit) error {
+	for id := range cc.Macros {
 		name := xc.Dict.S(id)
 		if !t.IsAcceptableName(TargetDefine, name) {
 			continue

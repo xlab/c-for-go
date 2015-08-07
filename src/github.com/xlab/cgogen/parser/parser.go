@@ -11,11 +11,13 @@ import (
 )
 
 type Config struct {
-	Arch            TargetArch
-	DefinesPath     string
-	IncludePaths    []string
-	SysIncludePaths []string
-	TargetPaths     []string
+	Arch              TargetArch
+	CustomDefinesPath string
+	EnableWebIncludes bool
+	WebIncludePrefix  string
+	IncludePaths      []string
+	SysIncludePaths   []string
+	TargetPaths       []string
 }
 
 func NewConfig(paths ...string) *Config {
@@ -37,8 +39,8 @@ func checkConfig(cfg *Config) *Config {
 
 type Parser struct {
 	cfg        *Config
+	ccCfg      *cc.ParseConfig
 	predefined string
-	model      cc.Model
 }
 
 func New(cfg *Config) (*Parser, error) {
@@ -58,15 +60,10 @@ func New(cfg *Config) (*Parser, error) {
 			saneFiles = append(saneFiles, path)
 		}
 		cfg.TargetPaths = saneFiles
-	}
-	if len(cfg.TargetPaths) == 0 {
+	} else {
 		return nil, errors.New("parser: no target paths specified")
 	}
-	if model, ok := models[cfg.Arch]; !ok {
-		return nil, errors.New(fmt.Sprintf("parser: the target model not defined: %v", cfg.Arch))
-	} else {
-		p.model = model
-	}
+
 	if def, ok := predefines[cfg.Arch]; !ok {
 		p.predefined = predefinedBase
 	} else {
@@ -75,26 +72,37 @@ func New(cfg *Config) (*Parser, error) {
 	if len(cfg.IncludePaths) == 0 {
 		cfg.IncludePaths = []string{"."}
 	}
-	if len(cfg.DefinesPath) > 0 {
-		if buf, err := ioutil.ReadFile(cfg.DefinesPath); err != nil {
+	if len(cfg.CustomDefinesPath) > 0 {
+		if buf, err := ioutil.ReadFile(cfg.CustomDefinesPath); err != nil {
 			return nil, errors.New("parser: custom defines file provided but can't be read")
 		} else if len(buf) > 0 {
 			p.predefined = fmt.Sprintf("%s\n// custom defines below\n%s", p.predefined, buf)
 		}
 	}
+	if ccCfg, err := p.ccParserConfig(); err != nil {
+		return nil, err
+	} else {
+		p.ccCfg = ccCfg
+	}
 	return p, nil
 }
 
-func (p *Parser) Parse() (unit *cc.TranslationUnit, macros []int, err error) {
-	unit, err = cc.Parse(p.predefined, p.cfg.TargetPaths, p.model,
-		cc.IncludePaths(p.cfg.IncludePaths),
-		cc.SysIncludePaths(p.cfg.SysIncludePaths))
-	if err != nil {
-		unit = nil
-		return
+func (p *Parser) ccParserConfig() (*cc.ParseConfig, error) {
+	ccCfg := &cc.ParseConfig{
+		Predefined:        p.predefined,
+		Paths:             p.cfg.TargetPaths,
+		SysIncludePaths:   p.cfg.SysIncludePaths,
+		IncludePaths:      p.cfg.IncludePaths,
+		EnableWebIncludes: p.cfg.EnableWebIncludes,
+		WebIncludePrefix:  p.cfg.WebIncludePrefix,
 	}
-	for id := range cc.Macros {
-		macros = append(macros, id)
+	if err := cc.CheckParseConfig(ccCfg); err != nil {
+		return nil, err
 	}
-	return
+	return ccCfg, nil
+}
+
+func (p *Parser) Parse() (unit *cc.TranslationUnit, err error) {
+	// this works as easy as this only with patched cc package, beware when using the vanilla cznic/cc.
+	return cc.Parse(p.ccCfg)
 }
