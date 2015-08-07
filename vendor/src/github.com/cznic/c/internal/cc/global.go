@@ -8,10 +8,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"go/token"
-	"os"
 	"reflect"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/cznic/c/internal/xc"
@@ -291,58 +289,5 @@ func (d *tokDB) tokens(id PpTokenList) (r []xc.Token) {
 		}
 		t := xc.Token{Char: lex.NewChar(pos, c), Val: v}
 		r = append(r, t)
-	}
-}
-
-func ppFile0(nmTok xc.Token, nm string) *xc.Once {
-	return compilation.Once(nm, func() interface{} {
-		f, err := os.Open(nm)
-		if err != nil {
-			compilation.ErrTok(nmTok, err.Error())
-			return nil
-		}
-
-		defer f.Close()
-
-		fi, err := f.Stat()
-		if err != nil {
-			compilation.ErrTok(nmTok, err.Error())
-			return nil
-		}
-
-		file := fileset.AddFile(nm, -1, int(fi.Size()))
-		scanner := newUtf8src(f, file)
-		lx := newLexer(scanner, false)
-		defer lx.close()
-
-		return parsePreprocessingFile(lx)
-	})
-}
-
-func predefines(src string, ch chan []xc.Token) {
-	file := fileset.AddFile("<built-in>", -1, len(src))
-	scanner := newUtf8src(strings.NewReader(src), file)
-	lx := newLexer(scanner, false)
-	defer lx.close()
-
-	lx.predefines = true
-	r := parsePreprocessingFile(lx)
-	if r == nil {
-		return
-	}
-
-	r.preprocess(newEvalCtx(lx, ch))
-}
-
-func ppFile(nmTok xc.Token, nm string) *PreprocessingFile {
-	v := ppFile0(nmTok, nm).Value()
-	switch x := v.(type) {
-	case nil:
-		return nil
-	case *PreprocessingFile:
-		return x
-	default:
-		compilation.ErrTok(nmTok, "not a C file: %s", nm)
-		return nil
 	}
 }

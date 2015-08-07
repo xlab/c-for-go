@@ -25,10 +25,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/cznic/c/internal/xc"
-	"github.com/cznic/golex/lex"
 	"github.com/cznic/mathutil"
 )
 
@@ -36,6 +34,7 @@ import (
 
 type ParseConfig struct {
 	Predefined        string
+	Input             []byte
 	Paths             []string
 	SysIncludePaths   []string
 	IncludePaths      []string
@@ -50,8 +49,8 @@ func CheckParseConfig(cfg *ParseConfig) error {
 	if cfg == nil {
 		return errors.New("no config specified")
 	}
-	if len(cfg.Paths) == 0 {
-		return errors.New("no paths specified to parse")
+	if len(cfg.Paths) == 0 && len(cfg.Input) == 0 {
+		return errors.New("no paths or input specified to parse")
 	}
 	if likelyIsURL(cfg.WebIncludePrefix) {
 		if u, err := url.Parse(cfg.WebIncludePrefix); err == nil {
@@ -129,8 +128,12 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 		defer close(lx.ch)
 
 		predefines(cfg.Predefined, lx.ch)
-		for _, path := range cfg.Paths {
-			ppFile(xc.Token{}, path).preprocess(ctx)
+		if len(cfg.Paths) > 0 {
+			for _, path := range cfg.Paths {
+				ppFileByPath(xc.Token{}, path).preprocess(ctx)
+			}
+		} else if len(cfg.Input) > 0 {
+			ppFileBySrc(cfg.Input, "<input>").preprocess(ctx)
 		}
 	}()
 
@@ -149,28 +152,4 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 	}
 
 	return lx.tu, nil
-}
-
-func parsePreprocessingFile(lx *lexer) *PreprocessingFile {
-	lx.unget(lex.NewChar(0, PREPROCESSING_FILE))
-	lx.state = lsPreprocess
-	if n := yyParse(lx); n != 0 {
-		return nil
-	}
-
-	return lx.ast
-}
-
-func exampleAST(rule int, src string) interface{} {
-	isExample = true
-	defer func() { isExample = false }()
-
-	scanner := newUtf8src(strings.NewReader(src), fileset.AddFile(fmt.Sprintf("example%v.c", rule), -1, len(src)))
-	lx := newLexer(scanner, false)
-
-	defer lx.close()
-
-	lx.exampleRule = rule
-	yyParse(lx)
-	return lx.example
 }

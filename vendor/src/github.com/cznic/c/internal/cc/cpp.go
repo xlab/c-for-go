@@ -728,7 +728,7 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 					continue
 				}
 
-				if pf := ppFile(t, fn); pf != nil {
+				if pf := ppFileByPath(t, fn); pf != nil {
 					pf.preprocess(ctx)
 				}
 				return
@@ -758,7 +758,7 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 					continue
 				}
 
-				if pf := ppFile(t, fn); pf != nil {
+				if pf := ppFileByPath(t, fn); pf != nil {
 					pf.preprocess(ctx)
 				}
 				return
