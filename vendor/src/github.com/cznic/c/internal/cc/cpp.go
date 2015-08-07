@@ -771,6 +771,9 @@ func (c *ControlLine) preprocess(ctx *evalCtx) {
 			return
 		}
 
+		// TODO: consider case when Filename is actually an URL (when parsing PPINCLUDE in web-included file)
+		// also consider a way to fallback to some default URL if local file wasn't found.
+
 		srcDir := filepath.Dir(fileset.Position(c.Token.Pos()).Filename)
 		fn := filepath.Join(srcDir, refPath)
 		if _, ok := ctx.onceMap[fn]; ok {

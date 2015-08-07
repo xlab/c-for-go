@@ -13,6 +13,34 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
+func TestWebInclude(t *testing.T) {
+	pCfg := parser.NewConfig("test/web_include_test.h")
+	pCfg.SysIncludePaths = []string{"/usr/include"}
+	pCfg.WebIncludesEnabled = true
+	p, err := parser.New(pCfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf := bufio.NewWriter(os.Stdout)
+	defer buf.Flush()
+	constRules := ConstRules{
+		ConstEnum:        ConstEvalFull,
+		ConstDeclaration: ConstExpand,
+	}
+	tl, err := New(nil, constRules, nil, buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tl.Learn(unit); err != nil {
+		t.Fatal(err)
+	}
+	tl.Report()
+}
+
 func TestLearn(t *testing.T) {
 	pCfg := parser.NewConfig("/Users/xlab/Documents/dev/ctru/ctrulib/libctru/include/3ds.h")
 	pCfg.SysIncludePaths = []string{"/Users/xlab/Documents/dev/ctru/ctrulib/libctru/include", "/usr/include"}
@@ -51,5 +79,5 @@ func TestLearn(t *testing.T) {
 	if err := tl.Learn(unit); err != nil {
 		t.Fatal(err)
 	}
-	tl.Report()
+	// tl.Report()
 }

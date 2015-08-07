@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/cznic/c/internal/xc"
@@ -93,11 +94,34 @@ func ppFileBySrc(refTok xc.Token, src []byte, name string) *PreprocessingFile {
 
 func ppFileByURL(refTok xc.Token, u *url.URL) *PreprocessingFile {
 	resp, err := http.Get(u.String())
+	if err != nil || resp.StatusCode != http.StatusOK {
+		if err != nil {
+			compilation.ErrTok(refTok, err.Error())
+			return nil
+		}
+		compilation.ErrTok(refTok, fmt.Sprintf("unable to fetch include: %s", resp.Status))
+		defer resp.Body.Close()
+
+		base := filepath.Base(u.Path)
+		u.Path = filepath.Dir(u.Path)
+		if resp, err := http.Get(u.String()); err != nil || resp.StatusCode != http.StatusOK {
+			return nil
+		} else {
+			u = resp.Request.URL
+			u.Path = filepath.Join(u.Path, base)
+		}
+	}
+	resp, err = http.Get(u.String())
 	if err != nil {
 		compilation.ErrTok(refTok, err.Error())
 		return nil
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		compilation.ErrTok(refTok, fmt.Sprintf("unable to fetch include: %s", resp.Status))
+		return nil
+	}
+	compilation.ClearErrors()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		compilation.ErrTok(refTok, err.Error())
