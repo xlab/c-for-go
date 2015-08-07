@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/cznic/c/internal/xc"
 	"github.com/cznic/mathutil"
@@ -622,6 +623,13 @@ func (m Model) sanityCheck() error {
 		}
 	}
 	return nil
+}
+
+func likelyIsURL(str string) bool {
+	if strings.HasPrefix(str, "http://") || strings.HasPrefix(str, "https://") {
+		return true
+	}
+	return false
 }
 
 func fromSlashes(a []string) []string {

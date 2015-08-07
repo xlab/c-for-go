@@ -33,17 +33,21 @@ var (
 	dict         = xc.Dict
 	fileset      = xc.FileSet
 	includePaths []string
-	isExample    bool
+
+	isExample bool
 
 	// dict id: macro. No mutex needed, AST preprocessing is serial.
 
 	// Macros records macros defined during preprocessing. Map key is the identifier ID.
-	Macros = map[int]*macro{} //TODO unexport?
+	Macros = map[int]*macro{} //TODO unexport? no thanks
 
 	maxAlignment    int
 	model           Model
 	printHooks      = strutil.PrettyPrintHooks{}
 	sysIncludePaths []string
+
+	webIncludePrefix  string
+	enableWebIncludes bool
 )
 
 func init() {

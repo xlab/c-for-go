@@ -22,7 +22,9 @@
 package cc
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/cznic/c/internal/xc"
@@ -30,57 +32,95 @@ import (
 	"github.com/cznic/mathutil"
 )
 
-// Opt is a configuration/setup function.
-type Opt func(lx *lexer)
+// Warning: this file has been altered by xlab.
 
-// SysIncludePaths option configures where to search for system include files.
-// (<name.h>)
-func SysIncludePaths(paths []string) Opt {
-	return func(*lexer) { sysIncludePaths = fromSlashes(paths) }
+type ParseConfig struct {
+	Predefined        string
+	Paths             []string
+	SysIncludePaths   []string
+	IncludePaths      []string
+	EnableWebIncludes bool
+	WebIncludePrefix  string
+	YyDebugLevel      int
+	OnPreprocessLine  func([]xc.Token)
+	SizeModel         Model
 }
 
-// IncludePaths option configures where to search for include files. ("name.h")
-func IncludePaths(paths []string) Opt {
-	return func(*lexer) { includePaths = fromSlashes(paths) }
-}
+func CheckParseConfig(cfg *ParseConfig) error {
+	if cfg == nil {
+		return errors.New("no config specified")
+	}
+	if len(cfg.Paths) == 0 {
+		return errors.New("no paths specified to parse")
+	}
+	if likelyIsURL(cfg.WebIncludePrefix) {
+		if u, err := url.Parse(cfg.WebIncludePrefix); err == nil {
+			cfg.WebIncludePrefix = u.String()
+		} else {
+			return fmt.Errorf("web include prefix specified but doesn't represent a valid URL: %v", err)
+		}
+	}
+	fromSlashes(cfg.Paths)
+	fromSlashes(cfg.IncludePaths)
+	fromSlashes(cfg.SysIncludePaths)
 
-// YyDebug sets the parser debug level.
-func YyDebug(n int) Opt {
-	return func(*lexer) { yyDebug = n }
-}
-
-// Cpp registers a preprocessor hook function which is called for every line
-// the preprocessor produces before it is consumed by the parser.
-func Cpp(f func([]xc.Token)) Opt {
-	return func(lx *lexer) { lx.cpp = f }
+	if cfg.SizeModel == nil {
+		// some random 64-bit model taken from ccgo
+		cfg.SizeModel = Model{
+			Ptr:       {Size: 8, Align: 8, More: "__TODO_PTR"},
+			Void:      {Size: 0, Align: 1, More: "__TODO_VOID"},
+			Char:      {Size: 1, Align: 1, More: "int8"},
+			UChar:     {Size: 1, Align: 1, More: "byte"},
+			Short:     {Size: 2, Align: 2, More: "int16"},
+			UShort:    {Size: 2, Align: 2, More: "uint16"},
+			Int:       {Size: 4, Align: 4, More: "int32"},
+			UInt:      {Size: 4, Align: 4, More: "uint32"},
+			Long:      {Size: 8, Align: 8, More: "int64"},
+			ULong:     {Size: 8, Align: 8, More: "uint64"},
+			LongLong:  {Size: 8, Align: 8, More: "int64"},
+			ULongLong: {Size: 8, Align: 8, More: "uint64"},
+			Float:     {Size: 4, Align: 4, More: "float32"},
+			Double:    {Size: 8, Align: 8, More: "float64"},
+			Bool:      {Size: 1, Align: 1, More: "bool"},
+			Complex:   {Size: 8, Align: 8, More: "complex128"},
+		}
+	}
+	return nil
 }
 
 // Parse clears any existing macros and define any macros in predefine. Then
 // Parse preprocesses and parses the translation unit consisting of files in
 // paths. The m communicates the scalar types model and opts allow to amend the
 // parser. Parse is not reentrant nor safe to call concurrently.
-func Parse(predefine string, paths []string, m Model, opts ...Opt) (*TranslationUnit, error) {
-	fromSlashes(paths)
+func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
+	if err := CheckParseConfig(cfg); err != nil {
+		return nil, err
+	}
 	compilation.ClearErrors()
-	Macros = map[int]*macro{}
-	if err := m.sanityCheck(); err != nil {
+
+	Macros = make(map[int]*macro)
+	if err := cfg.SizeModel.sanityCheck(); err != nil {
 		compilation.Err(0, "%s", err.Error())
 		return nil, compilation.Errors(true)
 	}
 
-	model = m
+	model = cfg.SizeModel
 	maxAlignment = -1
-	for _, v := range m {
+	for _, v := range model {
 		maxAlignment = mathutil.Max(maxAlignment, v.Align)
 	}
+
+	includePaths = cfg.IncludePaths
+	sysIncludePaths = cfg.SysIncludePaths
+	webIncludePrefix = cfg.WebIncludePrefix
+	enableWebIncludes = cfg.EnableWebIncludes
+	yyDebug = cfg.YyDebugLevel
+
 	lx := newTULexer()
-	for _, opt := range opts {
-		opt(lx)
-	}
+	lx.cpp = cfg.OnPreprocessLine
 	if err := compilation.Errors(true); err != nil {
 		return nil, err
 	}
-
 	lx.ch = make(chan []xc.Token, 1000)
 	lx0 := newTULexer()
 	ctx := newEvalCtx(lx0, lx.ch)
@@ -88,13 +128,14 @@ func Parse(predefine string, paths []string, m Model, opts ...Opt) (*Translation
 	go func() {
 		defer close(lx.ch)
 
-		predefines(predefine, lx.ch)
-		for _, path := range paths {
+		predefines(cfg.Predefined, lx.ch)
+		for _, path := range cfg.Paths {
 			ppFile(xc.Token{}, path).preprocess(ctx)
 		}
 	}()
 
-	if err := compilation.Errors(true); err != nil { // Do not parse if preprocessing failed.
+	if err := compilation.Errors(true); err != nil {
+		// Do not parse if preprocessing failed.
 		return nil, err
 	}
 
@@ -103,9 +144,8 @@ func Parse(predefine string, paths []string, m Model, opts ...Opt) (*Translation
 	if err := compilation.Errors(true); err != nil {
 		return nil, err
 	}
-
 	if r != 0 {
-		panic("internal error")
+		return nil, errors.New("internal error")
 	}
 
 	return lx.tu, nil
