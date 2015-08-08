@@ -1987,6 +1987,7 @@ func (t *Translator) EvalUnaryExpression(ex *cc.UnaryExpression) Value {
 	case 4, // "sizeof" UnaryExpression
 		5: // "sizeof" '(' TypeName ')'
 		// sizeof will be always 0, why not?
+		// todo: try to use unsafe.Sizeof if gopherjs will fail anyway
 		return mustInt(0)
 	case 6, // "defined" IDENTIFIER
 		7: // "defined" '(' IDENTIFIER ')'

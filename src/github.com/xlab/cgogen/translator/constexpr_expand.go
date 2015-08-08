@@ -231,6 +231,7 @@ func (t *Translator) ExpandUnaryExpression(ex *cc.UnaryExpression) Expression {
 	case 4, // "sizeof" UnaryExpression
 		5: // "sizeof" '(' TypeName ')'
 		// sizeof will always be 0, why not.
+		// todo: try to use unsafe.Sizeof if gopherjs will fail anyway
 		return nil
 	case 6, // "defined" IDENTIFIER
 		7: // "defined" '(' IDENTIFIER ')'
@@ -265,8 +266,8 @@ func (t *Translator) ExpandPostfixExpression(ex *cc.PostfixExpression) Expressio
 		return buf
 	case 3, // PostfixExpression '.' IDENTIFIER
 		4: // PostfixExpression "->" IDENTIFIER
-		return bytesJoin(
-			t.ExpandPostfixExpression(ex.PostfixExpression), ex.Token.S(), ".")
+		identifier := t.TransformName(TargetDeclare, string(ex.Token.S()))
+		return bytesJoin(t.ExpandPostfixExpression(ex.PostfixExpression), identifier, ".")
 	case 5, // PostfixExpression "++"
 		6: // PostfixExpression "--"
 		// not present in golang
@@ -286,7 +287,7 @@ func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) Expressio
 	switch ex.Case {
 	case 0: // IDENTIFIER
 		name := ex.Token.S()
-		switch t.constRules[ConstDeclaration] {
+		switch t.constRules[ConstDeclare] {
 		case ConstExpandFull:
 			if expr, ok := t.exprMap[string(name)]; ok {
 				return bytesWrap(expr, "(", ")")
@@ -304,7 +305,7 @@ func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) Expressio
 			}
 		default:
 			if _, ok := t.exprMap[string(name)]; ok {
-				return name
+				return t.TransformName(TargetDeclare, string(name))
 			}
 		}
 		// just skip undefined

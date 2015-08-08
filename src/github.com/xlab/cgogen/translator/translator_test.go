@@ -30,8 +30,8 @@ func TestWebInclude(t *testing.T) {
 	defer buf.Flush()
 	cfg := &Config{
 		ConstRules: ConstRules{
-			ConstEnum:        ConstEvalFull,
-			ConstDeclaration: ConstExpand,
+			ConstEnum:    ConstEvalFull,
+			ConstDeclare: ConstExpand,
 		},
 	}
 	tl, err := New(cfg, buf)
@@ -75,8 +75,8 @@ func TestLearn(t *testing.T) {
 			},
 		},
 		ConstRules: ConstRules{
-			ConstEnum:        ConstEvalFull,
-			ConstDeclaration: ConstExpand,
+			ConstEnum:    ConstEvalFull,
+			ConstDeclare: ConstExpand,
 		},
 	}
 
@@ -87,5 +87,6 @@ func TestLearn(t *testing.T) {
 	if err := tl.Learn(unit); err != nil {
 		t.Fatal(err)
 	}
-	tl.Report()
+
+	// tl.Report()
 }

@@ -20,12 +20,14 @@ type Translator struct {
 	constRules  ConstRules
 	typemap     CTypeMap
 
-	valueMap     map[string]Value
-	exprMap      map[string]Expression
-	tagMap       map[string]CDecl
-	defines      []CDecl
-	typedefs     []CDecl
-	declarations []CDecl
+	valueMap map[string]Value
+	exprMap  map[string]Expression
+	tagMap   map[string]CDecl
+	defines  []CDecl
+	typedefs []CDecl
+	declares []CDecl
+
+	transformCache *NameTransformCache
 }
 
 type RxMap map[RuleTarget][]Rx
@@ -48,14 +50,15 @@ func New(cfg *Config, out io.Writer) (*Translator, error) {
 		cfg = &Config{}
 	}
 	t := &Translator{
-		out:         out,
-		rules:       cfg.Rules,
-		constRules:  cfg.ConstRules,
-		typemap:     cfg.Typemap,
-		compiledRxs: make(map[RuleAction]RxMap),
-		valueMap:    make(map[string]Value),
-		exprMap:     make(map[string]Expression),
-		tagMap:      make(map[string]CDecl),
+		out:            out,
+		rules:          cfg.Rules,
+		constRules:     cfg.ConstRules,
+		typemap:        cfg.Typemap,
+		compiledRxs:    make(map[RuleAction]RxMap),
+		valueMap:       make(map[string]Value),
+		exprMap:        make(map[string]Expression),
+		tagMap:         make(map[string]CDecl),
+		transformCache: &NameTransformCache{},
 	}
 	for _, action := range ruleActions {
 		if rxMap, err := getRuleActionRxs(t.rules, action); err != nil {
@@ -71,6 +74,13 @@ func getRuleActionRxs(rules Rules, action RuleAction) (RxMap, error) {
 	rxMap := make(RxMap, len(rules))
 	for target, specs := range rules {
 		for _, spec := range specs {
+			if len(spec.Load) > 0 {
+				if s, ok := builtinRules[spec.Load]; ok {
+					spec = s
+				} else {
+					return nil, fmt.Errorf("no builtin rule found: %s", spec.Load)
+				}
+			}
 			if spec.Action == ActionNone {
 				spec.Action = ActionReplace
 				spec.To = "${_src}"
@@ -131,6 +141,7 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 		}
 		t.defines = append(t.defines, CDecl{
 			Pos:        pos,
+			IsDefine:   true,
 			Name:       string(name),
 			Expression: tokList[0].S(),
 			Src:        strings.Join(srcParts, " "),
@@ -141,7 +152,7 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 	for unit != nil {
 		unit = t.walkTranslationUnit(unit)
 	}
-	sort.Sort(declList(t.declarations))
+	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
 	return xc.Compilation.Errors(true)
 }
@@ -157,21 +168,17 @@ func (t *Translator) Report() {
 		t.Printf("%v\n", decl)
 	}
 
-	t.Printf("\n\n\n[!] DECLARATIONS:\n")
-	for _, decl := range t.declarations {
+	t.Printf("\n\n\n[!] DECLARES:\n")
+	for _, decl := range t.declares {
 		t.Printf("%v\n", decl)
 	}
-
-	t.Printf("\n\n\n[!] const (")
-	for _, line := range t.defines {
-		t.Printf("\n// %s\n//   > define %s %v\n%s = %s",
-			srcLocation(line.Pos), line.Name, line.Src,
-			t.TransformName(TargetDefine, line.Name), line.Expression)
-	}
-	t.Printf("\n)\n\n")
 }
 
 func (t *Translator) TransformName(target RuleTarget, str string) []byte {
+	if name, ok := t.transformCache.Get(target, str); ok {
+		return name
+	}
+
 	var name []byte
 	if target != TargetGlobal {
 		// apply global rules first
@@ -182,8 +189,8 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 
 	for _, rx := range t.compiledRxs[ActionReplace][target] {
 		indices := rx.From.FindAllSubmatchIndex(name, -1)
-		reference := make([]byte, 0, len(name))
-		reference = append(reference, name...)
+		reference := make([]byte, len(name))
+		copy(reference, name)
 
 		// Itrate submatches backwards since we need to insert expanded
 		// versions into the original name and doing so from beginning will shift indices
@@ -212,6 +219,7 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 		}
 	}
 
+	t.transformCache.Set(target, str, name)
 	return name
 }
 
@@ -267,8 +275,8 @@ func (t *Translator) Defines() []CDecl {
 	return t.defines
 }
 
-func (t *Translator) Declarations() []CDecl {
-	return t.declarations
+func (t *Translator) Declares() []CDecl {
+	return t.declares
 }
 
 func (t *Translator) Typedefs() []CDecl {

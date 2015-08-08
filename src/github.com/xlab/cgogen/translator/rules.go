@@ -7,6 +7,7 @@ type RuleSpec struct {
 	From, To  string
 	Action    RuleAction
 	Transform RuleTransform
+	Load      string
 }
 
 type RuleAction string
@@ -33,11 +34,11 @@ const (
 type RuleTarget string
 
 const (
-	TargetGlobal      RuleTarget = "global"
-	TargetDefine                 = "define"
-	TargetTag                    = "tag"
-	TargetTypedef                = "typedef"
-	TargetDeclaration            = "declaration"
+	TargetGlobal  RuleTarget = "global"
+	TargetDefine             = "define"
+	TargetTag                = "tag"
+	TargetTypedef            = "typedef"
+	TargetDeclare            = "declare"
 )
 
 type ConstRule string
@@ -53,6 +54,10 @@ const (
 type ConstScope string
 
 const (
-	ConstEnum        = "enum"
-	ConstDeclaration = "declaration"
+	ConstEnum    = "enum"
+	ConstDeclare = "declare"
 )
+
+var builtinRules = map[string]RuleSpec{
+	"snakecase": RuleSpec{From: "_([^_]+)", To: "$1", Action: ActionReplace, Transform: TransformTitle},
+}

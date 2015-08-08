@@ -35,6 +35,7 @@ type CDecl struct {
 	Value      Value
 	Expression Expression
 	IsTypedef  bool
+	IsDefine   bool
 	Arrays     []ArraySizeSpec
 	Pos        token.Pos
 	Src        string

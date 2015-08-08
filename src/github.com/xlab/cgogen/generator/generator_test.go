@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/xlab/cgogen/parser"
 	tl "github.com/xlab/cgogen/translator"
 )
 
@@ -31,7 +32,81 @@ func TestTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gen.WriteDoc(buf)
-	gen.WriteIncludes(buf)
+	// gen.WriteDoc(buf)
+	// gen.WriteIncludes(buf)
 	gen.WritePackage(buf)
+}
+
+func TestFull(t *testing.T) {
+	pCfg := parser.NewConfig("/usr/local/Cellar/libvpx/1.4.0/include/vpx/vp8.h")
+	pCfg.SysIncludePaths = []string{"/usr/local/Cellar/libvpx/1.4.0/include", "/usr/include"}
+	p, err := parser.New(pCfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf := bufio.NewWriter(os.Stdout)
+	defer buf.Flush()
+
+	trCfg := &tl.Config{
+		Rules: tl.Rules{
+			tl.TargetGlobal: {
+				tl.RuleSpec{Transform: tl.TransformLower},
+				//
+				tl.RuleSpec{From: "vpx_", To: "_", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "vp8_", To: "_", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "_abi", Transform: tl.TransformUpper},
+				tl.RuleSpec{From: "_img", To: "_image", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "_fmt", To: "_format", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "_cs", To: "_color_space", Action: tl.ActionReplace},
+			},
+			tl.TargetDefine: {
+				tl.RuleSpec{From: "(?i)VPX_", Action: tl.ActionAccept},
+				tl.RuleSpec{From: "(?i)VP8_", Action: tl.ActionAccept},
+				tl.RuleSpec{From: "_INLINE$", Action: tl.ActionIgnore},
+				tl.RuleSpec{Load: "snakecase"},
+			},
+			tl.TargetTypedef: {
+				tl.RuleSpec{From: "_t$", Action: tl.ActionReplace},
+				tl.RuleSpec{Load: "snakecase"},
+			},
+			tl.TargetDeclare: {
+				tl.RuleSpec{Load: "snakecase"},
+			},
+		},
+		ConstRules: tl.ConstRules{
+			tl.ConstEnum:    tl.ConstEvalFull,
+			tl.ConstDeclare: tl.ConstExpand,
+		},
+	}
+
+	tr, err := tl.New(trCfg, buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tr.Learn(unit); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &Config{
+		PackageName:   "vpx",
+		PkgConfigOpts: []string{"vpx"},
+		SysIncludes:   []string{"vpx/vp8.h"},
+	}
+	gen, err := New(cfg, tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// tr.Report()
+	f, err := os.Create("test/constants.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	gen.WritePackage(f)
+	writeSpace(f, 1)
+	gen.WriteConst(f)
 }

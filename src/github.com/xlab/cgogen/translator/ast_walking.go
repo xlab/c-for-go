@@ -16,13 +16,13 @@ func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
 	case 0: // FunctionDefinition
 		// (not an API definition)
 	case 1: // Declaration
-		declarations := t.walkDeclaration(declr.Declaration)
-		for _, decl := range declarations {
+		declares := t.walkDeclaration(declr.Declaration)
+		for _, decl := range declares {
 			if decl.IsTypedef {
 				t.typedefs = append(t.typedefs, decl)
 				continue
 			}
-			t.declarations = append(t.declarations, decl)
+			t.declares = append(t.declares, decl)
 		}
 	}
 }
@@ -48,20 +48,20 @@ func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
 		}
 	}
 
-	// prepare to collect declarations
-	var declarations []CDecl
+	// prepare to collect declares
+	var declares []CDecl
 
 	if declr.InitDeclaratorListOpt != nil {
 		nextList := declr.InitDeclaratorListOpt.InitDeclaratorList
 		for nextList != nil {
 			decl := CDecl{Spec: refDecl.Spec.Copy(), IsTypedef: refDecl.IsTypedef}
 			nextList = t.walkInitDeclaratorList(nextList, &decl)
-			declarations = append(declarations, decl)
+			declares = append(declares, decl)
 			t.valueMap[decl.Name] = decl.Value
 			t.exprMap[decl.Name] = decl.Expression
 		}
 	}
-	return declarations
+	return declares
 }
 
 func (t *Translator) walkInitializer(init *cc.Initializer, decl *CDecl) {
@@ -257,8 +257,8 @@ func (t *Translator) walkStructDeclaration(declr *cc.StructDeclaration) []CDecl 
 		nextList = t.walkSpecifierQualifierList(nextList, refDecl)
 	}
 
-	// prepare to collect declarations
-	var declarations []CDecl
+	// prepare to collect declares
+	var declares []CDecl
 
 	if declr.StructDeclaratorListOpt != nil {
 		nextDeclaratorList := declr.StructDeclaratorListOpt.StructDeclaratorList
@@ -266,11 +266,11 @@ func (t *Translator) walkStructDeclaration(declr *cc.StructDeclaration) []CDecl 
 			decl := CDecl{Spec: refDecl.Spec.Copy()}
 			t.walkStructDeclarator(nextDeclaratorList.StructDeclarator, &decl)
 			nextDeclaratorList = nextDeclaratorList.StructDeclaratorList
-			declarations = append(declarations, decl)
+			declares = append(declares, decl)
 		}
 	}
 
-	return declarations
+	return declares
 }
 
 func (t *Translator) walkSUSpecifier(suSpec *cc.StructOrUnionSpecifier, decl *CDecl) {
@@ -280,8 +280,8 @@ func (t *Translator) walkSUSpecifier(suSpec *cc.StructOrUnionSpecifier, decl *CD
 		structSpec := decl.Spec.(*CStructSpec)
 		nextList := suSpec.StructDeclarationList
 		for nextList != nil {
-			declarations := t.walkStructDeclaration(nextList.StructDeclaration)
-			structSpec.Members = append(structSpec.Members, declarations...)
+			declares := t.walkStructDeclaration(nextList.StructDeclaration)
+			structSpec.Members = append(structSpec.Members, declares...)
 			nextList = nextList.StructDeclarationList
 		}
 	case 1: // StructOrUnion IDENTIFIER

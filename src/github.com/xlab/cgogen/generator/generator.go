@@ -2,6 +2,7 @@ package generator
 
 import (
 	"errors"
+	"io"
 
 	tl "github.com/xlab/cgogen/translator"
 )
@@ -49,4 +50,23 @@ func New(cfg *Config, tr *tl.Translator) (*Generator, error) {
 		tr:  tr,
 	}
 	return gen, nil
+}
+
+func (gen *Generator) WriteConst(wr io.Writer) {
+	gen.writeDefinesGroup(wr, gen.tr.Defines())
+	writeSpace(wr, 1)
+	tagsSeen := make(map[string]struct{})
+	for _, decl := range gen.tr.Typedefs() {
+		if decl.Spec.Kind() != tl.EnumKind {
+			continue
+		}
+		spec := decl.Spec.(*tl.CEnumSpec)
+		if len(spec.Tag) > 0 {
+			if _, ok := tagsSeen[spec.Tag]; ok {
+				continue
+			}
+			tagsSeen[spec.Tag] = struct{}{}
+		}
+		gen.writeEnum(wr, decl)
+	}
 }

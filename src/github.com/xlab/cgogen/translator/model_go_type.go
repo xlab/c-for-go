@@ -17,7 +17,7 @@ type GoTypeSpec struct {
 	Bits     uint16
 }
 
-func (gts *GoTypeSpec) Wrap(innerGTS GoTypeSpec) GoTypeSpec {
+func (gts GoTypeSpec) Wrap(innerGTS GoTypeSpec) GoTypeSpec {
 	return GoTypeSpec{
 		Slices:   gts.Slices,
 		Pointers: gts.Pointers,
@@ -26,7 +26,7 @@ func (gts *GoTypeSpec) Wrap(innerGTS GoTypeSpec) GoTypeSpec {
 	}
 }
 
-func (gts *GoTypeSpec) String() string {
+func (gts GoTypeSpec) String() string {
 	var str string
 	str += strings.Repeat("[]", int(gts.Slices))
 	str += strings.Repeat("*", int(gts.Pointers))
@@ -47,10 +47,7 @@ func (gts *GoTypeSpec) String() string {
 	return str
 }
 
-func (gts *GoTypeSpec) MarshalJSON() ([]byte, error) {
-	if gts == nil {
-		return []byte{}, nil
-	}
+func (gts GoTypeSpec) MarshalJSON() ([]byte, error) {
 	return []byte(gts.String()), nil
 }
 

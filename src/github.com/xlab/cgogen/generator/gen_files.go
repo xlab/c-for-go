@@ -108,3 +108,7 @@ func writeTextBlock(wr io.Writer, text string) {
 		fmt.Fprintf(wr, "// %s\n", line)
 	}
 }
+
+func writeError(wr io.Writer, err error) {
+	fmt.Fprintf(wr, "// error: %v\n", err)
+}

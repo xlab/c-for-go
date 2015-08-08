@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"github.com/cznic/c/internal/xc"
 )
@@ -87,26 +88,26 @@ func alterBytesPart(buf []byte, idx []int, altFn func([]byte) []byte) []byte {
 
 func replaceBytes(buf []byte, idx []int, piece []byte) []byte {
 	a, b := idx[0], idx[1]
-	altered := make([]byte, 2*len(buf)+len(piece)-a-b)
+	altered := make([]byte, len(buf)-(b-a)+len(piece))
 	copy(altered[:a], buf[:a])
 	pLen := copy(altered[a:], piece)
 	copy(altered[a+pLen:], buf[b:])
 	return altered
 }
 
-func srcLocation(p token.Pos) string {
+func SrcLocation(p token.Pos) string {
 	pos := xc.FileSet.Position(p)
 	return fmt.Sprintf("%s:%d", narrowPath(pos.Filename), pos.Line)
 }
 
 func unresolvedIdentifierWarn(name string, p token.Pos) {
 	_, file, line, _ := runtime.Caller(1)
-	fmt.Printf("WARN: %s:%d unresolved identifier %s at %s\n", narrowPath(file), line, name, srcLocation(p))
+	fmt.Printf("WARN: %s:%d unresolved identifier %s at %s\n", narrowPath(file), line, name, SrcLocation(p))
 }
 
 func unmanagedCaseWarn(c int, p token.Pos) {
 	_, file, line, _ := runtime.Caller(1)
-	fmt.Printf("WARN: %s:%d unmanaged case %d at %s\n", narrowPath(file), line, c, srcLocation(p))
+	fmt.Printf("WARN: %s:%d unmanaged case %d at %s\n", narrowPath(file), line, c, SrcLocation(p))
 }
 
 func incVal(v Value) Value {
@@ -122,4 +123,40 @@ func incVal(v Value) Value {
 	default:
 		return v
 	}
+}
+
+type NameTransformCache struct {
+	mux   sync.RWMutex
+	cache map[struct {
+		RuleTarget
+		string
+	}][]byte
+}
+
+func (n *NameTransformCache) Get(target RuleTarget, name string) ([]byte, bool) {
+	n.mux.RLock()
+	if cached, ok := n.cache[struct {
+		RuleTarget
+		string
+	}{target, name}]; ok {
+		n.mux.RUnlock()
+		return cached, true
+	}
+	n.mux.RUnlock()
+	return nil, false
+}
+
+func (n *NameTransformCache) Set(target RuleTarget, name string, result []byte) {
+	n.mux.Lock()
+	if n.cache == nil {
+		n.cache = make(map[struct {
+			RuleTarget
+			string
+		}][]byte)
+	}
+	n.cache[struct {
+		RuleTarget
+		string
+	}{target, name}] = result
+	n.mux.Unlock()
 }
