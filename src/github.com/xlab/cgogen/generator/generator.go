@@ -68,5 +68,16 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 			tagsSeen[spec.Tag] = struct{}{}
 		}
 		gen.writeEnum(wr, decl)
+		writeSpace(wr, 1)
+	}
+	for _, decl := range gen.tr.Declares() {
+		if decl.Spec.Kind() != tl.TypeKind {
+			continue
+		}
+		if len(decl.Name) == 0 {
+			continue
+		}
+		gen.writeConstDeclaration(wr, decl)
+		writeSpace(wr, 1)
 	}
 }

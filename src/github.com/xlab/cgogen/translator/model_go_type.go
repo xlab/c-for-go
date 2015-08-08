@@ -11,20 +11,21 @@ type GoTypeSpec struct {
 	Slices   uint8
 	Pointers uint8
 	Arrays   []uint64
+	InnerCGO string
 	Inner    *GoTypeSpec
 	Unsigned bool
 	Base     string
 	Bits     uint16
 }
 
-func (gts GoTypeSpec) Wrap(innerGTS GoTypeSpec) GoTypeSpec {
-	return GoTypeSpec{
-		Slices:   gts.Slices,
-		Pointers: gts.Pointers,
-		Arrays:   gts.Arrays,
-		Inner:    &innerGTS,
-	}
-}
+// func (gts GoTypeSpec) Wrap(innerGTS GoTypeSpec) GoTypeSpec {
+// 	return GoTypeSpec{
+// 		Slices:   gts.Slices,
+// 		Pointers: gts.Pointers,
+// 		Arrays:   gts.Arrays,
+// 		Inner:    &innerGTS,
+// 	}
+// }
 
 func (gts GoTypeSpec) String() string {
 	var str string

@@ -223,14 +223,58 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 	return name
 }
 
-func (t *Translator) TranslateSpec(spec CTypeSpec) (GoTypeSpec, error) {
+func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	if gospec, ok := t.typemap[spec]; ok {
-		return gospec, nil
+		return gospec, true
 	}
 	if gospec, ok := builtinCTypeMap[spec]; ok {
-		return gospec, nil
+		return gospec, true
 	}
-	return GoTypeSpec{}, errors.New("no explicit rule found")
+	return GoTypeSpec{}, false
+}
+
+func (t *Translator) TranslateSpec(spec CTypeSpec) GoTypeSpec {
+	if gospec, ok := t.lookupSpec(spec); !ok {
+		spec.Const = false
+		if gospec, ok = t.lookupSpec(spec); !ok {
+			spec.Const = true
+		} else {
+			return gospec
+		}
+	} else {
+		return gospec
+	}
+
+	wrapper := GoTypeSpec{}
+	if spec.Pointers > 0 {
+		for spec.Pointers > 0 {
+			spec.Pointers--
+			if spec.Pointers > 1 {
+				wrapper.Arrays = append(wrapper.Arrays, 0)
+			} else {
+				wrapper.Pointers++
+			}
+			if gospec, ok := t.lookupSpec(spec); !ok {
+				spec.Const = false
+				if gospec, ok = t.lookupSpec(spec); !ok {
+					spec.Const = true
+				} else {
+					wrapper.Inner = &gospec
+					wrapper.InnerCGO = builtinCGOTypeMap[spec]
+				}
+			} else {
+				wrapper.Inner = &gospec
+				wrapper.InnerCGO = builtinCGOTypeMap[spec]
+			}
+		}
+	} else {
+		wrapper.Inner = &GoTypeSpec{
+			Base: spec.Base,
+		}
+		wrapper.InnerCGO = "C." + spec.Base
+	}
+
+	return wrapper
 }
 
 func (t *Translator) IsAcceptableName(target RuleTarget, name []byte) bool {

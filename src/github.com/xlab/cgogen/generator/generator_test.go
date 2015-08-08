@@ -100,8 +100,8 @@ func TestFull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// tr.Report()
-	f, err := os.Create("test/constants.go")
+	tr.Report()
+	f, err := os.Create("test/out/constants.go")
 	if err != nil {
 		t.Fatal(err)
 	}

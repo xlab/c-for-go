@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"io"
+	"log"
 
 	tl "github.com/xlab/cgogen/translator"
 )
@@ -38,12 +39,7 @@ func (gen *Generator) writeEnum(wr io.Writer, enumDecl tl.CDecl) {
 	}
 
 	fmt.Fprintf(wr, "// %s as declared in %s\n", typeName, tl.SrcLocation(enumDecl.Pos))
-	enumType, err := gen.tr.TranslateSpec(spec.Type)
-	if err != nil {
-		writeError(wr, err)
-		return
-	}
-
+	enumType := gen.tr.TranslateSpec(spec.Type)
 	writeType(wr, typeName, enumType)
 	writeSpace(wr, 1)
 	fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName, tl.SrcLocation(enumDecl.Pos))
@@ -59,7 +55,20 @@ func (gen *Generator) writeEnum(wr io.Writer, enumDecl tl.CDecl) {
 		fmt.Fprintf(wr, "%s = %s\n", enName, en.Expression)
 	}
 	writeEndConst(wr)
-	writeSpace(wr, 1)
+}
+
+func (gen *Generator) writeConstDeclaration(wr io.Writer, decl tl.CDecl) {
+	spec, ok := decl.Spec.(*tl.CTypeSpec)
+	if !ok {
+		return
+	} else if !spec.Const {
+		return
+	}
+	gospec := gen.tr.TranslateSpec(*spec)
+	log.Println(spec.String(), "converted in", gospec.String())
+	declName := gen.tr.TransformName(tl.TargetDeclare, decl.Name)
+	fmt.Fprintf(wr, "// %s as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
+	writeConst(wr, declName, decl.Expression, gospec)
 }
 
 func writeStartConst(wr io.Writer) {
@@ -68,4 +77,8 @@ func writeStartConst(wr io.Writer) {
 
 func writeEndConst(wr io.Writer) {
 	fmt.Fprintln(wr, ")")
+}
+
+func writeConst(wr io.Writer, name, expr []byte, spec tl.GoTypeSpec) {
+	fmt.Fprintf(wr, "const %s %s = %s\n", name, spec, expr)
 }

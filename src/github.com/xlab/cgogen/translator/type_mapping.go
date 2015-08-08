@@ -1,5 +1,6 @@
 package translator
 
+type CGOTypeMap map[CTypeSpec]string
 type CTypeMap map[CTypeSpec]GoTypeSpec
 type GoTypeMap map[string]GoTypeSpec
 
@@ -48,6 +49,22 @@ var builtinGoTypeMap = GoTypeMap{
 	Float64Spec.String():     Float64Spec,
 	PointerSpec.String():     PointerSpec,
 	UintptrSpec.String():     UintptrSpec,
+}
+
+var builtinCGOTypeMap = CGOTypeMap{
+	CTypeSpec{Base: "char"}:                             "C.char",
+	CTypeSpec{Base: "char", Unsigned: true}:             "C.uchar",
+	CTypeSpec{Base: "short"}:                            "C.short",
+	CTypeSpec{Base: "short", Unsigned: true}:            "C.ushort",
+	CTypeSpec{Base: "int"}:                              "C.int",
+	CTypeSpec{Base: "int", Unsigned: true}:              "C.uint",
+	CTypeSpec{Base: "long"}:                             "C.long",
+	CTypeSpec{Base: "long", Unsigned: true}:             "C.ulong",
+	CTypeSpec{Base: "long", Long: true}:                 "C.longlong",
+	CTypeSpec{Base: "long", Long: true, Unsigned: true}: "C.ulonglong",
+	CTypeSpec{Base: "float"}:                            "C.float",
+	CTypeSpec{Base: "double"}:                           "C.float",
+	CTypeSpec{Base: "void", Pointers: 1}:                "unsafe.Pointer",
 }
 
 var builtinCTypeMap = CTypeMap{
