@@ -11,7 +11,8 @@ import (
 )
 
 type Config struct {
-	Arch               TargetArch
+	Arch               string
+	archBits           TargetArchBits
 	CustomDefinesPath  string
 	WebIncludesEnabled bool
 	WebIncludePrefix   string
@@ -30,9 +31,12 @@ func checkConfig(cfg *Config) *Config {
 	if cfg == nil {
 		cfg = &Config{}
 	}
-	if cfg.Arch != Arch32 && cfg.Arch != Arch64 {
+	if arch, ok := arches[cfg.Arch]; !ok {
 		// default to 64-bit arch
-		cfg.Arch = Arch64
+		cfg.archBits = Arch64
+	} else if arch != Arch32 && arch != Arch64 {
+		// default to 64-bit arch
+		cfg.archBits = Arch64
 	}
 	return cfg
 }
@@ -64,7 +68,7 @@ func New(cfg *Config) (*Parser, error) {
 		return nil, errors.New("parser: no target paths specified")
 	}
 
-	if def, ok := predefines[cfg.Arch]; !ok {
+	if def, ok := predefines[cfg.archBits]; !ok {
 		p.predefined = predefinedBase
 	} else {
 		p.predefined = def

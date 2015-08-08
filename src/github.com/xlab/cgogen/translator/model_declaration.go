@@ -9,7 +9,9 @@ type CTypeKind int
 
 const (
 	TypeKind CTypeKind = iota
+	DefineKind
 	StructKind
+	UnionKind
 	FunctionKind
 	EnumKind
 )
@@ -35,6 +37,7 @@ type CDecl struct {
 	IsTypedef  bool
 	Arrays     []ArraySizeSpec
 	Pos        token.Pos
+	Src        string
 }
 
 func (c CDecl) String() string {

@@ -17,6 +17,7 @@
 // 	short b;
 // } ulol_t;
 
+#define VPX_TEST 1+2
 
 enum LOL {
   One = 1,

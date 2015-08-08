@@ -17,6 +17,9 @@ func (c *CStructSpec) SetPointers(n uint8) {
 }
 
 func (c CStructSpec) Kind() CTypeKind {
+	if c.Union {
+		return UnionKind
+	}
 	return StructKind
 }
 

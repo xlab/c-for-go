@@ -1,10 +1,10 @@
 package parser
 
-type TargetArch int
+type TargetArchBits int
 
 const (
-	Arch32 TargetArch = 32
-	Arch64 TargetArch = 64
+	Arch32 TargetArchBits = 32
+	Arch64 TargetArchBits = 64
 )
 
 var predefinedBase = `
@@ -18,12 +18,12 @@ var predefinedBase = `
 #define __attribute__(x)
 `
 
-var predefines = map[TargetArch]string{
+var predefines = map[TargetArchBits]string{
 	Arch32: predefinedBase + `#define __i386__ 1`,
 	Arch64: predefinedBase + `#define __x86_64__ 1`,
 }
 
-var archs = map[string]TargetArch{
+var arches = map[string]TargetArchBits{
 	"386":    Arch32,
 	"arm":    Arch32,
 	"armbe":  Arch32,
