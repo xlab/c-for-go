@@ -3,14 +3,13 @@ package translator
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
 type GoTypeSpec struct {
 	Slices   uint8
 	Pointers uint8
-	Arrays   []uint64
+	Arrays   string
 	InnerCGO string
 	Inner    *GoTypeSpec
 	Unsigned bool
@@ -18,34 +17,27 @@ type GoTypeSpec struct {
 	Bits     uint16
 }
 
-// func (gts GoTypeSpec) Wrap(innerGTS GoTypeSpec) GoTypeSpec {
-// 	return GoTypeSpec{
-// 		Slices:   gts.Slices,
-// 		Pointers: gts.Pointers,
-// 		Arrays:   gts.Arrays,
-// 		Inner:    &innerGTS,
-// 	}
-// }
-
 func (gts GoTypeSpec) String() string {
-	var str string
-	str += strings.Repeat("[]", int(gts.Slices))
-	str += strings.Repeat("*", int(gts.Pointers))
-	for _, size := range gts.Arrays {
-		str += fmt.Sprintf("[%d]", size)
+	buf := new(bytes.Buffer)
+	buf.WriteString(gts.Arrays)
+	if gts.Slices > 0 {
+		buf.WriteString(strings.Repeat("[]", int(gts.Slices)))
+	}
+	if gts.Pointers > 0 {
+		buf.WriteString(strings.Repeat("*", int(gts.Pointers)))
 	}
 	if gts.Inner != nil {
-		str += gts.Inner.String()
+		buf.WriteString(gts.Inner.String())
 	} else {
 		if gts.Unsigned {
-			str += "u"
+			buf.WriteString("u")
 		}
-		str += gts.Base
+		buf.WriteString(gts.Base)
 		if gts.Bits > 0 {
-			str += strconv.Itoa(int(gts.Bits))
+			fmt.Fprintf(buf, "%d", int(gts.Bits))
 		}
 	}
-	return str
+	return buf.String()
 }
 
 func (gts GoTypeSpec) MarshalJSON() ([]byte, error) {

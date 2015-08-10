@@ -14,6 +14,7 @@ var predefinedBase = `
 #define __signed signed
 #define __GNUC__ 0
 #define __asm__(x)
+#define __asm(x)
 #define __inline
 #define __attribute__(x)
 `

@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -8,8 +9,18 @@ import (
 type CEnumSpec struct {
 	Tag         string
 	Enumerators []CDecl
-	Pointers    uint8
 	Type        CTypeSpec
+	Arrays      string
+	VarArrays   uint8
+	Pointers    uint8
+}
+
+func (c *CEnumSpec) AddArray(size uint32) {
+	if size > 0 {
+		c.Arrays = fmt.Sprintf("[%d]%s", size, c.Arrays)
+		return
+	}
+	c.VarArrays++
 }
 
 func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
@@ -76,6 +87,26 @@ func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
 	return &c.Type
 }
 
+func (ces CEnumSpec) String() string {
+	var members []string
+	for _, m := range ces.Enumerators {
+		members = append(members, m.String())
+	}
+	membersColumn := strings.Join(members, ", ")
+
+	buf := new(bytes.Buffer)
+	fmt.Fprint(buf, "enum")
+	if len(ces.Tag) > 0 {
+		buf.WriteString(" " + ces.Tag)
+	}
+	if len(members) > 0 {
+		fmt.Fprintf(buf, " {%s}", membersColumn)
+	}
+	buf.WriteString(strings.Repeat("*", int(ces.Pointers)))
+	buf.WriteString(ces.Arrays)
+	return buf.String()
+}
+
 func (c *CEnumSpec) SetPointers(n uint8) {
 	c.Pointers = n
 }
@@ -88,22 +119,23 @@ func (c CEnumSpec) Copy() CType {
 	return &c
 }
 
-func (ces CEnumSpec) String() string {
-	var members []string
-	for _, m := range ces.Enumerators {
-		members = append(members, m.String())
-	}
-	membersColumn := strings.Join(members, ", ")
+func (c *CEnumSpec) GetBase() string {
+	return c.Tag
+}
 
-	str := "enum"
-	if len(ces.Tag) > 0 {
-		str = fmt.Sprintf("%s %s", str, ces.Tag)
-	}
-	if len(members) > 0 {
-		str = fmt.Sprintf("%s {%s}", str, membersColumn)
-	}
-	if ces.Pointers > 0 {
-		str += strings.Repeat("*", int(ces.Pointers))
-	}
-	return str
+func (c *CEnumSpec) GetArrays() string {
+	return c.Arrays
+}
+
+func (c *CEnumSpec) GetVarArrays() uint8 {
+	return c.VarArrays
+}
+
+func (c *CEnumSpec) GetPointers() uint8 {
+	return c.Pointers
+}
+
+func (c *CEnumSpec) IsConst() bool {
+	// could be c.Const
+	return false
 }

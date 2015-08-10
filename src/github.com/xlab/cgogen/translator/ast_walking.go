@@ -20,6 +20,7 @@ func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
 		for _, decl := range declares {
 			if decl.IsTypedef {
 				t.typedefs = append(t.typedefs, decl)
+				t.typedefsSet[decl.Name] = struct{}{}
 				continue
 			}
 			t.declares = append(t.declares, decl)
@@ -36,15 +37,15 @@ func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
 	}
 
 	switch refDecl.Spec.Kind() {
-	case EnumKind:
-		spec := refDecl.Spec.(*CEnumSpec)
-		if len(spec.Tag) != 0 {
-			t.tagMap[spec.Tag] = refDecl
-		}
-	case StructKind:
-		spec := refDecl.Spec.(*CStructSpec)
-		if len(spec.Tag) != 0 {
-			t.tagMap[spec.Tag] = refDecl
+	case EnumKind, StructKind, UnionKind:
+		if tag := refDecl.Spec.GetBase(); len(tag) > 0 {
+			if prev, ok := t.tagMap[tag]; !ok {
+				// first time seen -> store the tag
+				t.tagMap[tag] = refDecl
+			} else if !prev.IsTemplate() {
+				// overwrite with a template declaration
+				t.tagMap[tag] = refDecl
+			}
 		}
 	}
 
@@ -154,8 +155,37 @@ func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDec
 		if declr.AssignmentExpressionOpt != nil {
 			assignmentExpr = declr.AssignmentExpressionOpt.AssignmentExpression
 		}
-		val := t.ExpandAssignmentExpression(assignmentExpr)
-		decl.AddArray(val)
+
+		val := t.EvalAssignmentExpression(assignmentExpr)
+		switch x := val.(type) {
+		case int32:
+			if x > 0 {
+				decl.AddArray(uint32(x))
+			} else {
+				decl.AddArray(0)
+			}
+		case int64:
+			if x > 0 {
+				decl.AddArray(uint32(x))
+			} else {
+				decl.AddArray(0)
+			}
+		case uint32:
+			if x > 0 {
+				decl.AddArray(uint32(x))
+			} else {
+				decl.AddArray(0)
+			}
+		case uint64:
+			if x > 0 {
+				decl.AddArray(uint32(x))
+			} else {
+				decl.AddArray(0)
+			}
+		default:
+			decl.AddArray(0)
+		}
+
 		next = declr.DirectDeclarator
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		next = declr.DirectDeclarator
@@ -292,8 +322,8 @@ func (t *Translator) walkSUSpecifier(suSpec *cc.StructOrUnionSpecifier, decl *CD
 			}
 		case 1: // union
 			decl.Spec = &CStructSpec{
-				Union: true,
-				Tag:   string(suSpec.Token.S()),
+				IsUnion: true,
+				Tag:     string(suSpec.Token.S()),
 			}
 		}
 	}
@@ -305,7 +335,7 @@ func walkSUSpecifier0(suSpec *cc.StructOrUnionSpecifier0, decl *CDecl) {
 		decl.Spec = &CStructSpec{}
 	case 1: // union
 		decl.Spec = &CStructSpec{
-			Union: true,
+			IsUnion: true,
 		}
 	}
 	if suSpec.IdentifierOpt != nil {
@@ -381,13 +411,26 @@ func (t *Translator) walkTypeSpec(typeSpec *cc.TypeSpecifier, decl *CDecl) {
 	case 1:
 		spec.Base = "char"
 	case 2:
-		spec.Short = true
+		switch spec.Base {
+		case "int":
+			spec.Short = true
+		default:
+			spec.Short = false
+			spec.Base = "short"
+		}
 	case 3:
 		spec.Base = "int"
 	case 4:
-		if spec.Long {
+		switch spec.Base {
+		case "int":
+			if spec.Long {
+				spec.Base = "long"
+			} else {
+				spec.Long = true
+			}
+		case "":
 			spec.Base = "long"
-		} else {
+		default:
 			spec.Long = true
 		}
 	case 5:

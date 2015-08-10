@@ -5,48 +5,46 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 type CTypeSpec struct {
-	Base     string
-	Const    bool
-	Unsigned bool
-	Short    bool
-	Long     bool
-	Pointers uint8
+	Base      string
+	Const     bool
+	Unsigned  bool
+	Short     bool
+	Long      bool
+	Arrays    string
+	VarArrays uint8
+	Pointers  uint8
 }
 
-func (c *CTypeSpec) SetPointers(n uint8) {
-	c.Pointers = n
-}
-
-func (c CTypeSpec) Kind() CTypeKind {
-	return TypeKind
+func (c *CTypeSpec) AddArray(size uint32) {
+	if size > 0 {
+		c.Arrays = fmt.Sprintf("[%d]%s", size, c.Arrays)
+		return
+	}
+	c.VarArrays++
 }
 
 func (cts CTypeSpec) String() string {
-	var str string
+	buf := new(bytes.Buffer)
 	if cts.Const {
-		str += "const "
+		buf.WriteString("const ")
 	}
 	if cts.Unsigned {
-		str += "unsigned "
+		buf.WriteString("unsigned ")
 	}
 	switch {
 	case cts.Long:
-		str += "long "
+		buf.WriteString("long ")
 	case cts.Short:
-		str += "short "
+		buf.WriteString("short ")
 	}
-	str += cts.Base
-	for i := uint8(0); i < cts.Pointers; i++ {
-		str += "*"
-	}
-	return str
-}
-
-func (c CTypeSpec) Copy() CType {
-	return &c
+	fmt.Fprint(buf, cts.Base)
+	buf.WriteString(strings.Repeat("*", int(cts.Pointers)))
+	buf.WriteString(cts.Arrays)
+	return buf.String()
 }
 
 func (cts *CTypeSpec) MarshalJSON() ([]byte, error) {
@@ -134,4 +132,36 @@ func CTypeOf(v interface{}) (*CTypeSpec, error) {
 	default:
 		return nil, errors.New(fmt.Sprintf("cannot resolve type %T", x))
 	}
+}
+
+func (c *CTypeSpec) SetPointers(n uint8) {
+	c.Pointers = n
+}
+
+func (c CTypeSpec) Kind() CTypeKind {
+	return TypeKind
+}
+
+func (c CTypeSpec) Copy() CType {
+	return &c
+}
+
+func (c *CTypeSpec) GetBase() string {
+	return c.Base
+}
+
+func (c *CTypeSpec) GetArrays() string {
+	return c.Arrays
+}
+
+func (c *CTypeSpec) GetVarArrays() uint8 {
+	return c.VarArrays
+}
+
+func (c *CTypeSpec) GetPointers() uint8 {
+	return c.Pointers
+}
+
+func (c *CTypeSpec) IsConst() bool {
+	return c.Const
 }

@@ -23,10 +23,12 @@ type Translator struct {
 	valueMap map[string]Value
 	exprMap  map[string]Expression
 	tagMap   map[string]CDecl
+
 	defines  []CDecl
 	typedefs []CDecl
 	declares []CDecl
 
+	typedefsSet    map[string]struct{}
 	transformCache *NameTransformCache
 }
 
@@ -58,6 +60,7 @@ func New(cfg *Config, out io.Writer) (*Translator, error) {
 		valueMap:       make(map[string]Value),
 		exprMap:        make(map[string]Expression),
 		tagMap:         make(map[string]CDecl),
+		typedefsSet:    make(map[string]struct{}),
 		transformCache: &NameTransformCache{},
 	}
 	for _, action := range ruleActions {
@@ -175,6 +178,9 @@ func (t *Translator) Report() {
 }
 
 func (t *Translator) TransformName(target RuleTarget, str string) []byte {
+	if len(str) == 0 {
+		return emptyStr
+	}
 	if name, ok := t.transformCache.Get(target, str); ok {
 		return name
 	}
@@ -233,48 +239,133 @@ func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	return GoTypeSpec{}, false
 }
 
-func (t *Translator) TranslateSpec(spec CTypeSpec) GoTypeSpec {
-	if gospec, ok := t.lookupSpec(spec); !ok {
-		spec.Const = false
-		if gospec, ok = t.lookupSpec(spec); !ok {
-			spec.Const = true
+func getVarArrayCount(arraySizes []uint32) (count uint8) {
+	for i := range arraySizes {
+		if arraySizes[i] == 0 {
+			count++
+		}
+	}
+	return
+}
+
+func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
+	switch spec.Kind() {
+	case TypeKind:
+		spec := spec.(*CTypeSpec)
+		lookupSpec := CTypeSpec{
+			Base:     spec.Base,
+			Const:    spec.Const,
+			Unsigned: spec.Unsigned,
+			Short:    spec.Short,
+			Long:     spec.Long,
+			// Arrays skip
+			// VarArrays skip
+			Pointers: spec.Pointers,
+		}
+		wrapper := GoTypeSpec{
+			Arrays: spec.GetArrays(),
+		}
+
+		if gospec, ok := t.lookupSpec(lookupSpec); !ok {
+			lookupSpec.Const = false
+			if gospec, ok = t.lookupSpec(lookupSpec); !ok {
+				lookupSpec.Const = true
+			} else {
+				lookupSpec.Const = false
+				wrapper.Pointers += spec.GetVarArrays()
+				wrapper.Inner = &gospec
+				wrapper.InnerCGO = builtinCGOTypeMap[lookupSpec.String()]
+				return wrapper
+			}
 		} else {
+			gospec.Arrays = spec.GetArrays()
 			return gospec
 		}
-	} else {
-		return gospec
-	}
 
-	wrapper := GoTypeSpec{}
-	if spec.Pointers > 0 {
-		for spec.Pointers > 0 {
-			spec.Pointers--
-			if spec.Pointers > 1 {
-				wrapper.Arrays = append(wrapper.Arrays, 0)
-			} else {
-				wrapper.Pointers++
-			}
-			if gospec, ok := t.lookupSpec(spec); !ok {
-				spec.Const = false
-				if gospec, ok = t.lookupSpec(spec); !ok {
-					spec.Const = true
+		if pointers := spec.GetPointers(); pointers > 0 {
+			for pointers > 0 {
+				if pointers > 1 {
+					wrapper.Slices++
 				} else {
-					wrapper.Inner = &gospec
-					wrapper.InnerCGO = builtinCGOTypeMap[spec]
+					wrapper.Pointers++
 				}
-			} else {
-				wrapper.Inner = &gospec
-				wrapper.InnerCGO = builtinCGOTypeMap[spec]
+				pointers--
+				if gospec, ok := t.lookupSpec(lookupSpec); !ok {
+					lookupSpec.Const = false
+					if gospec, ok = t.lookupSpec(lookupSpec); !ok {
+						lookupSpec.Const = true
+					} else {
+						lookupSpec.Const = false
+						wrapper.Pointers += spec.GetVarArrays()
+						wrapper.Inner = &gospec
+						wrapper.InnerCGO = builtinCGOTypeMap[lookupSpec.String()]
+						return wrapper
+					}
+				} else {
+					lookupSpec.Const = false
+					wrapper.Pointers += spec.GetVarArrays()
+					wrapper.Inner = &gospec
+					wrapper.InnerCGO = builtinCGOTypeMap[lookupSpec.String()]
+					return wrapper
+				}
 			}
 		}
-	} else {
+		wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Inner = &GoTypeSpec{
-			Base: spec.Base,
+			Base: string(t.TransformName(TargetTypedef, lookupSpec.Base)),
 		}
-		wrapper.InnerCGO = "C." + spec.Base
+		wrapper.InnerCGO = "C." + lookupSpec.Base
+		return wrapper
+	default:
+		wrapper := GoTypeSpec{
+			Arrays: spec.GetArrays(),
+		}
+		if pointers := spec.GetPointers(); pointers > 0 {
+			for pointers > 0 {
+				if pointers > 1 {
+					wrapper.Slices++
+				} else {
+					wrapper.Pointers++
+				}
+				pointers--
+			}
+		}
+		wrapper.Pointers += spec.GetVarArrays()
+		wrapper.Inner = &GoTypeSpec{}
+		if fallback, ok := t.IsBaseDefined(spec); ok {
+			wrapper.Inner.Base = string(t.TransformName(TargetTypedef, spec.GetBase()))
+			wrapper.InnerCGO = "C." + spec.GetBase()
+		} else {
+			// fallback to CGO reference if name isn't in the headers scope.
+			wrapper.Inner.Base = fallback
+			wrapper.InnerCGO = fallback
+		}
+		return wrapper
 	}
+}
 
-	return wrapper
+func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
+	name := spec.GetBase()
+	decl, ok := t.tagMap[name]
+	if ok && decl.IsTemplate() {
+		// sucessfully resolved up to template
+		return
+	}
+	if _, ok = t.typedefsSet[name]; ok {
+		return
+	}
+	// let's construct a fallback reference to some template in C land
+	switch spec.Kind() {
+	case StructKind:
+		fallback = "C.struct_" + name
+	case UnionKind:
+		fallback = "C.union_" + name
+	case EnumKind:
+		fallback = "C.enum_" + name
+	default:
+		fallback = "C." + name
+	}
+	return
 }
 
 func (t *Translator) IsAcceptableName(target RuleTarget, name []byte) bool {
@@ -297,10 +388,6 @@ func (t *Translator) IsAcceptableName(target RuleTarget, name []byte) bool {
 		return t.IsAcceptableName(TargetGlobal, name)
 	}
 	return false
-}
-
-func (t *Translator) Translate() {
-	// TODO
 }
 
 func (t *Translator) TagMap() map[string]CDecl {

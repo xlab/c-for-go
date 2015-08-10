@@ -1,6 +1,6 @@
 package translator
 
-type CGOTypeMap map[CTypeSpec]string
+type CGOTypeMap map[string]string
 type CTypeMap map[CTypeSpec]GoTypeSpec
 type GoTypeMap map[string]GoTypeSpec
 
@@ -26,6 +26,8 @@ var (
 	Float64Spec     = GoTypeSpec{Base: "float", Bits: 64}
 	PointerSpec     = GoTypeSpec{Base: "unsafe.Pointer"}
 	UintptrSpec     = GoTypeSpec{Base: "uintptr"}
+	//
+	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
 
 var builtinGoTypeMap = GoTypeMap{
@@ -49,22 +51,30 @@ var builtinGoTypeMap = GoTypeMap{
 	Float64Spec.String():     Float64Spec,
 	PointerSpec.String():     PointerSpec,
 	UintptrSpec.String():     UintptrSpec,
+	//
+	InterfaceSliceSpec.String(): InterfaceSliceSpec,
 }
 
 var builtinCGOTypeMap = CGOTypeMap{
-	CTypeSpec{Base: "char"}:                             "C.char",
-	CTypeSpec{Base: "char", Unsigned: true}:             "C.uchar",
-	CTypeSpec{Base: "short"}:                            "C.short",
-	CTypeSpec{Base: "short", Unsigned: true}:            "C.ushort",
-	CTypeSpec{Base: "int"}:                              "C.int",
-	CTypeSpec{Base: "int", Unsigned: true}:              "C.uint",
-	CTypeSpec{Base: "long"}:                             "C.long",
-	CTypeSpec{Base: "long", Unsigned: true}:             "C.ulong",
-	CTypeSpec{Base: "long", Long: true}:                 "C.longlong",
-	CTypeSpec{Base: "long", Long: true, Unsigned: true}: "C.ulonglong",
-	CTypeSpec{Base: "float"}:                            "C.float",
-	CTypeSpec{Base: "double"}:                           "C.float",
-	CTypeSpec{Base: "void", Pointers: 1}:                "unsafe.Pointer",
+	IntSpec.String():         "C.int",
+	UintSpec.String():        "C.uint",
+	Int8Spec.String():        "C.char",
+	Int16Spec.String():       "C.short",
+	Int32Spec.String():       "C.long",
+	Int64Spec.String():       "C.int",
+	Uint8Spec.String():       "C.uchar",
+	Uint16Spec.String():      "C.ushort",
+	Uint32Spec.String():      "C.uint",
+	Uint64Spec.String():      "C.ulong",
+	RuneSpec.String():        "C.int",
+	RuneSliceSpec.String():   "*C.int",
+	ByteSliceSpec.String():   "*C.char",
+	StringSpec.String():      "*C.char",
+	StringSliceSpec.String(): "**C.char",
+	Float32Spec.String():     "C.float",
+	Float64Spec.String():     "C.double",
+	PointerSpec.String():     "unsafe.Pointer",
+	UintptrSpec.String():     "unsafe.Pointer",
 }
 
 var builtinCTypeMap = CTypeMap{
@@ -148,6 +158,8 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "wchar_t", Pointers: 1}: RuneSliceSpec,
 	// const wchar_t* -> string
 	CTypeSpec{Base: "wchar_t", Const: true, Pointers: 1}: StringSpec,
+	// tr1/cstdarg
+	CTypeSpec{Base: "va_list"}: InterfaceSliceSpec,
 }
 
 // TODO consider:

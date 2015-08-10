@@ -1,30 +1,26 @@
 package translator
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
 
 type CStructSpec struct {
-	Tag      string
-	Union    bool
-	Members  []CDecl
-	Pointers uint8
+	Tag       string
+	IsUnion   bool
+	Members   []CDecl
+	Arrays    string
+	VarArrays uint8
+	Pointers  uint8
 }
 
-func (c *CStructSpec) SetPointers(n uint8) {
-	c.Pointers = n
-}
-
-func (c CStructSpec) Kind() CTypeKind {
-	if c.Union {
-		return UnionKind
+func (c *CStructSpec) AddArray(size uint32) {
+	if size > 0 {
+		c.Arrays = fmt.Sprintf("[%d]%s", size, c.Arrays)
+		return
 	}
-	return StructKind
-}
-
-func (c CStructSpec) Copy() CType {
-	return &c
+	c.VarArrays++
 }
 
 func (css CStructSpec) String() string {
@@ -34,18 +30,54 @@ func (css CStructSpec) String() string {
 	}
 	membersColumn := strings.Join(members, ", ")
 
-	str := "struct"
-	if css.Union {
-		str = "union"
+	buf := new(bytes.Buffer)
+	if css.IsUnion {
+		buf.WriteString("union")
+	} else {
+		buf.WriteString("struct")
 	}
 	if len(css.Tag) > 0 {
-		str = fmt.Sprintf("%s %s", str, css.Tag)
+		buf.WriteString(" " + css.Tag)
 	}
 	if len(members) > 0 {
-		str = fmt.Sprintf("%s {%s}", str, membersColumn)
+		fmt.Fprintf(buf, " {%s}", membersColumn)
 	}
-	if css.Pointers > 0 {
-		str += strings.Repeat("*", int(css.Pointers))
+	buf.WriteString(strings.Repeat("*", int(css.Pointers)))
+	buf.WriteString(css.Arrays)
+	return buf.String()
+}
+
+func (c *CStructSpec) SetPointers(n uint8) {
+	c.Pointers = n
+}
+
+func (c CStructSpec) Kind() CTypeKind {
+	if c.IsUnion {
+		return UnionKind
 	}
-	return str
+	return StructKind
+}
+
+func (c CStructSpec) Copy() CType {
+	return &c
+}
+
+func (c *CStructSpec) GetBase() string {
+	return c.Tag
+}
+
+func (c *CStructSpec) GetArrays() string {
+	return c.Arrays
+}
+
+func (c *CStructSpec) GetVarArrays() uint8 {
+	return c.VarArrays
+}
+
+func (c *CStructSpec) GetPointers() uint8 {
+	return c.Pointers
+}
+
+func (c *CStructSpec) IsConst() bool {
+	return false
 }
