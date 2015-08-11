@@ -47,11 +47,11 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcSpec tl.CType) {
 }
 
 func writeStartParams(wr io.Writer) {
-	fmt.Fprintln(wr, "(")
+	fmt.Fprint(wr, "(")
 }
 
 func writeEndParams(wr io.Writer) {
-	fmt.Fprintln(wr, ")")
+	fmt.Fprint(wr, ")")
 }
 
 func writeEndStruct(wr io.Writer) {

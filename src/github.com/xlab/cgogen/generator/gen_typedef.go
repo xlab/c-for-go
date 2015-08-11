@@ -16,10 +16,19 @@ func (gen *Generator) writeTypeTypedef(wr io.Writer, decl tl.CDecl) {
 }
 
 func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
+	var returnRef string
+	spec := decl.Spec.(*tl.CFunctionSpec)
+	if spec.Return != nil {
+		returnRef = gen.tr.TranslateSpec(tl.TargetDeclare, spec.Return.Spec).String()
+	}
+
 	declName := gen.tr.TransformName(tl.TargetTypedef, decl.Name)
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
 	fmt.Fprintf(wr, "type %s %s", declName, decl.Spec)
 	gen.writeFunctionParams(wr, decl.Spec)
+	if len(returnRef) > 0 {
+		fmt.Fprintf(wr, " %s", returnRef)
+	}
 	writeSpace(wr, 1)
 }
 

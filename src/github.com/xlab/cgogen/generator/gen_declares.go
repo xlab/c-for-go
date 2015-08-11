@@ -25,11 +25,19 @@ func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl tl.CDecl, global b
 }
 
 func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, global bool) {
+	var returnRef string
+	spec := decl.Spec.(*tl.CFunctionSpec)
+	if spec.Return != nil {
+		returnRef = gen.tr.TranslateSpec(tl.TargetDeclare, spec.Return.Spec).String()
+	}
+
 	var declName string
 	if global {
-		if name := gen.tr.TransformName(tl.TargetDeclare, decl.Name); len(name) > 0 {
-			declName = string(name)
-		} else {
+		declName = string(gen.tr.TransformName(tl.TargetDeclare, decl.Name))
+		if returnRef == declName {
+			declName = string(gen.tr.TransformName(tl.TargetDeclare, "new_"+decl.Name))
+		}
+		if len(declName) == 0 {
 			declName = "_"
 		}
 	} else if len(decl.Name) > 0 {
@@ -37,12 +45,16 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, glob
 	} else {
 		declName = "_"
 	}
+
 	if global {
 		fmt.Fprintf(wr, "func %s", declName)
 	} else {
 		fmt.Fprintf(wr, "%s %s", declName, gen.tr.TranslateSpec(tl.TargetDeclare, decl.Spec))
 	}
 	gen.writeFunctionParams(wr, decl.Spec)
+	if len(returnRef) > 0 {
+		fmt.Fprintf(wr, " %s", returnRef)
+	}
 }
 
 func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, global bool) {

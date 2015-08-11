@@ -6,7 +6,7 @@ import (
 )
 
 type CFunctionSpec struct {
-	Returns   CDecl
+	Return    *CDecl
 	ParamList []CDecl
 	Arrays    string
 	VarArrays uint8
@@ -26,7 +26,11 @@ func (c CFunctionSpec) String() string {
 	for _, param := range c.ParamList {
 		params = append(params, param.String())
 	}
-	return fmt.Sprintf("%s (%s)", c.Returns, strings.Join(params, ", "))
+	paramList := strings.Join(params, ", ")
+	if c.Return != nil {
+		return fmt.Sprintf("%s (%s)", c.Return, paramList)
+	}
+	return fmt.Sprintf("void (%s)", paramList)
 }
 
 func (c *CFunctionSpec) SetPointers(n uint8) {
