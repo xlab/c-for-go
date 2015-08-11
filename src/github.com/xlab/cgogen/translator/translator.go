@@ -16,6 +16,7 @@ import (
 type Translator struct {
 	out         io.Writer
 	rules       Rules
+	prefixEnums bool
 	compiledRxs map[RuleAction]RxMap
 	constRules  ConstRules
 	typemap     CTypeMap
@@ -224,7 +225,6 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 			name = replaceBytes(name, idx, buf)
 		}
 	}
-
 	t.transformCache.Set(target, str, name)
 	return name
 }
@@ -239,16 +239,7 @@ func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	return GoTypeSpec{}, false
 }
 
-func getVarArrayCount(arraySizes []uint32) (count uint8) {
-	for i := range arraySizes {
-		if arraySizes[i] == 0 {
-			count++
-		}
-	}
-	return
-}
-
-func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
+func (t *Translator) TranslateSpec(target RuleTarget, spec CType) GoTypeSpec {
 	switch spec.Kind() {
 	case TypeKind:
 		spec := spec.(*CTypeSpec)
@@ -312,28 +303,28 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		}
 		wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Inner = &GoTypeSpec{
-			Base: string(t.TransformName(TargetTypedef, lookupSpec.Base)),
+			Base: string(t.TransformName(target, lookupSpec.Base)),
 		}
 		wrapper.InnerCGO = "C." + lookupSpec.Base
+		return wrapper
+	case FunctionKind:
+		wrapper := GoTypeSpec{
+			Arrays: spec.GetArrays(),
+			Inner:  &GoTypeSpec{},
+		}
+		wrapper.splitPointers(spec.GetPointers())
+		wrapper.Pointers += spec.GetVarArrays()
+		wrapper.Inner.Base = "func"
 		return wrapper
 	default:
 		wrapper := GoTypeSpec{
 			Arrays: spec.GetArrays(),
+			Inner:  &GoTypeSpec{},
 		}
-		if pointers := spec.GetPointers(); pointers > 0 {
-			for pointers > 0 {
-				if pointers > 1 {
-					wrapper.Slices++
-				} else {
-					wrapper.Pointers++
-				}
-				pointers--
-			}
-		}
+		wrapper.splitPointers(spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
-		wrapper.Inner = &GoTypeSpec{}
 		if fallback, ok := t.IsBaseDefined(spec); ok {
-			wrapper.Inner.Base = string(t.TransformName(TargetTypedef, spec.GetBase()))
+			wrapper.Inner.Base = string(t.TransformName(target, spec.GetBase()))
 			wrapper.InnerCGO = "C." + spec.GetBase()
 		} else {
 			// fallback to CGO reference if name isn't in the headers scope.

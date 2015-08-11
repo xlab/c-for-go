@@ -41,6 +41,7 @@ type CDecl struct {
 	Name       string
 	Value      Value
 	Expression Expression
+	IsStatic   bool
 	IsTypedef  bool
 	IsDefine   bool
 	Pos        token.Pos

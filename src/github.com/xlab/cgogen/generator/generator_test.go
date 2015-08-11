@@ -75,6 +75,7 @@ func TestFull(t *testing.T) {
 				tl.RuleSpec{Transform: tl.TransformTitle},
 			},
 			tl.TargetDeclare: {
+				tl.RuleSpec{From: "_t$", Action: tl.ActionReplace},
 				tl.RuleSpec{Load: "snakecase"},
 				tl.RuleSpec{Transform: tl.TransformTitle},
 			},
@@ -113,5 +114,7 @@ func TestFull(t *testing.T) {
 	gen.WriteConst(f)
 	writeSpace(f, 1)
 	gen.WriteTypedefs(f)
+	writeSpace(f, 1)
+	gen.WriteDeclares(f)
 	writeSpace(f, 1)
 }

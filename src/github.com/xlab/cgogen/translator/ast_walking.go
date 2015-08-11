@@ -18,7 +18,9 @@ func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
 	case 1: // Declaration
 		declares := t.walkDeclaration(declr.Declaration)
 		for _, decl := range declares {
-			if decl.IsTypedef {
+			if decl.IsStatic {
+				continue
+			} else if decl.IsTypedef {
 				t.typedefs = append(t.typedefs, decl)
 				t.typedefsSet[decl.Name] = struct{}{}
 				continue
@@ -55,7 +57,11 @@ func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
 	if declr.InitDeclaratorListOpt != nil {
 		nextList := declr.InitDeclaratorListOpt.InitDeclaratorList
 		for nextList != nil {
-			decl := CDecl{Spec: refDecl.Spec.Copy(), IsTypedef: refDecl.IsTypedef}
+			decl := CDecl{
+				Spec:      refDecl.Spec.Copy(),
+				IsTypedef: refDecl.IsTypedef,
+				IsStatic:  refDecl.IsStatic,
+			}
 			nextList = t.walkInitDeclaratorList(nextList, &decl)
 			declares = append(declares, decl)
 			t.valueMap[decl.Name] = decl.Value
@@ -219,6 +225,8 @@ func (t *Translator) walkDeclarationSpecifiers(declr *cc.DeclarationSpecifiers, 
 		switch declr.StorageClassSpecifier.Case {
 		case 0: // "typedef"
 			decl.IsTypedef = true
+		case 2: // "static"
+			decl.IsStatic = true
 		}
 		next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
 	case 1: // TypeSpecifier DeclarationSpecifiersOpt
@@ -243,10 +251,11 @@ func (t *Translator) walkSpecifierQualifierList(declr *cc.SpecifierQualifierList
 	if declr.SpecifierQualifierListOpt != nil {
 		next = declr.SpecifierQualifierListOpt.SpecifierQualifierList
 	}
+
 	switch declr.Case {
-	case 0:
+	case 0: // TypeSpecifier SpecifierQualifierListOpt
 		t.walkTypeSpec(declr.TypeSpecifier, decl)
-	case 1:
+	case 1: // TypeQualifier SpecifierQualifierListOpt
 		if spec, ok := decl.Spec.(*CTypeSpec); ok {
 			spec.Const = (declr.TypeQualifier.Case == 0)
 		}

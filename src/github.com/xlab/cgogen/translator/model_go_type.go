@@ -17,6 +17,17 @@ type GoTypeSpec struct {
 	Bits     uint16
 }
 
+func (gts *GoTypeSpec) splitPointers(n uint8) {
+	for n > 0 {
+		if n > 1 {
+			gts.Slices++
+		} else {
+			gts.Pointers++
+		}
+		n--
+	}
+}
+
 func (gts GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
 	buf.WriteString(gts.Arrays)

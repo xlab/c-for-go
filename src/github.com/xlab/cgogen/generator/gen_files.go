@@ -79,10 +79,6 @@ func writeEndComment(wr io.Writer) {
 	fmt.Fprintln(wr, "*/")
 }
 
-func writeSpace(wr io.Writer, n int) {
-	fmt.Fprint(wr, strings.Repeat("\n", n))
-}
-
 func writePackageName(wr io.Writer, name string) {
 	if len(name) == 0 {
 		name = "main"
@@ -107,8 +103,4 @@ func writeTextBlock(wr io.Writer, text string) {
 	for _, line := range lines {
 		fmt.Fprintf(wr, "// %s\n", line)
 	}
-}
-
-func writeError(wr io.Writer, err error) {
-	fmt.Fprintf(wr, "// error: %v\n", err)
 }

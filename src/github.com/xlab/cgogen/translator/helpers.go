@@ -22,6 +22,7 @@ var (
 	ptrStr          = []byte("*")
 	sliceStr        = []byte("[]")
 	spaceStr        = []byte(" ")
+	skipStr         = []byte("_")
 	emptyStr        = []byte{}
 	restrictedNames = bytes.Join([][]byte{
 		qualConst, specStruct, specUnion, specUnsigned, specSigned, specShort,
@@ -159,4 +160,13 @@ func (n *NameTransformCache) Set(target RuleTarget, name string, result []byte) 
 		string
 	}{target, name}] = result
 	n.mux.Unlock()
+}
+
+func getVarArrayCount(arraySizes []uint32) (count uint8) {
+	for i := range arraySizes {
+		if arraySizes[i] == 0 {
+			count++
+		}
+	}
+	return
 }
