@@ -7,49 +7,44 @@ import (
 	tl "github.com/xlab/cgogen/translator"
 )
 
-func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl tl.CDecl, global bool) {
-	var declName string
-	if global {
-		if name := gen.tr.TransformName(tl.TargetDeclare, decl.Name); len(name) > 0 {
-			declName = string(name)
-		} else {
-			declName = "_"
-		}
-	} else if len(decl.Name) > 0 {
-		declName = decl.Name
+func (gen *Generator) transformDeclName(declName string, public bool) string {
+	var name string
+	var target tl.RuleTarget
+	if public {
+		target = tl.TargetPublic
 	} else {
-		declName = "_"
+		target = tl.TargetPrivate
 	}
-
-	fmt.Fprintf(wr, "%s %s", declName, gen.tr.TranslateSpec(tl.TargetTypedef, decl.Spec))
+	name = string(gen.tr.TransformName(target, declName))
+	if len(name) == 0 {
+		name = "_"
+	}
+	return name
 }
 
-func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, global bool) {
+func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
+	declName := gen.transformDeclName(decl.Name, public)
+	goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+	fmt.Fprintf(wr, "%s %s", declName, goSpec)
+}
+
+func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		returnRef = gen.tr.TranslateSpec(tl.TargetDeclare, spec.Return.Spec).String()
+		returnRef = gen.tr.TranslateSpec(tl.TargetType, spec.Return.Spec).String()
 	}
-
-	var declName string
-	if global {
-		declName = string(gen.tr.TransformName(tl.TargetDeclare, decl.Name))
+	if public {
+		declName := string(gen.tr.TransformName(tl.TargetFunction, decl.Name))
 		if returnRef == declName {
-			declName = string(gen.tr.TransformName(tl.TargetDeclare, "new_"+decl.Name))
+			declName = string(gen.tr.TransformName(tl.TargetFunction, "new_"+decl.Name))
 		}
-		if len(declName) == 0 {
-			declName = "_"
-		}
-	} else if len(decl.Name) > 0 {
-		declName = decl.Name
-	} else {
-		declName = "_"
-	}
-
-	if global {
+		fmt.Fprintf(wr, "// %s method as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
 		fmt.Fprintf(wr, "func %s", declName)
 	} else {
-		fmt.Fprintf(wr, "%s %s", declName, gen.tr.TranslateSpec(tl.TargetDeclare, decl.Spec))
+		declName := string(gen.tr.TransformName(tl.TargetPrivate, decl.Name))
+		goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+		fmt.Fprintf(wr, "%s %s", declName, goSpec)
 	}
 	gen.writeFunctionParams(wr, decl.Spec)
 	if len(returnRef) > 0 {
@@ -57,20 +52,8 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, glob
 	}
 }
 
-func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, global bool) {
-	var declName string
-	if global {
-		if name := gen.tr.TransformName(tl.TargetDeclare, decl.Name); len(name) > 0 {
-			declName = string(name)
-		} else {
-			declName = "_"
-		}
-	} else if len(decl.Name) > 0 {
-		declName = decl.Name
-	} else {
-		declName = "_"
-	}
-
+func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
+	declName := gen.transformDeclName(decl.Name, public)
 	if tag := decl.Spec.GetBase(); len(tag) > 0 {
 		// refSpec := &tl.CTypeSpec{
 		// 	Base:      spec.Tag,
@@ -78,7 +61,8 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, global
 		// 	VarArrays: spec.GetVarArrays(),
 		// 	Pointers:  spec.GetPointers(),
 		// }
-		fmt.Fprintf(wr, "%s %s", declName, gen.tr.TranslateSpec(tl.TargetTag, decl.Spec))
+		goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+		fmt.Fprintf(wr, "%s %s", declName, goSpec)
 		return
 	}
 	if !decl.IsTemplate() {
@@ -91,21 +75,9 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, global
 	writeEndStruct(wr)
 }
 
-func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl tl.CDecl, global bool) {
-	var declName string
-	if global {
-		if name := gen.tr.TransformName(tl.TargetDeclare, decl.Name); len(name) > 0 {
-			declName = string(name)
-		} else {
-			declName = "_"
-		}
-	} else if len(decl.Name) > 0 {
-		declName = decl.Name
-	} else {
-		declName = "_"
-	}
-
-	typeRef := gen.tr.TranslateSpec(tl.TargetTag, decl.Spec).String()
+func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
+	declName := gen.transformDeclName(decl.Name, public)
+	typeRef := gen.tr.TranslateSpec(tl.TargetType, decl.Spec).String()
 	if declName != typeRef {
 		fmt.Fprintf(wr, "%s %s", declName, typeRef)
 		writeSpace(wr, 1)

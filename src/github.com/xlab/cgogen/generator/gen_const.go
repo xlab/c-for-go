@@ -20,7 +20,7 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []tl.CDecl) {
 		if len(decl.Expression) == 0 {
 			decl.Expression = skipName
 		}
-		name := gen.tr.TransformName(tl.TargetDefine, decl.Name)
+		name := gen.tr.TransformName(tl.TargetConst, decl.Name)
 		fmt.Fprintf(wr, "// %s as defined in %s\n", name, tl.SrcLocation(decl.Pos))
 		fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
 		writeSpace(wr, 1)
@@ -29,12 +29,12 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []tl.CDecl) {
 }
 
 func (gen *Generator) writeConstDeclaration(wr io.Writer, decl tl.CDecl) {
-	goSpec := gen.tr.TranslateSpec(tl.TargetTypedef, decl.Spec)
-	declName := gen.tr.TransformName(tl.TargetDeclare, decl.Name)
+	declName := gen.tr.TransformName(tl.TargetConst, decl.Name)
 	fmt.Fprintf(wr, "// %s as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
 	if len(decl.Expression) == 0 {
 		decl.Expression = skipName
 	}
+	goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
 	fmt.Fprintf(wr, "const %s %s = %s", declName, goSpec, decl.Expression)
 }
 
@@ -42,14 +42,14 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl tl.CDecl, namesSeen
 	var typeName []byte
 	var hasType bool
 	if decl.IsTypedef {
-		if typeName = gen.tr.TransformName(tl.TargetTypedef, decl.Name); len(typeName) > 0 {
+		if typeName = gen.tr.TransformName(tl.TargetType, decl.Name); len(typeName) > 0 {
 			hasType = true
 		}
 	}
 
 	spec := decl.Spec.(*tl.CEnumSpec)
 	if hasType {
-		enumType := gen.tr.TranslateSpec(tl.TargetDeclare, &spec.Type)
+		enumType := gen.tr.TranslateSpec(tl.TargetType, &spec.Type)
 		fmt.Fprintf(wr, "// %s as declared in %s\n", typeName, tl.SrcLocation(decl.Pos))
 		fmt.Fprintf(wr, "type %s %s\n", typeName, enumType)
 		writeSpace(wr, 1)
@@ -58,7 +58,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl tl.CDecl, namesSeen
 	writeStartConst(wr)
 	first := true
 	for _, en := range spec.Enumerators {
-		enName := gen.tr.TransformName(tl.TargetDeclare, en.Name)
+		enName := gen.tr.TransformName(tl.TargetConst, en.Name)
 		if len(enName) == 0 {
 			continue
 		} else if namesSeen[string(enName)] {
@@ -87,14 +87,14 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 	var declName []byte
 	var isTypedef bool
 	if decl.IsTypedef {
-		if declName = gen.tr.TransformName(tl.TargetTypedef, decl.Name); len(declName) > 0 {
+		if declName = gen.tr.TransformName(tl.TargetType, decl.Name); len(declName) > 0 {
 			isTypedef = true
 		}
 	}
 
 	spec := decl.Spec.(*tl.CEnumSpec)
-	tagName := gen.tr.TransformName(tl.TargetTag, decl.Spec.GetBase())
-	enumType := gen.tr.TranslateSpec(tl.TargetDeclare, &spec.Type)
+	tagName := gen.tr.TransformName(tl.TargetType, decl.Spec.GetBase())
+	enumType := gen.tr.TranslateSpec(tl.TargetType, &spec.Type)
 	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName, tl.SrcLocation(decl.Pos))
 	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
 	writeSpace(wr, 1)
@@ -111,7 +111,7 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 	writeStartConst(wr)
 	first := true
 	for _, en := range spec.Enumerators {
-		enName := gen.tr.TransformName(tl.TargetDeclare, en.Name)
+		enName := gen.tr.TransformName(tl.TargetConst, en.Name)
 		if len(enName) == 0 {
 			continue
 		}

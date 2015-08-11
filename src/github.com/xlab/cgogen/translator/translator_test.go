@@ -65,7 +65,7 @@ func TestLearn(t *testing.T) {
 				RuleSpec{From: "(?i)VPX_", Action: ActionAccept},
 				RuleSpec{Transform: TransformLower},
 			},
-			TargetDefine: {
+			TargetConst: {
 				RuleSpec{From: "_INLINE$", Action: ActionIgnore},
 				RuleSpec{From: "vpx_", To: "_", Action: ActionReplace},
 				RuleSpec{From: "_abi", Transform: TransformUpper},

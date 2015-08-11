@@ -58,26 +58,31 @@ func TestFull(t *testing.T) {
 				//
 				tl.RuleSpec{From: "vpx_", To: "_", Action: tl.ActionReplace},
 				tl.RuleSpec{From: "vp8_", To: "_", Action: tl.ActionReplace},
-				tl.RuleSpec{From: "_abi", Transform: tl.TransformUpper},
-				tl.RuleSpec{From: "_img", To: "_image", Action: tl.ActionReplace},
-				tl.RuleSpec{From: "_fmt", To: "_format", Action: tl.ActionReplace},
-				tl.RuleSpec{From: "_cs", To: "_color_space", Action: tl.ActionReplace},
 			},
-			tl.TargetDefine: {
+			tl.TargetConst: {
 				tl.RuleSpec{From: "(?i)VPX_", Action: tl.ActionAccept},
 				tl.RuleSpec{From: "(?i)VP8_", Action: tl.ActionAccept},
 				tl.RuleSpec{From: "_INLINE$", Action: tl.ActionIgnore},
-				tl.RuleSpec{Load: "snakecase"},
 			},
-			tl.TargetTypedef: {
+			tl.TargetType: {
 				tl.RuleSpec{From: "_t$", Action: tl.ActionReplace},
-				tl.RuleSpec{Load: "snakecase"},
 				tl.RuleSpec{Transform: tl.TransformTitle},
 			},
-			tl.TargetDeclare: {
-				tl.RuleSpec{From: "_t$", Action: tl.ActionReplace},
-				tl.RuleSpec{Load: "snakecase"},
+			tl.TargetFunction: {
+				tl.RuleSpec{From: "codec_error$", To: "codec_get_error", Action: tl.ActionReplace},
 				tl.RuleSpec{Transform: tl.TransformTitle},
+			},
+			tl.TargetPublic: {
+				tl.RuleSpec{Transform: tl.TransformTitle},
+			},
+			tl.TargetPostGlobal: {
+				tl.RuleSpec{From: "_abi", Transform: tl.TransformUpper},
+				tl.RuleSpec{From: "_id?|$", Transform: tl.TransformUpper},
+				tl.RuleSpec{From: "_img", To: "_image", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "_fmt", To: "_format", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "_cs", To: "_color_space", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "_$", Action: tl.ActionReplace},
+				tl.RuleSpec{Load: "snakecase"},
 			},
 		},
 		ConstRules: tl.ConstRules{

@@ -34,11 +34,14 @@ const (
 type RuleTarget string
 
 const (
-	TargetGlobal  RuleTarget = "global"
-	TargetDefine             = "define"
-	TargetTag                = "tag"
-	TargetTypedef            = "typedef"
-	TargetDeclare            = "declare"
+	TargetGlobal     RuleTarget = "global"
+	TargetPostGlobal            = "post-global"
+	//
+	TargetConst    = "const"
+	TargetType     = "type"
+	TargetPublic   = "public"
+	TargetPrivate  = "private"
+	TargetFunction = "function"
 )
 
 type ConstRule string

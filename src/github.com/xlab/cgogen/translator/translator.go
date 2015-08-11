@@ -132,7 +132,7 @@ func (t *Translator) Printf(format string, args ...interface{}) {
 func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 	for id := range cc.Macros {
 		name := xc.Dict.S(id)
-		if !t.IsAcceptableName(TargetDefine, name) {
+		if !t.IsAcceptableName(TargetConst, name) {
 			continue
 		}
 		pos, tokList, uTokList, ok := cc.ExpandDefine(id)
@@ -187,7 +187,7 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 	}
 
 	var name []byte
-	if target != TargetGlobal {
+	if target != TargetGlobal && target != TargetPostGlobal {
 		// apply global rules first
 		name = t.TransformName(TargetGlobal, str)
 	} else {
@@ -224,6 +224,10 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 			}
 			name = replaceBytes(name, idx, buf)
 		}
+	}
+	if target != TargetGlobal && target != TargetPostGlobal {
+		// apply post-global rules in the end
+		name = t.TransformName(TargetPostGlobal, string(name))
 	}
 	t.transformCache.Set(target, str, name)
 	return name

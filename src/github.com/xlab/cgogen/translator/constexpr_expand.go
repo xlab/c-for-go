@@ -266,7 +266,7 @@ func (t *Translator) ExpandPostfixExpression(ex *cc.PostfixExpression) Expressio
 		return buf
 	case 3, // PostfixExpression '.' IDENTIFIER
 		4: // PostfixExpression "->" IDENTIFIER
-		identifier := t.TransformName(TargetDeclare, string(ex.Token.S()))
+		identifier := t.TransformName(TargetConst, string(ex.Token.S()))
 		return bytesJoin(t.ExpandPostfixExpression(ex.PostfixExpression), identifier, ".")
 	case 5, // PostfixExpression "++"
 		6: // PostfixExpression "--"
@@ -305,7 +305,7 @@ func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) Expressio
 			}
 		default:
 			if _, ok := t.exprMap[string(name)]; ok {
-				return t.TransformName(TargetDeclare, string(name))
+				return t.TransformName(TargetConst, string(name))
 			}
 		}
 		// just skip undefined
