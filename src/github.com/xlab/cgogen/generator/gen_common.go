@@ -15,13 +15,13 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structSpec tl.CType) {
 	for _, member := range spec.Members {
 		switch member.Spec.Kind() {
 		case tl.TypeKind:
-			gen.writeTypeDeclaration(wr, member, false)
+			gen.writeTypeDeclaration(wr, member, true)
 		case tl.StructKind:
-			gen.writeStructDeclaration(wr, member, false)
+			gen.writeStructDeclaration(wr, member, true)
 		case tl.EnumKind:
-			gen.writeEnumDeclaration(wr, member, false)
+			gen.writeEnumDeclaration(wr, member, true)
 		case tl.FunctionKind:
-			gen.writeFunctionDeclaration(wr, member, false)
+			gen.writeFunctionDeclaration(wr, member, true)
 		}
 		writeSpace(wr, 1)
 	}

@@ -132,8 +132,6 @@ func (gen *Generator) WriteDeclares(wr io.Writer) {
 			if !decl.IsTemplate() {
 				gen.writeEnumDeclaration(wr, decl, true)
 			}
-		case tl.TypeKind:
-			gen.writeTypeDeclaration(wr, decl, true)
 		case tl.FunctionKind:
 			gen.writeFunctionDeclaration(wr, decl, true)
 		}
