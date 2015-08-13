@@ -10,14 +10,11 @@ func (gen *Generator) WriteDoc(wr io.Writer) {
 	writeTextBlock(wr, gen.cfg.PackageLicense)
 	writeSpace(wr, 1)
 	writeLongTextBlock(wr, gen.cfg.PackageDescription)
-	writePackageName(wr, gen.cfg.PackageName)
+	writePackageName(wr, gen.pkg)
+	writeSpace(wr, 1)
 }
 
 func (gen *Generator) WriteIncludes(wr io.Writer) error {
-	writeTextBlock(wr, gen.cfg.PackageLicense)
-	writeSpace(wr, 1)
-	writePackageName(wr, gen.cfg.PackageName)
-	writeSpace(wr, 1)
 	writeStartComment(wr)
 	writePkgConfig(wr, gen.cfg.PkgConfigOpts)
 	writeFlagSet(wr, gen.cfg.CPPFlags)
@@ -36,10 +33,11 @@ func (gen *Generator) WriteIncludes(wr io.Writer) error {
 	return nil
 }
 
-func (gen *Generator) WritePackage(wr io.Writer) {
+func (gen *Generator) WritePackageHeader(wr io.Writer) {
 	writeTextBlock(wr, gen.cfg.PackageLicense)
 	writeSpace(wr, 1)
-	writePackageName(wr, gen.cfg.PackageName)
+	writePackageName(wr, gen.pkg)
+	writeSpace(wr, 1)
 }
 
 func writeFlagSet(wr io.Writer, flags ArchFlagSet) {

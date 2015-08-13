@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -14,7 +13,6 @@ import (
 )
 
 type Translator struct {
-	out         io.Writer
 	rules       Rules
 	prefixEnums bool
 	compiledRxs map[RuleAction]RxMap
@@ -48,12 +46,11 @@ type Config struct {
 	Typemap    CTypeMap
 }
 
-func New(cfg *Config, out io.Writer) (*Translator, error) {
+func New(cfg *Config) (*Translator, error) {
 	if cfg == nil {
 		cfg = &Config{}
 	}
 	t := &Translator{
-		out:            out,
 		rules:          cfg.Rules,
 		constRules:     cfg.ConstRules,
 		typemap:        cfg.Typemap,
@@ -125,10 +122,6 @@ func (s declList) Less(i, j int) bool {
 	}
 }
 
-func (t *Translator) Printf(format string, args ...interface{}) {
-	fmt.Fprintf(t.out, format, args...)
-}
-
 func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 	for id := range cc.Macros {
 		name := xc.Dict.S(id)
@@ -159,23 +152,6 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
 	return xc.Compilation.Errors(true)
-}
-
-func (t *Translator) Report() {
-	t.Printf("[!] TAGS:\n")
-	for tag, decl := range t.tagMap {
-		t.Printf("%s refers to %v\n", tag, decl)
-	}
-
-	t.Printf("\n\n\n[!] TYPEDEFs:\n")
-	for _, decl := range t.typedefs {
-		t.Printf("%v\n", decl)
-	}
-
-	t.Printf("\n\n\n[!] DECLARES:\n")
-	for _, decl := range t.declares {
-		t.Printf("%v\n", decl)
-	}
 }
 
 func (t *Translator) TransformName(target RuleTarget, str string) []byte {
@@ -210,9 +186,6 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 		// -> vpxErrorResilientPartitions
 		for i := len(indices) - 1; i >= 0; i-- {
 			idx := indices[i]
-			// if len(rx.Transform) > 0 {
-			// 	log.Println("doing", rx.Transform, "at", string(name[idx[0]:idx[1]]), "in", string(name))
-			// }
 			buf := rx.From.Expand([]byte{}, rx.To, reference, idx)
 			switch rx.Transform {
 			case TransformLower:

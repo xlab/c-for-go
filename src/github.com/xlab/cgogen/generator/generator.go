@@ -8,6 +8,7 @@ import (
 )
 
 type Generator struct {
+	pkg string
 	cfg *Config
 	tr  *tl.Translator
 }
@@ -19,7 +20,6 @@ type ArchFlagSet struct {
 }
 
 type Config struct {
-	PackageName        string
 	PackageDescription string
 	PackageLicense     string
 	PkgConfigOpts      []string
@@ -31,21 +31,15 @@ type Config struct {
 	Includes           []string
 }
 
-func CheckConfig(cfg *Config) error {
-	if len(cfg.PackageName) == 0 {
-		return errors.New("no package name specified")
+func New(packageName string, cfg *Config, tr *tl.Translator) (*Generator, error) {
+	if len(packageName) == 0 {
+		return nil, errors.New("no package name provided")
 	}
-	return nil
-}
-
-func New(cfg *Config, tr *tl.Translator) (*Generator, error) {
 	if tr == nil {
 		return nil, errors.New("no translator provided")
 	}
-	if err := CheckConfig(cfg); err != nil {
-		return nil, err
-	}
 	gen := &Generator{
+		pkg: packageName,
 		cfg: cfg,
 		tr:  tr,
 	}

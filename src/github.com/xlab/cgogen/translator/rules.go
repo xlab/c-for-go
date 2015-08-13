@@ -14,9 +14,9 @@ type RuleAction string
 
 const (
 	ActionNone    RuleAction = ""
-	ActionAccept             = "accept"
-	ActionIgnore             = "ignore"
-	ActionReplace            = "replace"
+	ActionAccept  RuleAction = "accept"
+	ActionIgnore  RuleAction = "ignore"
+	ActionReplace RuleAction = "replace"
 )
 
 var ruleActions = []RuleAction{
@@ -27,38 +27,38 @@ type RuleTransform string
 
 const (
 	TransformLower RuleTransform = "lower"
-	TransformTitle               = "title"
-	TransformUpper               = "upper"
+	TransformTitle RuleTransform = "title"
+	TransformUpper RuleTransform = "upper"
 )
 
 type RuleTarget string
 
 const (
 	TargetGlobal     RuleTarget = "global"
-	TargetPostGlobal            = "post-global"
+	TargetPostGlobal RuleTarget = "post-global"
 	//
-	TargetConst    = "const"
-	TargetType     = "type"
-	TargetPublic   = "public"
-	TargetPrivate  = "private"
-	TargetFunction = "function"
+	TargetConst    RuleTarget = "const"
+	TargetType     RuleTarget = "type"
+	TargetPublic   RuleTarget = "public"
+	TargetPrivate  RuleTarget = "private"
+	TargetFunction RuleTarget = "function"
 )
 
 type ConstRule string
 
 const (
 	ConstCGOAlias   ConstRule = "cgo_alias"
-	ConstExpand               = "expand"
-	ConstExpandFull           = "expand_full"
-	ConstEval                 = "eval"
-	ConstEvalFull             = "eval_full"
+	ConstExpand     ConstRule = "expand"
+	ConstExpandFull ConstRule = "expand_full"
+	ConstEval       ConstRule = "eval"
+	ConstEvalFull   ConstRule = "eval_full"
 )
 
 type ConstScope string
 
 const (
-	ConstEnum    = "enum"
-	ConstDeclare = "declare"
+	ConstEnum    ConstScope = "enum"
+	ConstDeclare ConstScope = "declare"
 )
 
 var builtinRules = map[string]RuleSpec{

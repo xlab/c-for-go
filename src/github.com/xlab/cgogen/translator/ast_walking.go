@@ -370,6 +370,7 @@ func walkSUSpecifier0(suSpec *cc.StructOrUnionSpecifier0, decl *CDecl) {
 }
 
 func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
+	decl.Pos = enSpec.Token.Pos()
 	switch enSpec.Case {
 	case 0, // EnumSpecifier0 '{' EnumeratorList '}'
 		1: // EnumSpecifier0 '{' EnumeratorList ',' '}'

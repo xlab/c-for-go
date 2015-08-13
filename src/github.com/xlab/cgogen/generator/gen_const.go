@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 
 	tl "github.com/xlab/cgogen/translator"
 )
@@ -56,7 +57,6 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl tl.CDecl, namesSeen
 		fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName, tl.SrcLocation(decl.Pos))
 	}
 	writeStartConst(wr)
-	first := true
 	for _, en := range spec.Enumerators {
 		enName := gen.tr.TransformName(tl.TargetConst, en.Name)
 		if len(enName) == 0 {
@@ -72,8 +72,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl tl.CDecl, namesSeen
 		if len(en.Expression) == 0 {
 			en.Expression = skipName
 		}
-		if hasType && first {
-			first = false
+		if hasType {
 			fmt.Fprintf(wr, "%s %s = %s\n", enName, typeName, en.Expression)
 			continue
 		}
@@ -95,6 +94,9 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 	spec := decl.Spec.(*tl.CEnumSpec)
 	tagName := gen.tr.TransformName(tl.TargetType, decl.Spec.GetBase())
 	enumType := gen.tr.TranslateSpec(tl.TargetType, &spec.Type)
+
+	log.Println("expanding enum:", decl.Spec.GetBase(), "got position:", decl.Pos, "that points to", tl.SrcLocation(decl.Pos))
+
 	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName, tl.SrcLocation(decl.Pos))
 	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
 	writeSpace(wr, 1)
@@ -109,7 +111,6 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 
 	fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName, tl.SrcLocation(decl.Pos))
 	writeStartConst(wr)
-	first := true
 	for _, en := range spec.Enumerators {
 		enName := gen.tr.TransformName(tl.TargetConst, en.Name)
 		if len(enName) == 0 {
@@ -118,12 +119,7 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 		if len(en.Expression) == 0 {
 			en.Expression = skipName
 		}
-		if first {
-			first = false
-			fmt.Fprintf(wr, "%s %s = %s\n", enName, declName, en.Expression)
-			continue
-		}
-		fmt.Fprintf(wr, "%s = %s\n", enName, en.Expression)
+		fmt.Fprintf(wr, "%s %s = %s\n", enName, declName, en.Expression)
 	}
 	writeEndConst(wr)
 	writeSpace(wr, 1)

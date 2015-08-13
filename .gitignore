@@ -1,4 +1,4 @@
 .DS_Store
 bin/
 pkg/
-src/github.com/xlab/cgogen/generator/test/out/*
+tmp/

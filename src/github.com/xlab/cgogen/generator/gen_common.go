@@ -13,6 +13,8 @@ var skipName = []byte("_")
 func (gen *Generator) writeStructMembers(wr io.Writer, structSpec tl.CType) {
 	spec := structSpec.(*tl.CStructSpec)
 	for _, member := range spec.Members {
+		// declName := gen.tr.TransformName(tl.TargetPublic, member.Name)
+		// fmt.Fprintf(wr, "// %s member as declared in %s\n", declName, tl.SrcLocation(member.Pos))
 		switch member.Spec.Kind() {
 		case tl.TypeKind:
 			gen.writeTypeDeclaration(wr, member, true)
