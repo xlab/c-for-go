@@ -132,7 +132,9 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 		predefines(cfg.Predefined, lx.ch)
 		if len(cfg.Paths) > 0 {
 			for _, path := range cfg.Paths {
-				path = findFile(path, cfg.SysIncludePaths)
+				if !filepath.IsAbs(path) {
+					path = findFile(path, cfg.SysIncludePaths)
+				}
 				ppFileByPath(xc.Token{}, path).preprocess(ctx)
 			}
 		} else if len(cfg.Input) > 0 {
