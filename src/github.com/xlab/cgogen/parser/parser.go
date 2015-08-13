@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/cznic/c/internal/cc"
 )
@@ -17,7 +18,6 @@ type Config struct {
 	WebIncludesEnabled bool
 	WebIncludePrefix   string
 	IncludePaths       []string
-	SysIncludePaths    []string
 	TargetPaths        []string
 }
 
@@ -55,6 +55,15 @@ func New(cfg *Config) (*Parser, error) {
 		// workaround for cznic's cc (it panics if supplied path is a dir)
 		var saneFiles []string
 		for _, path := range cfg.TargetPaths {
+			if !filepath.IsAbs(path) {
+				if p, err := findFile(path, cfg.IncludePaths); err != nil {
+					err = fmt.Errorf("parser: file specified but not found: %s (include paths: %s)",
+						path, strings.Join(cfg.IncludePaths, ", "))
+					return nil, err
+				} else {
+					path = p
+				}
+			}
 			if info, err := os.Stat(path); err != nil || info.IsDir() {
 				continue
 			}
@@ -88,12 +97,24 @@ func New(cfg *Config) (*Parser, error) {
 	return p, nil
 }
 
+func findFile(path string, includePaths []string) (string, error) {
+	if _, err := os.Stat(path); err == nil {
+		return path, nil
+	}
+	for _, inc := range includePaths {
+		result := filepath.Join(inc, path)
+		if _, err := os.Stat(result); err == nil {
+			return result, nil
+		}
+	}
+	return "", errors.New("not found")
+}
+
 func (p *Parser) ccParserConfig() (*cc.ParseConfig, error) {
 	ccCfg := &cc.ParseConfig{
 		Predefined:         p.predefined,
 		Paths:              p.cfg.TargetPaths,
-		SysIncludePaths:    p.cfg.SysIncludePaths,
-		IncludePaths:       p.cfg.IncludePaths,
+		SysIncludePaths:    p.cfg.IncludePaths,
 		WebIncludesEnabled: p.cfg.WebIncludesEnabled,
 		WebIncludePrefix:   p.cfg.WebIncludePrefix,
 	}

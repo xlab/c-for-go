@@ -47,18 +47,18 @@ const (
 type ConstRule string
 
 const (
-	ConstCGOAlias   ConstRule = "cgo_alias"
+	ConstCGOAlias   ConstRule = "cgo"
 	ConstExpand     ConstRule = "expand"
-	ConstExpandFull ConstRule = "expand_full"
+	ConstExpandFull ConstRule = "expandFull"
 	ConstEval       ConstRule = "eval"
-	ConstEvalFull   ConstRule = "eval_full"
+	ConstEvalFull   ConstRule = "evalFull"
 )
 
 type ConstScope string
 
 const (
-	ConstEnum    ConstScope = "enum"
-	ConstDeclare ConstScope = "declare"
+	ConstEnum    ConstScope = "enums"
+	ConstDeclare ConstScope = "declares"
 )
 
 var builtinRules = map[string]RuleSpec{

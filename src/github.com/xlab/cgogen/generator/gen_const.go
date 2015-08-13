@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 
 	tl "github.com/xlab/cgogen/translator"
 )
@@ -94,9 +93,6 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 	spec := decl.Spec.(*tl.CEnumSpec)
 	tagName := gen.tr.TransformName(tl.TargetType, decl.Spec.GetBase())
 	enumType := gen.tr.TranslateSpec(tl.TargetType, &spec.Type)
-
-	log.Println("expanding enum:", decl.Spec.GetBase(), "got position:", decl.Pos, "that points to", tl.SrcLocation(decl.Pos))
-
 	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName, tl.SrcLocation(decl.Pos))
 	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
 	writeSpace(wr, 1)
