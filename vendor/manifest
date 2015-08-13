@@ -43,7 +43,7 @@
 		{
 			"importpath": "github.com/xlab/pkgconfig/pkg",
 			"repository": "https://github.com/xlab/pkgconfig",
-			"revision": "2ec31acac3e7ae831fdbc23cea27057a27fced4c",
+			"revision": "83a1f4874f4ca375a2d1c6bb567e15e3947486c0",
 			"branch": "master",
 			"path": "/pkg"
 		},

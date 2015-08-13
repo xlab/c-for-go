@@ -25,8 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
-	"path/filepath"
 
 	"github.com/cznic/c/internal/xc"
 	"github.com/cznic/mathutil"
@@ -132,9 +130,6 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 		predefines(cfg.Predefined, lx.ch)
 		if len(cfg.Paths) > 0 {
 			for _, path := range cfg.Paths {
-				if !filepath.IsAbs(path) {
-					path = findFile(path, cfg.SysIncludePaths)
-				}
 				ppFileByPath(xc.Token{}, path).preprocess(ctx)
 			}
 		} else if len(cfg.Input) > 0 {
@@ -157,17 +152,4 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 	}
 
 	return lx.tu, nil
-}
-
-func findFile(path string, includePaths []string) string {
-	if _, err := os.Stat(path); err == nil {
-		return path
-	}
-	for _, inc := range includePaths {
-		result := filepath.Join(inc, path)
-		if _, err := os.Stat(result); err == nil {
-			return result
-		}
-	}
-	return path
 }

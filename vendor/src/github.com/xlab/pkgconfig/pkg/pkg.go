@@ -45,7 +45,7 @@ func NewConfig(pcPaths []string) (Config, error) {
 		for _, path := range strings.Split(pkgConfigPath, ":") {
 			path = strings.TrimSpace(path)
 			if len(path) > 0 {
-				cfg.pcPaths = append(pcPaths, path)
+				cfg.pcPaths = append(cfg.pcPaths, path)
 			}
 		}
 		if len(cfg.pcPaths) == 0 {
