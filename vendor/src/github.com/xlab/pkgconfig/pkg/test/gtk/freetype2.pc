@@ -1,0 +1,12 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: FreeType 2
+Description: A free, high-quality, and portable font engine.
+Version: 13.1.7
+Requires:
+Libs: -L${libdir} -lfreetype
+Libs.private:
+Cflags: -I${includedir}/freetype2 -I${includedir}

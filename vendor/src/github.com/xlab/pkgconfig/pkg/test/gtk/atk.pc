@@ -1,0 +1,11 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: Atk
+Description: Accessibility Toolkit
+Version: 2.2.0
+Requires: gobject-2.0
+Libs: -L${libdir} -latk-1.0
+Cflags: -I${includedir}/atk-1.0

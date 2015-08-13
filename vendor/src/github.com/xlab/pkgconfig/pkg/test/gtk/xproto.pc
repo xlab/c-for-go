@@ -1,0 +1,10 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+includex11dir=${includedir}/X11
+
+Name: Xproto
+Description: Xproto headers
+Version: 7.0.22
+Cflags: -I${includedir}

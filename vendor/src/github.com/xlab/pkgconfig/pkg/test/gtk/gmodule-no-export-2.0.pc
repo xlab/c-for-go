@@ -1,0 +1,14 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+gmodule_supported=true
+
+Name: GModule
+Description: Dynamic module loader for GLib
+Requires: glib-2.0
+Version: 2.30.3
+Libs: -L${libdir} -lgmodule-2.0 -pthread  -lrt
+Libs.private: -ldl
+Cflags: -pthread

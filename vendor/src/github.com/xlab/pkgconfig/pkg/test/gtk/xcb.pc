@@ -1,0 +1,13 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+xcbproto_version=1.6
+
+Name: XCB
+Description: X-protocol C Binding
+Version: 1.7
+Requires.private: xau >= 0.99.2
+Libs: -L${libdir} -lxcb
+Libs.private:
+Cflags: -I${includedir}

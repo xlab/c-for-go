@@ -1,0 +1,12 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+targets=x11
+
+Name: GDK
+Description: GTK+ Drawing Kit
+Version: 3.2.4
+Requires: pango pangocairo gdk-pixbuf-2.0 cairo-gobject
+Libs: -L${libdir} -lgdk-3
+Cflags: -I${includedir}/gtk-3.0

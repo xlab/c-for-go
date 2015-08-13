@@ -1,0 +1,9 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: KBProto
+Description: KB extension headers
+Version: 1.0.5
+Cflags: -I${includedir}

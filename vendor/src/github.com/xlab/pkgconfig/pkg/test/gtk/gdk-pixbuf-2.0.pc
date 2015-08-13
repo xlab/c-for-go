@@ -1,0 +1,19 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+gdk_pixbuf_binary_version=2.10.0
+gdk_pixbuf_binarydir=${libdir}/gdk-pixbuf-2.0/2.10.0
+gdk_pixbuf_moduledir=${gdk_pixbuf_binarydir}/loaders
+gdk_pixbuf_cache_file=${gdk_pixbuf_binarydir}/loaders.cache
+
+Name: GdkPixbuf
+Description: Image loading and scaling
+Version: 2.24.1
+Requires: gobject-2.0
+Requires.private: gmodule-no-export-2.0 libpng12
+Libs: -L${libdir} -lgdk_pixbuf-2.0
+Libs.private:  -lm
+Cflags: -I${includedir}/gdk-pixbuf-2.0
+

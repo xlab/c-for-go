@@ -1,0 +1,11 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libpng
+Description: Loads and saves PNG files
+Version: 1.2.49
+Libs: -L${libdir} -lpng12
+Libs.private: -lz -lm
+Cflags: -I${includedir}

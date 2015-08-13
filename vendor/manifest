@@ -41,6 +41,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/xlab/pkgconfig/pkg",
+			"repository": "https://github.com/xlab/pkgconfig",
+			"revision": "2ec31acac3e7ae831fdbc23cea27057a27fced4c",
+			"branch": "master",
+			"path": "/pkg"
+		},
+		{
 			"importpath": "gopkg.in/mflag.v1",
 			"repository": "https://gopkg.in/mflag.v1",
 			"revision": "1092c1992ee9deea07b89edd5d1023fd7b849ec4",

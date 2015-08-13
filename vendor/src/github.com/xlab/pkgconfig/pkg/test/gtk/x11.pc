@@ -1,0 +1,15 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+xthreadlib=-lpthread
+
+Name: X11
+Description: X Library
+Version: 1.4.3
+Requires: xproto kbproto
+Requires.private: xcb >= 1.1.92
+Cflags: -I${includedir}
+Libs: -L${libdir} -lX11
+Libs.private: -lpthread

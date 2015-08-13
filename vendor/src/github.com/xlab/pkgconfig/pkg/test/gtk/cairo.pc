@@ -1,0 +1,13 @@
+prefix=/gtk
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: cairo
+Description: Multi-platform 2D graphics library
+Version: 1.10.2
+
+Requires.private:   gobject-2.0 glib-2.0     pixman-1 >= 0.18.4    fontconfig >= 2.2.95 freetype2 >= 9.7.3  libpng xrender >= 0.6 x11
+Libs: -L${libdir} -lcairo
+Libs.private:          -lz -lz
+Cflags: -I${includedir}/cairo
