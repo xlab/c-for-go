@@ -39,6 +39,12 @@
 			"repository": "https://github.com/cznic/strutil",
 			"revision": "1eb03e3cc9d345307a45ec82bd3016cde4bd4464",
 			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/mflag.v1",
+			"repository": "https://gopkg.in/mflag.v1",
+			"revision": "1092c1992ee9deea07b89edd5d1023fd7b849ec4",
+			"branch": "master"
 		}
 	]
 }
