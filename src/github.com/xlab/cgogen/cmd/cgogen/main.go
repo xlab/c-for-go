@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	configPath = mflag.String([]string{"c", "-config", "-cfg"}, "", "Specify the config file path, defaults to <package>.json or cgogen.json.")
+	configPath = mflag.String([]string{"c", "-config", "-cfg"}, "", "Specify the config file path, defaults to <package>.yml or cgogen.yml.")
 	outputPath = mflag.String([]string{"o", "-out", "-out-dir"}, "", "Specify the output directory")
 )
 
@@ -41,20 +41,22 @@ func main() {
 func getConfigPath() (str string) {
 	if path := *configPath; len(path) > 0 {
 		if info, err := os.Stat(path); err != nil || info.IsDir() {
-			Errorf("can't locate the config file: %s", path)
+			Errorf("cannot locate the specified config file: %s", path)
 		}
 		return path
 	}
 	paths := []string{
-		fmt.Sprintf("%s.json", filepath.Base(packageName)),
-		"cgogen.json",
+		fmt.Sprintf("%s.yaml", filepath.Base(packageName)),
+		fmt.Sprintf("%s.yml", filepath.Base(packageName)),
+		"cgogen.yaml",
+		"cgogen.yml",
 	}
 	for _, path := range paths {
 		if info, err := os.Stat(path); err == nil && !info.IsDir() {
 			return path
 		}
 	}
-	Errorf("config path isn't specified, also couldn't locate neither of: %v", strings.Join(paths, ", "))
+	Errorf("config path was not specified, also could not locate neither of: %v", strings.Join(paths, ", "))
 	return
 }
 

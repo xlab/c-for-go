@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,6 +12,7 @@ import (
 	"github.com/xlab/cgogen/parser"
 	"github.com/xlab/cgogen/translator"
 	"github.com/xlab/pkgconfig/pkg"
+	"gopkg.in/yaml.v2"
 )
 
 type WriterOpt int
@@ -40,9 +40,9 @@ type CGOGen struct {
 }
 
 type CGOGenConfig struct {
-	Generator  *generator.Config
-	Translator *translator.Config
-	Parser     *parser.Config
+	Generator  *generator.Config  `yaml:"GENERATOR"`
+	Translator *translator.Config `yaml:"TRANSLATOR"`
+	Parser     *parser.Config     `yaml:"PARSER"`
 }
 
 func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
@@ -51,7 +51,7 @@ func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
 		return nil, err
 	}
 	var cfg CGOGenConfig
-	if err := json.Unmarshal(cfgData, &cfg); err != nil {
+	if err := yaml.Unmarshal(cfgData, &cfg); err != nil {
 		return nil, err
 	}
 	if cfg.Generator != nil {

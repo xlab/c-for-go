@@ -12,13 +12,13 @@ import (
 )
 
 type Config struct {
-	Arch               string
+	Arch               string   `yaml:"Arch"`
+	CustomDefinesPath  string   `yaml:"CustomDefinesPath"`
+	WebIncludesEnabled bool     `yaml:"WebIncludesEnabled"`
+	WebIncludePrefix   string   `yaml:"WebIncludePrefix"`
+	IncludePaths       []string `yaml:"IncludePaths"`
+	TargetPaths        []string `yaml:"TargetPaths"`
 	archBits           TargetArchBits
-	CustomDefinesPath  string
-	WebIncludesEnabled bool
-	WebIncludePrefix   string
-	IncludePaths       []string
-	TargetPaths        []string
 }
 
 func NewConfig(paths ...string) *Config {
@@ -51,17 +51,17 @@ func New(cfg *Config) (*Parser, error) {
 	p := &Parser{
 		cfg: checkConfig(cfg),
 	}
-	if len(cfg.TargetPaths) > 0 {
+	if len(p.cfg.TargetPaths) > 0 {
 		// workaround for cznic's cc (it panics if supplied path is a dir)
 		var saneFiles []string
-		for _, path := range cfg.TargetPaths {
+		for _, path := range p.cfg.TargetPaths {
 			if !filepath.IsAbs(path) {
-				if p, err := findFile(path, cfg.IncludePaths); err != nil {
+				if hPath, err := findFile(path, p.cfg.IncludePaths); err != nil {
 					err = fmt.Errorf("parser: file specified but not found: %s (include paths: %s)",
-						path, strings.Join(cfg.IncludePaths, ", "))
+						path, strings.Join(p.cfg.IncludePaths, ", "))
 					return nil, err
 				} else {
-					path = p
+					path = hPath
 				}
 			}
 			if info, err := os.Stat(path); err != nil || info.IsDir() {
@@ -72,18 +72,18 @@ func New(cfg *Config) (*Parser, error) {
 			}
 			saneFiles = append(saneFiles, path)
 		}
-		cfg.TargetPaths = saneFiles
+		p.cfg.TargetPaths = saneFiles
 	} else {
 		return nil, errors.New("parser: no target paths specified")
 	}
 
-	if def, ok := predefines[cfg.archBits]; !ok {
+	if def, ok := predefines[p.cfg.archBits]; !ok {
 		p.predefined = predefinedBase
 	} else {
 		p.predefined = def
 	}
-	if len(cfg.CustomDefinesPath) > 0 {
-		if buf, err := ioutil.ReadFile(cfg.CustomDefinesPath); err != nil {
+	if len(p.cfg.CustomDefinesPath) > 0 {
+		if buf, err := ioutil.ReadFile(p.cfg.CustomDefinesPath); err != nil {
 			return nil, errors.New("parser: custom defines file provided but can't be read")
 		} else if len(buf) > 0 {
 			p.predefined = fmt.Sprintf("%s\n// custom defines below\n%s", p.predefined, buf)

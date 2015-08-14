@@ -41,9 +41,9 @@ type Rx struct {
 }
 
 type Config struct {
-	Rules      Rules
-	ConstRules ConstRules
-	Typemap    CTypeMap
+	Rules      Rules      `yaml: "Rules"`
+	ConstRules ConstRules `yaml: "ConstRules"`
+	Typemap    CTypeMap   `yaml: "Typemap"`
 }
 
 func New(cfg *Config) (*Translator, error) {
