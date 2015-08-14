@@ -12,6 +12,7 @@ import (
 	"github.com/xlab/cgogen/parser"
 	"github.com/xlab/cgogen/translator"
 	"github.com/xlab/pkgconfig/pkg"
+	"golang.org/x/tools/imports"
 	"gopkg.in/yaml.v2"
 )
 
@@ -54,7 +55,6 @@ func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
 	if err := yaml.Unmarshal(cfgData, &cfg); err != nil {
 		return nil, err
 	}
-	log.Println(cfg.Translator)
 	if cfg.Generator != nil {
 		paths := includePathsFromPkgConfig(cfg.Generator.PkgConfigOpts)
 		if cfg.Parser == nil {
@@ -114,6 +114,7 @@ func (c *CGOGen) Generate() {
 	if wr, ok := c.writers[WriterInludes]; ok {
 		c.gen.WritePackageHeader(wr)
 		c.gen.WriteIncludes(wr)
+		c.gen.WriteImportC(main)
 	} else {
 		c.gen.WriteIncludes(main)
 	}
@@ -125,22 +126,42 @@ func (c *CGOGen) Generate() {
 	}
 	if wr, ok := c.writers[WriterTypes]; ok {
 		c.gen.WritePackageHeader(wr)
+		c.gen.WriteImportC(wr)
 		c.gen.WriteTypedefs(wr)
 	} else {
 		c.gen.WriteTypedefs(main)
 	}
 	if wr, ok := c.writers[WriterUnions]; ok {
 		c.gen.WritePackageHeader(wr)
+		c.gen.WriteImportC(wr)
 		c.gen.WriteUnions(wr)
 	} else {
+		c.gen.WritePackageHeader(wr)
+		c.gen.WriteImportC(wr)
 		c.gen.WriteUnions(main)
 	}
 	c.gen.WriteDeclares(main)
 }
 
+func goFmtFile(path string) error {
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	fmtBuf, err := imports.Process(path, buf, nil)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path, fmtBuf, 0644)
+}
+
 func (c *CGOGen) Close() {
 	for _, w := range c.writers {
+		path := w.Name()
 		w.Close()
+		if err := goFmtFile(path); err != nil {
+			log.Printf("[WARN]: cannot gofmt %s: %s\n", path, err.Error())
+		}
 	}
 }
 

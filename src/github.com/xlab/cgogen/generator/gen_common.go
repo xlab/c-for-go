@@ -32,7 +32,7 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structSpec tl.CType) {
 func (gen *Generator) writeFunctionParams(wr io.Writer, funcSpec tl.CType) {
 	spec := funcSpec.(*tl.CFunctionSpec)
 	writeStartParams(wr)
-	for _, param := range spec.ParamList {
+	for i, param := range spec.ParamList {
 		switch param.Spec.Kind() {
 		case tl.TypeKind:
 			gen.writeTypeDeclaration(wr, param, false)
@@ -43,7 +43,9 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcSpec tl.CType) {
 		case tl.FunctionKind:
 			gen.writeFunctionDeclaration(wr, param, false)
 		}
-		fmt.Fprintf(wr, ",")
+		if i < len(spec.ParamList)-1 {
+			fmt.Fprintf(wr, ", ")
+		}
 	}
 	writeEndParams(wr)
 }

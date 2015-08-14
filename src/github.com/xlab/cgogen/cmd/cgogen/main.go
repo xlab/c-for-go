@@ -35,6 +35,7 @@ func main() {
 	if err != nil {
 		Errorf(err.Error())
 	}
+	defer cgogen.Close()
 	cgogen.Generate()
 }
 

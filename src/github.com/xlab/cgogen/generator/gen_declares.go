@@ -50,6 +50,9 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, publ
 	if len(returnRef) > 0 {
 		fmt.Fprintf(wr, " %s", returnRef)
 	}
+	if public {
+		writeSpace(wr, 1)
+	}
 }
 
 func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
