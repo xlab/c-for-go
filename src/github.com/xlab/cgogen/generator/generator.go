@@ -63,10 +63,13 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 		}
 	}
 
-	for _, decl := range gen.tr.TagMap() {
+	for tag, decl := range gen.tr.TagMap() {
 		if decl.Spec.Kind() != tl.EnumKind {
 			continue
 		} else if !decl.IsTemplate() {
+			continue
+		}
+		if !gen.tr.IsAcceptableName(tl.TargetType, tag) {
 			continue
 		}
 		expandEnum(decl)
@@ -75,6 +78,9 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 		if decl.Spec.Kind() != tl.EnumKind {
 			continue
 		} else if !decl.IsTemplate() {
+			continue
+		}
+		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
 			continue
 		}
 		expandEnum(decl)
@@ -91,6 +97,9 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 		} else if !decl.IsConst() {
 			continue
 		}
+		if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+			continue
+		}
 		gen.writeConstDeclaration(wr, decl)
 		writeSpace(wr, 1)
 	}
@@ -98,6 +107,9 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 
 func (gen *Generator) WriteTypedefs(wr io.Writer) {
 	for _, decl := range gen.tr.Typedefs() {
+		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
+			continue
+		}
 		switch decl.Kind() {
 		case tl.StructKind:
 			gen.writeStructTypedef(wr, decl)
@@ -121,12 +133,21 @@ func (gen *Generator) WriteDeclares(wr io.Writer) {
 		}
 		switch decl.Kind() {
 		case tl.StructKind:
+			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+				continue
+			}
 			gen.writeStructDeclaration(wr, decl, true)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
+				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+					continue
+				}
 				gen.writeEnumDeclaration(wr, decl, true)
 			}
 		case tl.FunctionKind:
+			if !gen.tr.IsAcceptableName(tl.TargetFunction, decl.Name) {
+				continue
+			}
 			gen.writeFunctionDeclaration(wr, decl, true)
 		}
 		writeSpace(wr, 1)

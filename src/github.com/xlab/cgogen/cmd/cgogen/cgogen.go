@@ -54,6 +54,7 @@ func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
 	if err := yaml.Unmarshal(cfgData, &cfg); err != nil {
 		return nil, err
 	}
+	log.Println(cfg.Translator)
 	if cfg.Generator != nil {
 		paths := includePathsFromPkgConfig(cfg.Generator.PkgConfigOpts)
 		if cfg.Parser == nil {

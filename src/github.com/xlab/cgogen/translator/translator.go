@@ -41,9 +41,9 @@ type Rx struct {
 }
 
 type Config struct {
-	Rules      Rules      `yaml: "Rules"`
-	ConstRules ConstRules `yaml: "ConstRules"`
-	Typemap    CTypeMap   `yaml: "Typemap"`
+	Rules      Rules      `yaml:"Rules"`
+	ConstRules ConstRules `yaml:"ConstRules"`
+	Typemap    CTypeMap   `yaml:"Typemap"`
 }
 
 func New(cfg *Config) (*Translator, error) {
@@ -124,7 +124,7 @@ func (s declList) Less(i, j int) bool {
 
 func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 	for id := range cc.Macros {
-		name := xc.Dict.S(id)
+		name := string(xc.Dict.S(id))
 		if !t.IsAcceptableName(TargetConst, name) {
 			continue
 		}
@@ -139,7 +139,7 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 		t.defines = append(t.defines, CDecl{
 			Pos:        pos,
 			IsDefine:   true,
-			Name:       string(name),
+			Name:       name,
 			Expression: tokList[0].S(),
 			Src:        strings.Join(srcParts, " "),
 		})
@@ -191,7 +191,9 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 			case TransformLower:
 				buf = bytes.ToLower(buf)
 			case TransformTitle:
-				buf = bytes.Title(buf)
+				if len(buf) > 0 {
+					buf[0] = bytes.ToUpper(buf[:1])[0]
+				}
 			case TransformUpper:
 				buf = bytes.ToUpper(buf)
 			}
@@ -336,25 +338,29 @@ func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
 	return
 }
 
-func (t *Translator) IsAcceptableName(target RuleTarget, name []byte) bool {
-	if rxs, ok := t.compiledRxs[ActionIgnore][target]; ok {
-		for _, rx := range rxs {
-			if rx.From.Match(name) {
-				return false
-			}
-		}
-	}
+func (t *Translator) IsAcceptableName(target RuleTarget, name string) bool {
 	if rxs, ok := t.compiledRxs[ActionAccept][target]; ok {
 		for _, rx := range rxs {
-			if rx.From.Match(name) {
+			if rx.From.MatchString(name) {
+				// try to find explicit ignore rules
+				if rxs, ok := t.compiledRxs[ActionIgnore][target]; ok {
+					for _, rx := range rxs {
+						if rx.From.MatchString(name) {
+							// found an ignore rule, ignore the name
+							return false
+						}
+					}
+				}
+				// no ignore rules found, accept the name
 				return true
 			}
 		}
 	}
 	if target != TargetGlobal {
-		// fallback to global rules
+		// we don't have any specific rules for this target, check global rules
 		return t.IsAcceptableName(TargetGlobal, name)
 	}
+	// default to ignore
 	return false
 }
 
