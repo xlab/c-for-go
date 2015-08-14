@@ -52,6 +52,12 @@
 			"repository": "https://gopkg.in/mflag.v1",
 			"revision": "1092c1992ee9deea07b89edd5d1023fd7b849ec4",
 			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/yaml.v2",
+			"repository": "https://gopkg.in/yaml.v2",
+			"revision": "7ad95dd0798a40da1ccdff6dff35fd177b5edf40",
+			"branch": "v2"
 		}
 	]
 }
