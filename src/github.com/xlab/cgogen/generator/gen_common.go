@@ -62,6 +62,14 @@ func writeEndStruct(wr io.Writer) {
 	fmt.Fprintln(wr, "}")
 }
 
+func writeStartFuncBody(wr io.Writer) {
+	fmt.Fprintln(wr, "{")
+}
+
+func writeEndFuncBody(wr io.Writer) {
+	fmt.Fprintln(wr, "}")
+}
+
 func writeSpace(wr io.Writer, n int) {
 	fmt.Fprint(wr, strings.Repeat("\n", n))
 }

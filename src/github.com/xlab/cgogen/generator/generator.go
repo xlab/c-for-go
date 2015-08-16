@@ -11,6 +11,10 @@ type Generator struct {
 	pkg string
 	cfg *Config
 	tr  *tl.Translator
+	//
+	closed        bool
+	closeC, doneC chan struct{}
+	helpersChan   chan *Helper
 }
 
 type ArchFlagSet struct {
@@ -20,6 +24,7 @@ type ArchFlagSet struct {
 }
 
 type Config struct {
+	PackageName        string      `yaml:"PackageName"`
 	PackageDescription string      `yaml:"PackageDescription"`
 	PackageLicense     string      `yaml:"PackageLicense"`
 	PkgConfigOpts      []string    `yaml:"PkgConfigOpts"`
@@ -31,17 +36,20 @@ type Config struct {
 	Includes           []string    `yaml:"Includes"`
 }
 
-func New(packageName string, cfg *Config, tr *tl.Translator) (*Generator, error) {
-	if len(packageName) == 0 {
+func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
+	if cfg == nil || len(cfg.PackageName) == 0 {
 		return nil, errors.New("no package name provided")
-	}
-	if tr == nil {
+	} else if tr == nil {
 		return nil, errors.New("no translator provided")
 	}
 	gen := &Generator{
-		pkg: packageName,
+		pkg: pkg,
 		cfg: cfg,
 		tr:  tr,
+		//
+		helpersChan: make(chan *Helper, 1),
+		closeC:      make(chan struct{}),
+		doneC:       make(chan struct{}),
 	}
 	return gen, nil
 }
@@ -151,5 +159,75 @@ func (gen *Generator) WriteDeclares(wr io.Writer) {
 			gen.writeFunctionDeclaration(wr, decl, true)
 		}
 		writeSpace(wr, 1)
+	}
+}
+
+func (gen *Generator) Close() {
+	if gen.closed {
+		return
+	}
+	gen.closed = true
+	gen.closeC <- struct{}{}
+	<-gen.doneC
+}
+
+func (gen *Generator) MonitorAndWriteHelpers(goWr, cWr io.Writer, initWrFunc ...func() (io.Writer, error)) {
+	seenHelperNames := make(map[string]bool)
+	var seenGoHelper bool
+	var seenCHelper bool
+	for {
+		select {
+		case <-gen.closeC:
+			close(gen.helpersChan)
+		case helper, ok := <-gen.helpersChan:
+			if !ok {
+				close(gen.doneC)
+				return
+			}
+			if seenHelperNames[helper.Name] {
+				continue
+			}
+			seenHelperNames[helper.Name] = true
+
+			var wr io.Writer
+			switch helper.Side {
+			case GoSide:
+				if goWr != nil {
+					wr = goWr
+				} else if len(initWrFunc) < 1 {
+					continue
+				} else if w, err := initWrFunc[0](); err != nil {
+					continue
+				} else {
+					wr = w
+				}
+				if !seenGoHelper {
+					gen.writeGoHelpersHeader(wr)
+					seenGoHelper = true
+				}
+			case CSide:
+				if cWr != nil {
+					wr = cWr
+				} else if len(initWrFunc) < 2 {
+					continue
+				} else if w, err := initWrFunc[1](); err != nil {
+					continue
+				} else {
+					wr = w
+				}
+				if !seenCHelper {
+					gen.writeCHelpersHeader(wr)
+					seenCHelper = true
+				}
+			default:
+				continue
+			}
+
+			if len(helper.Description) > 0 {
+				writeTextBlock(wr, helper.Description)
+			}
+			writeSourceBlock(wr, helper.Source)
+			writeSpace(wr, 1)
+		}
 	}
 }

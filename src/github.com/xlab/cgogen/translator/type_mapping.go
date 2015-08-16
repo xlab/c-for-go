@@ -30,31 +30,6 @@ var (
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
 
-var builtinGoTypeMap = GoTypeMap{
-	BoolSpec.String():        BoolSpec,
-	IntSpec.String():         IntSpec,
-	UintSpec.String():        UintSpec,
-	Int8Spec.String():        Int8Spec,
-	Int16Spec.String():       Int16Spec,
-	Int32Spec.String():       Int32Spec,
-	Int64Spec.String():       Int64Spec,
-	Uint8Spec.String():       Uint8Spec,
-	Uint16Spec.String():      Uint16Spec,
-	Uint32Spec.String():      Uint32Spec,
-	Uint64Spec.String():      Uint64Spec,
-	RuneSpec.String():        RuneSpec,
-	RuneSliceSpec.String():   RuneSliceSpec,
-	ByteSliceSpec.String():   ByteSliceSpec,
-	StringSpec.String():      StringSpec,
-	StringSliceSpec.String(): StringSliceSpec,
-	Float32Spec.String():     Float32Spec,
-	Float64Spec.String():     Float64Spec,
-	PointerSpec.String():     PointerSpec,
-	UintptrSpec.String():     UintptrSpec,
-	//
-	InterfaceSliceSpec.String(): InterfaceSliceSpec,
-}
-
 var builtinCGOTypeMap = CGOTypeMap{
 	IntSpec.String():         "C.int",
 	UintSpec.String():        "C.uint",

@@ -34,7 +34,7 @@ func (gen *Generator) writeConstDeclaration(wr io.Writer, decl tl.CDecl) {
 	if len(decl.Expression) == 0 {
 		decl.Expression = skipName
 	}
-	goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+	goSpec := gen.tr.TranslateSpec(decl.Spec)
 	fmt.Fprintf(wr, "const %s %s = %s", declName, goSpec, decl.Expression)
 }
 
@@ -49,7 +49,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl tl.CDecl, namesSeen
 
 	spec := decl.Spec.(*tl.CEnumSpec)
 	if hasType {
-		enumType := gen.tr.TranslateSpec(tl.TargetType, &spec.Type)
+		enumType := gen.tr.TranslateSpec(&spec.Type)
 		fmt.Fprintf(wr, "// %s as declared in %s\n", typeName, tl.SrcLocation(decl.Pos))
 		fmt.Fprintf(wr, "type %s %s\n", typeName, enumType)
 		writeSpace(wr, 1)
@@ -92,7 +92,7 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 
 	spec := decl.Spec.(*tl.CEnumSpec)
 	tagName := gen.tr.TransformName(tl.TargetType, decl.Spec.GetBase())
-	enumType := gen.tr.TranslateSpec(tl.TargetType, &spec.Type)
+	enumType := gen.tr.TranslateSpec(&spec.Type)
 	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName, tl.SrcLocation(decl.Pos))
 	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
 	writeSpace(wr, 1)

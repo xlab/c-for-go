@@ -8,7 +8,7 @@ import (
 )
 
 func (gen *Generator) writeTypeTypedef(wr io.Writer, decl tl.CDecl) {
-	goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+	goSpec := gen.tr.TranslateSpec(decl.Spec)
 	declName := gen.tr.TransformName(tl.TargetType, decl.Name)
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
 	fmt.Fprintf(wr, "type %s %s", declName, goSpec)
@@ -19,7 +19,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		returnRef = gen.tr.TranslateSpec(tl.TargetType, spec.Return.Spec).String()
+		returnRef = gen.tr.TranslateSpec(spec.Return.Spec).String()
 	}
 
 	declName := gen.tr.TransformName(tl.TargetType, decl.Name)
@@ -42,7 +42,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl) {
 
 	if !decl.IsTemplate() {
 		// not a template, so a struct referenced by a tag declares a new type
-		typeRef := gen.tr.TranslateSpec(tl.TargetType, decl.Spec).String()
+		typeRef := gen.tr.TranslateSpec(decl.Spec).String()
 
 		if typeName := string(declName); typeName != typeRef {
 			fmt.Fprintf(wr, "// %s as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
@@ -67,7 +67,7 @@ func (gen *Generator) writeEnumTypedef(wr io.Writer, decl tl.CDecl) {
 	} else {
 		return
 	}
-	typeRef := gen.tr.TranslateSpec(tl.TargetType, decl.Spec).String()
+	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
 	if typeName := string(declName); typeName != typeRef {
 		fmt.Fprintf(wr, "// %s as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
 		fmt.Fprintf(wr, "type %s %s", declName, typeRef)

@@ -24,7 +24,7 @@ func (gen *Generator) transformDeclName(declName string, public bool) string {
 
 func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
 	declName := gen.transformDeclName(decl.Name, public)
-	goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+	goSpec := gen.tr.TranslateSpec(decl.Spec)
 	fmt.Fprintf(wr, "%s %s", declName, goSpec)
 }
 
@@ -32,7 +32,7 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, publ
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		returnRef = gen.tr.TranslateSpec(tl.TargetType, spec.Return.Spec).String()
+		returnRef = gen.tr.TranslateSpec(spec.Return.Spec).String()
 	}
 	if public {
 		declName := string(gen.tr.TransformName(tl.TargetFunction, decl.Name))
@@ -43,7 +43,7 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, publ
 		fmt.Fprintf(wr, "func %s", declName)
 	} else {
 		declName := string(gen.tr.TransformName(tl.TargetPrivate, decl.Name))
-		goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+		goSpec := gen.tr.TranslateSpec(decl.Spec)
 		fmt.Fprintf(wr, "%s %s", declName, goSpec)
 	}
 	gen.writeFunctionParams(wr, decl.Spec)
@@ -51,6 +51,7 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, publ
 		fmt.Fprintf(wr, " %s", returnRef)
 	}
 	if public {
+		gen.writeFunctionBody(wr, decl)
 		writeSpace(wr, 1)
 	}
 }
@@ -64,7 +65,7 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, public
 		// 	VarArrays: spec.GetVarArrays(),
 		// 	Pointers:  spec.GetPointers(),
 		// }
-		goSpec := gen.tr.TranslateSpec(tl.TargetType, decl.Spec)
+		goSpec := gen.tr.TranslateSpec(decl.Spec)
 		fmt.Fprintf(wr, "%s %s", declName, goSpec)
 		return
 	}
@@ -80,7 +81,7 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, public
 
 func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
 	declName := gen.transformDeclName(decl.Name, public)
-	typeRef := gen.tr.TranslateSpec(tl.TargetType, decl.Spec).String()
+	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
 	if declName != typeRef {
 		fmt.Fprintf(wr, "%s %s", declName, typeRef)
 		writeSpace(wr, 1)

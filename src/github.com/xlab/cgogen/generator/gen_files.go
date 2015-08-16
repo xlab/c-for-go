@@ -29,7 +29,6 @@ func (gen *Generator) WriteIncludes(wr io.Writer) {
 	writeFlagSet(wr, gen.cfg.CXXFlags)
 	writeFlagSet(wr, gen.cfg.CFlags)
 	writeFlagSet(wr, gen.cfg.LDFlags)
-	writeSpace(wr, 1)
 	for _, path := range gen.cfg.SysIncludes {
 		writeSysInclude(wr, path)
 	}
@@ -44,6 +43,32 @@ func (gen *Generator) WriteIncludes(wr io.Writer) {
 func (gen *Generator) WriteImportC(wr io.Writer) {
 	fmt.Fprintln(wr, `import "C"`)
 	writeSpace(wr, 1)
+}
+
+func (gen *Generator) writeGoHelpersHeader(wr io.Writer) {
+	writeTextBlock(wr, gen.cfg.PackageLicense)
+	writeSpace(wr, 1)
+	writeTextBlock(wr, genLabel())
+	writeSpace(wr, 1)
+	writePackageName(wr, gen.pkg)
+	writeSpace(wr, 1)
+	fmt.Fprintln(wr, `import "C"`)
+	writeSpace(wr, 1)
+}
+
+func (gen *Generator) writeCHelpersHeader(wr io.Writer) {
+	if len(gen.cfg.PackageLicense) > 0 {
+		writeTextBlock(wr, gen.cfg.PackageLicense)
+		writeSpace(wr, 1)
+	}
+	writeTextBlock(wr, genLabel())
+	writeSpace(wr, 1)
+	writeCStdIncludes(wr)
+	writeSpace(wr, 1)
+}
+
+func writeCStdIncludes(wr io.Writer) {
+	fmt.Fprintln(wr, "#include <stdlib.h>")
 }
 
 func (gen *Generator) WritePackageHeader(wr io.Writer) {
@@ -117,4 +142,12 @@ func writeTextBlock(wr io.Writer, text string) {
 	for _, line := range lines {
 		fmt.Fprintf(wr, "// %s\n", line)
 	}
+}
+
+func writeSourceBlock(wr io.Writer, src string) {
+	if len(src) == 0 {
+		return
+	}
+	fmt.Fprint(wr, src)
+	writeSpace(wr, 1)
 }

@@ -24,14 +24,14 @@ func init() {
 		mflag.PrintDefaults()
 	}
 	mflag.Parse()
-	if packageName = mflag.Arg(0); len(packageName) == 0 {
-		mflag.Usage()
-		Errorf("no package name specified")
-	}
+	// if packageName = mflag.Arg(0); len(packageName) == 0 {
+	// 	mflag.Usage()
+	// 	Errorf("no package name specified")
+	// }
 }
 
 func main() {
-	cgogen, err := NewCGOGen(packageName, getConfigPath(), *outputPath)
+	cgogen, err := NewCGOGen(getConfigPath(), *outputPath)
 	if err != nil {
 		Errorf(err.Error())
 	}

@@ -26,9 +26,11 @@ var ruleActions = []RuleAction{
 type RuleTransform string
 
 const (
-	TransformLower RuleTransform = "lower"
-	TransformTitle RuleTransform = "title"
-	TransformUpper RuleTransform = "upper"
+	TransformLower    RuleTransform = "lower"
+	TransformTitle    RuleTransform = "title"
+	TransformExport   RuleTransform = "export"
+	TransformUnexport RuleTransform = "unexport"
+	TransformUpper    RuleTransform = "upper"
 )
 
 type RuleTarget string

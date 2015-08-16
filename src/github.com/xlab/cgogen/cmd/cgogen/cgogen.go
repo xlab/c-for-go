@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -46,7 +47,7 @@ type CGOGenConfig struct {
 	Parser     *parser.Config     `yaml:"PARSER"`
 }
 
-func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
+func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	cfgData, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
@@ -61,6 +62,8 @@ func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
 			cfg.Parser = &parser.Config{}
 		}
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, paths...)
+	} else {
+		return nil, errors.New("cgogen: generator config was not specified")
 	}
 	p, err := parser.New(cfg.Parser)
 	if err != nil {
@@ -77,7 +80,7 @@ func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
 	if err := tl.Learn(unit); err != nil {
 		return nil, err
 	}
-	pkg := filepath.Base(packageName)
+	pkg := filepath.Base(cfg.Generator.PackageName)
 	gen, err := generator.New(pkg, cfg.Generator, tl)
 	if err != nil {
 		return nil, err
@@ -86,7 +89,7 @@ func NewCGOGen(packageName, configPath, outputPath string) (*CGOGen, error) {
 		gen:     gen,
 		writers: make(map[WriterOpt]*os.File),
 	}
-	filePrefix := filepath.Join(outputPath, packageName)
+	filePrefix := filepath.Join(outputPath, cfg.Generator.PackageName)
 	if err := os.MkdirAll(filePrefix, 0755); err != nil {
 		return nil, err
 	}

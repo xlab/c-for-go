@@ -18,6 +18,7 @@ type Config struct {
 	WebIncludePrefix   string   `yaml:"WebIncludePrefix"`
 	IncludePaths       []string `yaml:"IncludePaths"`
 	TargetPaths        []string `yaml:"TargetPaths"`
+	SourceBody         string   `yaml:"SourceBody"`
 	archBits           TargetArchBits
 }
 
@@ -114,6 +115,7 @@ func (p *Parser) ccParserConfig() (*cc.ParseConfig, error) {
 	ccCfg := &cc.ParseConfig{
 		Predefined:         p.predefined,
 		Paths:              p.cfg.TargetPaths,
+		Body:               []byte(p.cfg.SourceBody),
 		SysIncludePaths:    p.cfg.IncludePaths,
 		WebIncludesEnabled: p.cfg.WebIncludesEnabled,
 		WebIncludePrefix:   p.cfg.WebIncludePrefix,

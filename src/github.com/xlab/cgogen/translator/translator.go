@@ -190,9 +190,13 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 			switch rx.Transform {
 			case TransformLower:
 				buf = bytes.ToLower(buf)
-			case TransformTitle:
+			case TransformTitle, TransformExport:
 				if len(buf) > 0 {
 					buf[0] = bytes.ToUpper(buf[:1])[0]
+				}
+			case TransformUnexport:
+				if len(buf) > 0 {
+					buf[0] = bytes.ToLower(buf[:1])[0]
 				}
 			case TransformUpper:
 				buf = bytes.ToUpper(buf)
@@ -218,7 +222,7 @@ func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	return GoTypeSpec{}, false
 }
 
-func (t *Translator) TranslateSpec(target RuleTarget, spec CType) GoTypeSpec {
+func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 	switch spec.Kind() {
 	case TypeKind:
 		spec := spec.(*CTypeSpec)
@@ -234,6 +238,7 @@ func (t *Translator) TranslateSpec(target RuleTarget, spec CType) GoTypeSpec {
 		}
 		wrapper := GoTypeSpec{
 			Arrays: spec.GetArrays(),
+			Inner:  &GoTypeSpec{},
 		}
 
 		if gospec, ok := t.lookupSpec(lookupSpec); !ok {
@@ -282,7 +287,7 @@ func (t *Translator) TranslateSpec(target RuleTarget, spec CType) GoTypeSpec {
 		}
 		wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Inner = &GoTypeSpec{
-			Base: string(t.TransformName(target, lookupSpec.Base)),
+			Base: string(t.TransformName(TargetType, lookupSpec.Base)),
 		}
 		wrapper.InnerCGO = "C." + lookupSpec.Base
 		return wrapper
@@ -303,7 +308,7 @@ func (t *Translator) TranslateSpec(target RuleTarget, spec CType) GoTypeSpec {
 		wrapper.splitPointers(spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
 		if fallback, ok := t.IsBaseDefined(spec); ok {
-			wrapper.Inner.Base = string(t.TransformName(target, spec.GetBase()))
+			wrapper.Inner.Base = string(t.TransformName(TargetType, spec.GetBase()))
 			wrapper.InnerCGO = "C." + spec.GetBase()
 		} else {
 			// fallback to CGO reference if name isn't in the headers scope.
