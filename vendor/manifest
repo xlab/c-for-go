@@ -41,6 +41,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/stretchr/testify/assert",
+			"repository": "https://github.com/stretchr/testify",
+			"revision": "f5520455607c0233cb6d7b056f71b22c1d265ef1",
+			"branch": "master",
+			"path": "/assert"
+		},
+		{
 			"importpath": "github.com/xlab/pkgconfig/pkg",
 			"repository": "https://github.com/xlab/pkgconfig",
 			"revision": "83a1f4874f4ca375a2d1c6bb567e15e3947486c0",
