@@ -34,7 +34,7 @@ import (
 
 type ParseConfig struct {
 	Predefined         string
-	Input              []byte
+	Body               []byte
 	Paths              []string
 	SysIncludePaths    []string
 	IncludePaths       []string
@@ -49,7 +49,7 @@ func CheckParseConfig(cfg *ParseConfig) error {
 	if cfg == nil {
 		return errors.New("no config specified")
 	}
-	if len(cfg.Paths) == 0 && len(cfg.Input) == 0 {
+	if len(cfg.Paths) == 0 && len(cfg.Body) == 0 {
 		return errors.New("no paths or input specified to parse")
 	}
 	if likelyIsURL(cfg.WebIncludePrefix) {
@@ -132,8 +132,8 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 			for _, path := range cfg.Paths {
 				ppFileByPath(xc.Token{}, path).preprocess(ctx)
 			}
-		} else if len(cfg.Input) > 0 {
-			ppFileBySrc(xc.Token{}, cfg.Input, "<input>").preprocess(ctx)
+		} else if len(cfg.Body) > 0 {
+			ppFileBySrc(xc.Token{}, cfg.Body, "<raw source>").preprocess(ctx)
 		}
 	}()
 
