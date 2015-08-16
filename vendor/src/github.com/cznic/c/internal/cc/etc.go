@@ -701,6 +701,10 @@ func newBitField(t Type, bits int) bitField {
 		case IntType:
 		case UIntType:
 			st = UInt
+		case ShortType:
+			st = Short
+		case UShortType:
+			st = UShort
 		case NamedType:
 			var ts *TypeSpecifier
 			switch n := t.(type) {
@@ -724,6 +728,10 @@ func newBitField(t Type, bits int) bitField {
 			return bitField(Char)
 		case UInt:
 			return bitField(UChar)
+		case Short:
+			return bitField(Short)
+		case UShort:
+			return bitField(UShort)
 		default:
 			panic("internal error")
 		}
@@ -732,6 +740,10 @@ func newBitField(t Type, bits int) bitField {
 		case Int:
 			return bitField(Short)
 		case UInt:
+			return bitField(UShort)
+		case Short:
+			return bitField(Short)
+		case UShort:
 			return bitField(UShort)
 		default:
 			panic("internal error")
