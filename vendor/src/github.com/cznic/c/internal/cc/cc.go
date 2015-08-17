@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/cznic/c/internal/xc"
 	"github.com/cznic/mathutil"
@@ -152,4 +153,11 @@ func Parse(cfg *ParseConfig) (*TranslationUnit, error) {
 	}
 
 	return lx.tu, nil
+}
+
+func likelyIsURL(str string) bool {
+	if strings.HasPrefix(str, "http://") || strings.HasPrefix(str, "https://") {
+		return true
+	}
+	return false
 }

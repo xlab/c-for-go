@@ -11,9 +11,6 @@ package cc
 import __yyfmt__ "fmt"
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/cznic/c/internal/xc"
 	"github.com/cznic/golex/lex"
 	"github.com/cznic/mathutil"
@@ -3997,7 +3994,7 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			if !isExample {
-				fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
+				// fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
 			}
 		}
 	case 200:
@@ -4012,7 +4009,7 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			if !isExample {
-				fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
+				// fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
 			}
 		}
 	case 201:
@@ -4028,7 +4025,7 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			if !isExample {
-				fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
+				// fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
 			}
 		}
 	case 202:
@@ -4044,7 +4041,7 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			if !isExample {
-				fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
+				// fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
 			}
 		}
 	case 203:
@@ -4058,7 +4055,7 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			if !isExample {
-				fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
+				// fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
 			}
 		}
 	case 204:
@@ -4071,7 +4068,7 @@ yynewstate:
 			}
 			yyVAL.item = lhs
 			if !isExample {
-				fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
+				// fmt.Fprintf(os.Stderr, "TODO: DirectAbstractDeclarator case %v\n%s", lhs.Case, PrettyString(lhs))
 			}
 		}
 	case 205:

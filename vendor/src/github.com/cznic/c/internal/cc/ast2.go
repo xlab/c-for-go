@@ -81,8 +81,9 @@ func (a *AbstractDeclarator) Type() Type {
 	switch a.Case {
 	case 0: // Pointer
 		return newIndirectType(a.specifier, a.Pointer.indirection)
+	case 1: // PointerOpt DirectAbstractDeclarator
+		return (*directAbstractDeclarator)(a.DirectAbstractDeclarator)
 	default:
-		panic(a.Case) //TODO-
 		panic("internal error")
 	}
 }
