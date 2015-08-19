@@ -23,7 +23,7 @@ type CType interface {
 	GetVarArrays() uint8
 	GetPointers() uint8
 	SetPointers(uint8)
-	AddArray(uint32)
+	AddArray(uint64)
 	//
 	IsConst() bool
 	Kind() CTypeKind
@@ -71,7 +71,7 @@ func (c *CDecl) SetPointers(n uint8) {
 	c.Spec.SetPointers(n)
 }
 
-func (c *CDecl) AddArray(size uint32) {
+func (c *CDecl) AddArray(size uint64) {
 	c.Spec.AddArray(size)
 }
 

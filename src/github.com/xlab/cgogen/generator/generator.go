@@ -191,7 +191,7 @@ func (gen *Generator) MonitorAndWriteHelpers(goWr, cWr io.Writer, initWrFunc ...
 
 			var wr io.Writer
 			switch helper.Side {
-			case GoSide:
+			case NoSide, GoSide:
 				if goWr != nil {
 					wr = goWr
 				} else if len(initWrFunc) < 1 {

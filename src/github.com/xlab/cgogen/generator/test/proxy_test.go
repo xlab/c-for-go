@@ -11,3 +11,9 @@ func TestTestProxyString(t *testing.T) {
 	result := TestProxyString("a", "b", "c")
 	assert.Equal(t, expected, result)
 }
+
+func TestTestProxyBytes(t *testing.T) {
+	expected := []byte("abcd")
+	result := TestProxyBytes([]byte("ab"), []byte("cd"))
+	assert.Equal(t, expected, result)
+}

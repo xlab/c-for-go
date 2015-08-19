@@ -1,6 +1,5 @@
 package translator
 
-type CGOTypeMap map[string]string
 type CTypeMap map[CTypeSpec]GoTypeSpec
 type GoTypeMap map[string]GoTypeSpec
 
@@ -30,28 +29,6 @@ var (
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
 
-var builtinCGOTypeMap = CGOTypeMap{
-	IntSpec.String():         "C.int",
-	UintSpec.String():        "C.uint",
-	Int8Spec.String():        "C.char",
-	Int16Spec.String():       "C.short",
-	Int32Spec.String():       "C.long",
-	Int64Spec.String():       "C.int",
-	Uint8Spec.String():       "C.uchar",
-	Uint16Spec.String():      "C.ushort",
-	Uint32Spec.String():      "C.uint",
-	Uint64Spec.String():      "C.ulong",
-	RuneSpec.String():        "C.int",
-	RuneSliceSpec.String():   "*C.int",
-	ByteSliceSpec.String():   "*C.char",
-	StringSpec.String():      "*C.char",
-	StringSliceSpec.String(): "**C.char",
-	Float32Spec.String():     "C.float",
-	Float64Spec.String():     "C.double",
-	PointerSpec.String():     "unsafe.Pointer",
-	UintptrSpec.String():     "unsafe.Pointer",
-}
-
 var builtinCTypeMap = CTypeMap{
 	// CHAR TYPES
 	// ----------
@@ -60,7 +37,7 @@ var builtinCTypeMap = CTypeMap{
 	// char* -> []byte
 	CTypeSpec{Base: "char", Pointers: 1}: ByteSliceSpec,
 	// const char* -> string
-	CTypeSpec{Base: "char", Pointers: 1}: StringSpec,
+	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
 	// unsigned char -> byte
 	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
 	// unsigned char* -> []byte
@@ -136,9 +113,3 @@ var builtinCTypeMap = CTypeMap{
 	// tr1/cstdarg
 	CTypeSpec{Base: "va_list"}: InterfaceSliceSpec,
 }
-
-// TODO consider:
-// > const char** -> []string
-// or should it be *string? how about:
-// > const char*** -> []*string OR *[]string or even [][]string
-// TODO: make some tests and CGO evaluations

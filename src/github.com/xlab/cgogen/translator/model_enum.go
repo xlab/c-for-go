@@ -15,9 +15,9 @@ type CEnumSpec struct {
 	Pointers    uint8
 }
 
-func (c *CEnumSpec) AddArray(size uint32) {
+func (c *CEnumSpec) AddArray(size uint64) {
 	if size > 0 {
-		c.Arrays = fmt.Sprintf("[%d]%s", size, c.Arrays)
+		c.Arrays = fmt.Sprintf("%s[%d]", size, c.Arrays)
 		return
 	}
 	c.VarArrays++

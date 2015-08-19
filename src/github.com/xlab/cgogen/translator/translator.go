@@ -237,23 +237,21 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 			Pointers: spec.Pointers,
 		}
 		wrapper := GoTypeSpec{
-			Arrays: spec.GetArrays(),
+			Arrays: getArraySizes(spec.GetArrays()),
 			Inner:  &GoTypeSpec{},
 		}
 
 		if gospec, ok := t.lookupSpec(lookupSpec); !ok {
-			lookupSpec.Const = false
+			lookupSpec.Const = !lookupSpec.Const
 			if gospec, ok = t.lookupSpec(lookupSpec); !ok {
-				lookupSpec.Const = true
+				lookupSpec.Const = !lookupSpec.Const
 			} else {
-				lookupSpec.Const = false
 				wrapper.Pointers += spec.GetVarArrays()
 				wrapper.Inner = &gospec
-				wrapper.InnerCGO = builtinCGOTypeMap[lookupSpec.String()]
 				return wrapper
 			}
 		} else {
-			gospec.Arrays = spec.GetArrays()
+			gospec.Arrays = getArraySizes(spec.GetArrays())
 			return gospec
 		}
 
@@ -266,21 +264,17 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 				}
 				pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); !ok {
-					lookupSpec.Const = false
+					lookupSpec.Const = !lookupSpec.Const
 					if gospec, ok = t.lookupSpec(lookupSpec); !ok {
-						lookupSpec.Const = true
+						lookupSpec.Const = !lookupSpec.Const
 					} else {
-						lookupSpec.Const = false
 						wrapper.Pointers += spec.GetVarArrays()
 						wrapper.Inner = &gospec
-						wrapper.InnerCGO = builtinCGOTypeMap[lookupSpec.String()]
 						return wrapper
 					}
 				} else {
-					lookupSpec.Const = false
 					wrapper.Pointers += spec.GetVarArrays()
 					wrapper.Inner = &gospec
-					wrapper.InnerCGO = builtinCGOTypeMap[lookupSpec.String()]
 					return wrapper
 				}
 			}
@@ -289,11 +283,10 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		wrapper.Inner = &GoTypeSpec{
 			Base: string(t.TransformName(TargetType, lookupSpec.Base)),
 		}
-		wrapper.InnerCGO = "C." + lookupSpec.Base
 		return wrapper
 	case FunctionKind:
 		wrapper := GoTypeSpec{
-			Arrays: spec.GetArrays(),
+			Arrays: getArraySizes(spec.GetArrays()),
 			Inner:  &GoTypeSpec{},
 		}
 		wrapper.splitPointers(spec.GetPointers())
@@ -302,21 +295,69 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		return wrapper
 	default:
 		wrapper := GoTypeSpec{
-			Arrays: spec.GetArrays(),
+			Arrays: getArraySizes(spec.GetArrays()),
 			Inner:  &GoTypeSpec{},
 		}
 		wrapper.splitPointers(spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
 		if fallback, ok := t.IsBaseDefined(spec); ok {
 			wrapper.Inner.Base = string(t.TransformName(TargetType, spec.GetBase()))
-			wrapper.InnerCGO = "C." + spec.GetBase()
 		} else {
-			// fallback to CGO reference if name isn't in the headers scope.
 			wrapper.Inner.Base = fallback
-			wrapper.InnerCGO = fallback
 		}
 		return wrapper
 	}
+}
+
+func (t *Translator) CGoSpec(spec CType) CGoSpec {
+	cgo := CGoSpec{
+		Pointers: spec.GetPointers(),
+	}
+	cgo.Pointers += spec.GetVarArrays()
+	cgo.Pointers += uint8(strings.Count(spec.GetArrays(), "["))
+	if spec, ok := spec.(*CTypeSpec); ok {
+		switch base := spec.Base; base {
+		case "int", "short", "long", "char":
+			cgo.Base = "C."
+			if spec.Unsigned {
+				cgo.Base += "u"
+			}
+			switch {
+			case spec.Long:
+				cgo.Base += "long"
+				if spec.Base == "long" {
+					cgo.Base += "long"
+				}
+			case spec.Short:
+				cgo.Base += "short"
+			default:
+				cgo.Base += spec.Base
+			}
+			return cgo
+		case "void":
+			return cgo
+		default:
+			cgo.Base = "C." + spec.Base
+			return cgo
+		}
+	}
+	cgo.Base = t.cgoName(spec)
+	return cgo
+}
+
+func (t *Translator) cgoName(spec CType) string {
+	name := spec.GetBase()
+	if _, ok := t.tagMap[name]; ok {
+		switch spec.Kind() {
+		case StructKind:
+			return "C.struct_" + name
+		case UnionKind:
+			return "C.union_" + name
+		case EnumKind:
+			return "C.enum_" + name
+		}
+	}
+	return "C." + name
 }
 
 func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {

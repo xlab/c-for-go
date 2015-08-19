@@ -155,38 +155,45 @@ func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDec
 	case 1: // '(' Declarator ')'
 		walkPointers(declr.Declarator.PointerOpt, decl)
 		next = declr.Declarator.DirectDeclarator
+	case 5: // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
+		next = declr.DirectDeclarator
+		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
 	case 2, // DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'
 		3, // DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'
-		4, // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
-		5: // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
+		4: // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
+		next = declr.DirectDeclarator
 		assignmentExpr := declr.AssignmentExpression
-		if declr.AssignmentExpressionOpt != nil {
+		if declr.AssignmentExpressionOpt != nil &&
+			declr.AssignmentExpressionOpt.AssignmentExpression != nil {
 			assignmentExpr = declr.AssignmentExpressionOpt.AssignmentExpression
+		}
+		if assignmentExpr == nil {
+			return
 		}
 
 		val := t.EvalAssignmentExpression(assignmentExpr)
 		switch x := val.(type) {
 		case int32:
 			if x > 0 {
-				decl.AddArray(uint32(x))
+				decl.AddArray(uint64(x))
 			} else {
 				decl.AddArray(0)
 			}
 		case int64:
 			if x > 0 {
-				decl.AddArray(uint32(x))
+				decl.AddArray(uint64(x))
 			} else {
 				decl.AddArray(0)
 			}
 		case uint32:
 			if x > 0 {
-				decl.AddArray(uint32(x))
+				decl.AddArray(uint64(x))
 			} else {
 				decl.AddArray(0)
 			}
 		case uint64:
 			if x > 0 {
-				decl.AddArray(uint32(x))
+				decl.AddArray(uint64(x))
 			} else {
 				decl.AddArray(0)
 			}
@@ -194,7 +201,6 @@ func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDec
 			decl.AddArray(0)
 		}
 
-		next = declr.DirectDeclarator
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		next = declr.DirectDeclarator
 		if isVoid(decl.Spec) {

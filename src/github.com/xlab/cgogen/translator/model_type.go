@@ -2,8 +2,8 @@ package translator
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -18,12 +18,29 @@ type CTypeSpec struct {
 	Pointers  uint8
 }
 
-func (c *CTypeSpec) AddArray(size uint32) {
+func (c *CTypeSpec) AddArray(size uint64) {
 	if size > 0 {
-		c.Arrays = fmt.Sprintf("[%d]%s", size, c.Arrays)
+		c.Arrays = fmt.Sprintf("%s[%d]", size, c.Arrays)
 		return
 	}
 	c.VarArrays++
+}
+
+func getArraySizes(arr string) []uint64 {
+	if len(arr) == 0 {
+		return nil
+	}
+	var sizes []uint64
+	for len(arr) >= 3 {
+		// get"[n]" from "[k][l][m][n]"
+		idx := len(arr) - 3
+		part := arr[idx:]
+		// get "n" from "[n]" and convert to uint64
+		u, _ := strconv.ParseUint(part[1:len(part)-1], 10, 64)
+		sizes = append(sizes, u)
+		arr = arr[:idx]
+	}
+	return sizes
 }
 
 func (cts CTypeSpec) String() string {
@@ -44,27 +61,6 @@ func (cts CTypeSpec) String() string {
 	buf.WriteString(strings.Repeat("*", int(cts.Pointers)))
 	buf.WriteString(cts.Arrays)
 	return buf.String()
-}
-
-func CTypeOf(v interface{}) (*CTypeSpec, error) {
-	switch x := v.(type) {
-	case int32:
-		return &CTypeSpec{Base: "int"}, nil
-	case int64:
-		return &CTypeSpec{Base: "long"}, nil
-	case uint32:
-		return &CTypeSpec{Base: "int", Unsigned: true}, nil
-	case uint64:
-		return &CTypeSpec{Base: "long", Unsigned: true}, nil
-	case float32:
-		return &CTypeSpec{Base: "float"}, nil
-	case float64:
-		return &CTypeSpec{Base: "double"}, nil
-	case string:
-		return &CTypeSpec{Base: "char", Pointers: 1, Const: true}, nil
-	default:
-		return nil, errors.New(fmt.Sprintf("cannot resolve type %T", x))
-	}
 }
 
 func (c *CTypeSpec) SetPointers(n uint8) {

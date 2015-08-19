@@ -59,7 +59,9 @@ func TestProxies(t *testing.T) {
 	gen.WriteTypedefs(buf)
 	gen.WriteDeclares(buf)
 	fmtBuf, err := imports.Process(resultFile, buf.Bytes(), nil)
-	assert.NoError(err)
+	if !assert.NoError(err) {
+		fmtBuf = buf.Bytes()
+	}
 	assert.NoError(ioutil.WriteFile(resultFile, fmtBuf, 0644))
 }
 

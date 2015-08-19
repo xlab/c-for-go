@@ -9,8 +9,7 @@ import (
 type GoTypeSpec struct {
 	Slices   uint8
 	Pointers uint8
-	Arrays   string
-	InnerCGO string
+	Arrays   []uint64
 	Inner    *GoTypeSpec
 	Unsigned bool
 	Base     string
@@ -30,7 +29,9 @@ func (gts *GoTypeSpec) splitPointers(n uint8) {
 
 func (gts GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
-	buf.WriteString(gts.Arrays)
+	for _, size := range gts.Arrays {
+		fmt.Fprintf(buf, "[%d]", size)
+	}
 	if gts.Slices > 0 {
 		buf.WriteString(strings.Repeat("[]", int(gts.Slices)))
 	}
@@ -49,4 +50,13 @@ func (gts GoTypeSpec) String() string {
 		}
 	}
 	return buf.String()
+}
+
+type CGoSpec struct {
+	Base     string
+	Pointers uint8
+}
+
+func (cgs CGoSpec) String() string {
+	return fmt.Sprintf("%s%s", strings.Repeat("*", int(cgs.Pointers)), cgs.Base)
 }
