@@ -17,7 +17,7 @@ type CEnumSpec struct {
 
 func (c *CEnumSpec) AddArray(size uint64) {
 	if size > 0 {
-		c.Arrays = fmt.Sprintf("%s[%d]", size, c.Arrays)
+		c.Arrays = fmt.Sprintf("%s[%d]", c.Arrays, size)
 		return
 	}
 	c.VarArrays++

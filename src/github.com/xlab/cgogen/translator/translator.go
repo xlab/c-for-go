@@ -219,6 +219,15 @@ func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	if gospec, ok := builtinCTypeMap[spec]; ok {
 		return gospec, true
 	}
+	if spec.Const {
+		spec.Const = false
+		if gospec, ok := t.typemap[spec]; ok {
+			return gospec, true
+		}
+		if gospec, ok := builtinCTypeMap[spec]; ok {
+			return gospec, true
+		}
+	}
 	return GoTypeSpec{}, false
 }
 
@@ -236,43 +245,23 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 			// VarArrays skip
 			Pointers: spec.Pointers,
 		}
+		if gospec, ok := t.lookupSpec(lookupSpec); ok {
+			gospec.Arrays = getArraySizes(spec.GetArrays())
+			return gospec
+		}
 		wrapper := GoTypeSpec{
 			Arrays: getArraySizes(spec.GetArrays()),
 			Inner:  &GoTypeSpec{},
 		}
-
-		if gospec, ok := t.lookupSpec(lookupSpec); !ok {
-			lookupSpec.Const = !lookupSpec.Const
-			if gospec, ok = t.lookupSpec(lookupSpec); !ok {
-				lookupSpec.Const = !lookupSpec.Const
-			} else {
-				wrapper.Pointers += spec.GetVarArrays()
-				wrapper.Inner = &gospec
-				return wrapper
-			}
-		} else {
-			gospec.Arrays = getArraySizes(spec.GetArrays())
-			return gospec
-		}
-
-		if pointers := spec.GetPointers(); pointers > 0 {
-			for pointers > 0 {
-				if pointers > 1 {
+		if lookupSpec.Pointers > 0 {
+			for lookupSpec.Pointers > 0 {
+				if lookupSpec.Pointers > 1 {
 					wrapper.Slices++
 				} else {
 					wrapper.Pointers++
 				}
-				pointers--
-				if gospec, ok := t.lookupSpec(lookupSpec); !ok {
-					lookupSpec.Const = !lookupSpec.Const
-					if gospec, ok = t.lookupSpec(lookupSpec); !ok {
-						lookupSpec.Const = !lookupSpec.Const
-					} else {
-						wrapper.Pointers += spec.GetVarArrays()
-						wrapper.Inner = &gospec
-						return wrapper
-					}
-				} else {
+				lookupSpec.Pointers--
+				if gospec, ok := t.lookupSpec(lookupSpec); ok {
 					wrapper.Pointers += spec.GetVarArrays()
 					wrapper.Inner = &gospec
 					return wrapper

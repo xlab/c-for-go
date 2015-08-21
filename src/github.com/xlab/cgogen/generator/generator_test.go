@@ -42,9 +42,13 @@ func TestProxies(t *testing.T) {
 		gen.MonitorAndWriteHelpers(goHelpersBuf, cHelpersBuf)
 
 		if goHelpersBuf.Len() > 0 {
-			goHelpersFmt, err := imports.Process(goHelpersFile, goHelpersBuf.Bytes(), nil)
-			assert.NoError(err)
-			assert.NoError(ioutil.WriteFile(goHelpersFile, goHelpersFmt, 0644))
+			buf := goHelpersBuf.Bytes()
+			goHelpersFmt, err := imports.Process(goHelpersFile, buf, nil)
+			if assert.NoError(err) {
+				assert.NoError(ioutil.WriteFile(goHelpersFile, goHelpersFmt, 0644))
+			} else {
+				assert.NoError(ioutil.WriteFile(goHelpersFile, buf, 0644))
+			}
 		}
 		if cHelpersBuf.Len() > 0 {
 			assert.NoError(ioutil.WriteFile(cHelpersFile, cHelpersBuf.Bytes(), 0644))
