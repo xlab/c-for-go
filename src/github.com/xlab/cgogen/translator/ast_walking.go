@@ -470,7 +470,8 @@ func (t *Translator) walkTypeSpec(typeSpec *cc.TypeSpecifier, decl *CDecl) {
 		spec.Base = "float"
 	case 6:
 		spec.Base = "double"
-	case 7: // IGNORE: signed
+	case 7:
+		spec.Signed = true
 	case 8:
 		spec.Unsigned = true
 	case 9:

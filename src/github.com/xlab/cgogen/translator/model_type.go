@@ -10,6 +10,7 @@ import (
 type CTypeSpec struct {
 	Base      string
 	Const     bool
+	Signed    bool
 	Unsigned  bool
 	Short     bool
 	Long      bool
@@ -50,6 +51,8 @@ func (cts CTypeSpec) String() string {
 	}
 	if cts.Unsigned {
 		buf.WriteString("unsigned ")
+	} else if cts.Signed {
+		buf.WriteString("signed ")
 	}
 	switch {
 	case cts.Long:

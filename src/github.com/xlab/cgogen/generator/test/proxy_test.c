@@ -15,7 +15,3 @@ unsigned char* test_proxy_bytes(unsigned char *buf, char *buf_two) {
 	memcpy(&result[2], buf_two, 2);
 	return result;
 }
-
-const char *****test_proxy_ptr3_string(const char ****str[4]) {
-	return str;
-}

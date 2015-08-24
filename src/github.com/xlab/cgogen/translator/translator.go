@@ -307,6 +307,8 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 			cgo.Base = "C."
 			if spec.Unsigned {
 				cgo.Base += "u"
+			} else if spec.Signed {
+				cgo.Base += "s"
 			}
 			switch {
 			case spec.Long:

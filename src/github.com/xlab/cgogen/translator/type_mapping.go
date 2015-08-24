@@ -4,27 +4,27 @@ type CTypeMap map[CTypeSpec]GoTypeSpec
 type GoTypeMap map[string]GoTypeSpec
 
 var (
-	BoolSpec        = GoTypeSpec{Base: "bool"}
-	IntSpec         = GoTypeSpec{Base: "int"}
-	UintSpec        = GoTypeSpec{Base: "int", Unsigned: true}
-	Int8Spec        = GoTypeSpec{Base: "int", Bits: 8}
-	Uint8Spec       = GoTypeSpec{Base: "int", Bits: 8, Unsigned: true}
-	Int16Spec       = GoTypeSpec{Base: "int", Bits: 16}
-	Uint16Spec      = GoTypeSpec{Base: "int", Bits: 16, Unsigned: true}
-	Int32Spec       = GoTypeSpec{Base: "int", Bits: 32}
-	Uint32Spec      = GoTypeSpec{Base: "int", Bits: 32, Unsigned: true}
-	Int64Spec       = GoTypeSpec{Base: "int", Bits: 64}
-	Uint64Spec      = GoTypeSpec{Base: "int", Bits: 64, Unsigned: true}
-	RuneSpec        = GoTypeSpec{Base: "rune"}
-	RuneSliceSpec   = GoTypeSpec{Base: "rune", Slices: 1}
-	ByteSpec        = GoTypeSpec{Base: "byte"}
-	ByteSliceSpec   = GoTypeSpec{Base: "byte", Slices: 1}
-	StringSpec      = GoTypeSpec{Base: "string"}
-	StringSliceSpec = GoTypeSpec{Base: "string", Slices: 1}
-	Float32Spec     = GoTypeSpec{Base: "float", Bits: 32}
-	Float64Spec     = GoTypeSpec{Base: "float", Bits: 64}
-	PointerSpec     = GoTypeSpec{Base: "unsafe.Pointer"}
-	UintptrSpec     = GoTypeSpec{Base: "uintptr"}
+	BoolSpec   = GoTypeSpec{Base: "bool"}
+	IntSpec    = GoTypeSpec{Base: "int"}
+	UintSpec   = GoTypeSpec{Base: "int", Unsigned: true}
+	Int8Spec   = GoTypeSpec{Base: "int", Bits: 8}
+	Uint8Spec  = GoTypeSpec{Base: "int", Bits: 8, Unsigned: true}
+	Int16Spec  = GoTypeSpec{Base: "int", Bits: 16}
+	Uint16Spec = GoTypeSpec{Base: "int", Bits: 16, Unsigned: true}
+	Int32Spec  = GoTypeSpec{Base: "int", Bits: 32}
+	Uint32Spec = GoTypeSpec{Base: "int", Bits: 32, Unsigned: true}
+	Int64Spec  = GoTypeSpec{Base: "int", Bits: 64}
+	Uint64Spec = GoTypeSpec{Base: "int", Bits: 64, Unsigned: true}
+	RuneSpec   = GoTypeSpec{Base: "rune"}
+	// RuneSliceSpec   = GoTypeSpec{Base: "rune", Slices: 1}
+	ByteSpec = GoTypeSpec{Base: "byte"}
+	// ByteSliceSpec   = GoTypeSpec{Base: "byte", Slices: 1}
+	StringSpec = GoTypeSpec{Base: "string"}
+	// StringSliceSpec = GoTypeSpec{Base: "string", Slices: 1}
+	Float32Spec = GoTypeSpec{Base: "float", Bits: 32}
+	Float64Spec = GoTypeSpec{Base: "float", Bits: 64}
+	PointerSpec = GoTypeSpec{Base: "unsafe.Pointer"}
+	UintptrSpec = GoTypeSpec{Base: "uintptr"}
 	//
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
@@ -88,17 +88,21 @@ var builtinCTypeMap = CTypeMap{
 
 	// DEFINED TYPES
 	// ----------
-	CTypeSpec{Base: "bool"}:      BoolSpec,
-	CTypeSpec{Base: "_Bool"}:     BoolSpec, // C99
-	CTypeSpec{Base: "ssize_t"}:   Int64Spec,
-	CTypeSpec{Base: "size_t"}:    Uint64Spec,
-	CTypeSpec{Base: "int_t"}:     IntSpec,
-	CTypeSpec{Base: "uint_t"}:    UintSpec,
+	CTypeSpec{Base: "bool"}:    BoolSpec,
+	CTypeSpec{Base: "_Bool"}:   BoolSpec, // C99
+	CTypeSpec{Base: "ssize_t"}: Int64Spec,
+	CTypeSpec{Base: "size_t"}:  Uint64Spec,
+	CTypeSpec{Base: "int_t"}:   IntSpec,
+	CTypeSpec{Base: "uint_t"}:  UintSpec,
+
+	CTypeSpec{Base: "int8_t", Const: true, Pointers: 1}:  StringSpec,
+	CTypeSpec{Base: "uint8_t", Const: true, Pointers: 1}: StringSpec,
+	CTypeSpec{Base: "uint8_t"}:                           ByteSpec,
+
 	CTypeSpec{Base: "int8_t"}:    Int8Spec,
 	CTypeSpec{Base: "int16_t"}:   Int16Spec,
 	CTypeSpec{Base: "int32_t"}:   Int32Spec,
 	CTypeSpec{Base: "int64_t"}:   Int64Spec,
-	CTypeSpec{Base: "uint8_t"}:   Uint8Spec,
 	CTypeSpec{Base: "uint16_t"}:  Uint16Spec,
 	CTypeSpec{Base: "uint32_t"}:  Uint32Spec,
 	CTypeSpec{Base: "uint64_t"}:  Uint64Spec,
@@ -106,8 +110,6 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "uintptr_t"}: UintptrSpec,
 	// wchar_t -> rune
 	CTypeSpec{Base: "wchar_t"}: RuneSpec,
-	// wchar_t* -> []rune
-	CTypeSpec{Base: "wchar_t", Pointers: 1}: RuneSliceSpec,
 	// const wchar_t* -> string
 	CTypeSpec{Base: "wchar_t", Const: true, Pointers: 1}: StringSpec,
 	// tr1/cstdarg
