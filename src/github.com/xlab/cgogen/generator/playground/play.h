@@ -25,12 +25,12 @@ void lol(lol_t *l) {
 }
 
 void stringCube(const char**** str, int x, int y, int z) {
-	printf("Cube dimensions: x=%d, y=%d, z=%d\n", x, y, z);
+	// printf("Cube dimensions: x=%d, y=%d, z=%d\n", x, y, z);
 	for (int i = 0; i < x; i++) {
 		for (int j = 0; j < y; j++) {
 		 	for (int k = 0; k < z; k++) {
+		 		// printf("text at [%d][%d][%d] = %s\n", i, j, k, str[i][j][k]);
 		 		str[i][j][k] = "HELLO";
-				printf("text at [%d][%d][%d] = %s\n", i, j, k, str[i][j][k]);
 			}
 		}
 	}

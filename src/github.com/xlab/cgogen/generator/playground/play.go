@@ -20,6 +20,37 @@ type Lol struct {
 	Flag [4]bool
 }
 
+// goStr creates a string backed by *C.char and avoids copying.
+func goStr(p *C.char) (raw string) {
+	if p != nil && *p != 0 {
+		h := (*reflect.StringHeader)(unsafe.Pointer(&raw))
+		h.Data = uintptr(unsafe.Pointer(p))
+		for *p != 0 {
+			p = (*C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + 1)) // p++
+		}
+		h.Len = int(uintptr(unsafe.Pointer(p)) - h.Data)
+	}
+	return
+}
+
+func packSlicedStr(mem0 [][][]string, ptr0 ****C.char, ns ...int) {
+	const m = 1 << 30
+	for i0, mem1 := range mem0 {
+		ptr1 := (*(*[m]***C.char)(unsafe.Pointer(ptr0)))[i0]
+		for i1, mem2 := range mem1 {
+			ptr2 := (*(*[m]**C.char)(unsafe.Pointer(ptr1)))[i1]
+			for i2 := range mem2 {
+				ptr3 := (*(*[m]*C.char)(unsafe.Pointer(ptr2)))[i2]
+				if len(ns) > 0 {
+					mem2[i2] = goStrN(ptr3, ns[0])
+					continue
+				}
+				mem2[i2] = goStr(ptr3)
+			}
+		}
+	}
+}
+
 func unpackSlicedStr(s [][][]string) ****C.char {
 	mem0 := make([]***C.char, len(s))
 	for i0, s0 := range s {
@@ -50,6 +81,20 @@ func cStrSlice(s []string) **C.char {
 		mem[i] = cStr(str)
 	}
 	return (**C.char)(unsafe.Pointer(&mem[0]))
+}
+
+// goStrN creates a string backed by *C.char and avoids copying.
+func goStrN(p *C.char, n int) (raw string) {
+	if p != nil && *p != 0 && n > 0 {
+		h := (*reflect.StringHeader)(unsafe.Pointer(&raw))
+		h.Data = uintptr(unsafe.Pointer(p))
+		for *p != 0 && n > 0 {
+			n--
+			p = (*C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + 1)) // p++
+		}
+		h.Len = int(uintptr(unsafe.Pointer(p)) - h.Data)
+	}
+	return
 }
 
 func cStr(str string) *C.char {
@@ -93,7 +138,8 @@ func main() {
 }
 
 func passCube(cube [][][]string, x, y, z int) {
-	c, orig := unpackSlicedStr(cube)
-	C.stringCube(c, C.int(x), C.int(y), C.int(z))
-	log.Println(orig)
+	ptr0 := unpackSlicedStr(cube)
+	C.stringCube(ptr0, C.int(x), C.int(y), C.int(z))
+	packSlicedStr(cube, ptr0, x, y, z)
+	//log.Println(cube)
 }

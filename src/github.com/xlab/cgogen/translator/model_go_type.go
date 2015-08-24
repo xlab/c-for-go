@@ -7,10 +7,9 @@ import (
 )
 
 type GoTypeSpec struct {
+	Arrays   []uint64
 	Slices   uint8
 	Pointers uint8
-	Arrays   []uint64
-	Inner    *GoTypeSpec
 	Unsigned bool
 	Base     string
 	Bits     uint16
@@ -38,16 +37,12 @@ func (gts GoTypeSpec) String() string {
 	if gts.Pointers > 0 {
 		buf.WriteString(strings.Repeat("*", int(gts.Pointers)))
 	}
-	if gts.Inner != nil {
-		buf.WriteString(gts.Inner.String())
-	} else {
-		if gts.Unsigned {
-			buf.WriteString("u")
-		}
-		buf.WriteString(gts.Base)
-		if gts.Bits > 0 {
-			fmt.Fprintf(buf, "%d", int(gts.Bits))
-		}
+	if gts.Unsigned {
+		buf.WriteString("u")
+	}
+	buf.WriteString(gts.Base)
+	if gts.Bits > 0 {
+		fmt.Fprintf(buf, "%d", int(gts.Bits))
 	}
 	return buf.String()
 }

@@ -251,7 +251,6 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		}
 		wrapper := GoTypeSpec{
 			Arrays: getArraySizes(spec.GetArrays()),
-			Inner:  &GoTypeSpec{},
 		}
 		if lookupSpec.Pointers > 0 {
 			for lookupSpec.Pointers > 0 {
@@ -262,37 +261,35 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 				}
 				lookupSpec.Pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {
-					wrapper.Pointers += spec.GetVarArrays()
-					wrapper.Inner = &gospec
-					return wrapper
+					gospec.Arrays = append(wrapper.Arrays, gospec.Arrays...)
+					gospec.Slices += wrapper.Slices
+					gospec.Pointers += wrapper.Pointers
+					gospec.Pointers += spec.GetVarArrays()
+					return gospec
 				}
 			}
 		}
 		wrapper.Pointers += spec.GetVarArrays()
-		wrapper.Inner = &GoTypeSpec{
-			Base: string(t.TransformName(TargetType, lookupSpec.Base)),
-		}
+		wrapper.Base = string(t.TransformName(TargetType, lookupSpec.Base))
 		return wrapper
 	case FunctionKind:
 		wrapper := GoTypeSpec{
 			Arrays: getArraySizes(spec.GetArrays()),
-			Inner:  &GoTypeSpec{},
 		}
 		wrapper.splitPointers(spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
-		wrapper.Inner.Base = "func"
+		wrapper.Base = "func"
 		return wrapper
 	default:
 		wrapper := GoTypeSpec{
 			Arrays: getArraySizes(spec.GetArrays()),
-			Inner:  &GoTypeSpec{},
 		}
 		wrapper.splitPointers(spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
 		if fallback, ok := t.IsBaseDefined(spec); ok {
-			wrapper.Inner.Base = string(t.TransformName(TargetType, spec.GetBase()))
+			wrapper.Base = string(t.TransformName(TargetType, spec.GetBase()))
 		} else {
-			wrapper.Inner.Base = fallback
+			wrapper.Base = fallback
 		}
 		return wrapper
 	}
