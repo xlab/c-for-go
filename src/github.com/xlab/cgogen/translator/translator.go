@@ -261,9 +261,11 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 				}
 				lookupSpec.Pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {
+					if lookupSpec.Pointers == 0 {
+						gospec.Slices += wrapper.Slices + 1
+						gospec.Pointers += wrapper.Pointers - 1
+					}
 					gospec.Arrays = append(wrapper.Arrays, gospec.Arrays...)
-					gospec.Slices += wrapper.Slices
-					gospec.Pointers += wrapper.Pointers
 					gospec.Pointers += spec.GetVarArrays()
 					return gospec
 				}
@@ -296,6 +298,7 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 }
 
 func (t *Translator) CGoSpec(spec CType) CGoSpec {
+	// char **s[1][2][3] -> *[2][3]**C.char
 	cgo := CGoSpec{
 		Pointers: spec.GetPointers(),
 	}

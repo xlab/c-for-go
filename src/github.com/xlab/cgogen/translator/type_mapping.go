@@ -32,16 +32,14 @@ var (
 var builtinCTypeMap = CTypeMap{
 	// CHAR TYPES
 	// ----------
-	// char -> int8
-	CTypeSpec{Base: "char"}: Int8Spec,
-	// char* -> []byte
-	CTypeSpec{Base: "char", Pointers: 1}: ByteSliceSpec,
+	// char -> byte
+	CTypeSpec{Base: "char"}: ByteSpec,
+	// char* -> string
+	CTypeSpec{Base: "char", Pointers: 1}: StringSpec,
 	// const char* -> string
 	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
 	// unsigned char -> byte
 	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
-	// unsigned char* -> []byte
-	CTypeSpec{Base: "char", Unsigned: true, Pointers: 1}: ByteSliceSpec,
 	// const unsigned char* -> string
 	CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}: StringSpec,
 
@@ -54,10 +52,10 @@ var builtinCTypeMap = CTypeMap{
 
 	// LONG TYPES
 	// ----------
-	// long -> int64
-	CTypeSpec{Base: "long"}: Int64Spec,
-	// unsigned long -> uint64
-	CTypeSpec{Base: "long", Unsigned: true}: Uint64Spec,
+	// long -> int32
+	CTypeSpec{Base: "long"}: Int32Spec,
+	// unsigned long -> uint32
+	CTypeSpec{Base: "long", Unsigned: true}: Uint32Spec,
 	// long long -> int64
 	CTypeSpec{Base: "long", Long: true}: Int64Spec,
 	// unsigned long long -> uint64
@@ -65,10 +63,10 @@ var builtinCTypeMap = CTypeMap{
 
 	// INT TYPES
 	// ----------
-	// int -> int32
-	CTypeSpec{Base: "int"}: Int32Spec,
-	// unsigned int -> uint32
-	CTypeSpec{Base: "int", Unsigned: true}: Uint32Spec,
+	// int -> int
+	CTypeSpec{Base: "int"}: IntSpec,
+	// unsigned int -> uint
+	CTypeSpec{Base: "int", Unsigned: true}: UintSpec,
 	// short int -> int16
 	CTypeSpec{Base: "int", Short: true}: Int16Spec,
 	// unsigned short int -> uint16
@@ -95,6 +93,7 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "int_t"}:   IntSpec,
 	CTypeSpec{Base: "uint_t"}:  UintSpec,
 
+	CTypeSpec{Base: "int8_t", Pointers: 1}:               StringSpec,
 	CTypeSpec{Base: "int8_t", Const: true, Pointers: 1}:  StringSpec,
 	CTypeSpec{Base: "uint8_t", Const: true, Pointers: 1}: StringSpec,
 	CTypeSpec{Base: "uint8_t"}:                           ByteSpec,

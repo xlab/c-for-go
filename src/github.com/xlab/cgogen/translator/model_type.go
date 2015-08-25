@@ -32,14 +32,15 @@ func getArraySizes(arr string) []uint64 {
 		return nil
 	}
 	var sizes []uint64
-	for len(arr) >= 3 {
-		// get"[n]" from "[k][l][m][n]"
-		idx := len(arr) - 3
-		part := arr[idx:]
-		// get "n" from "[n]" and convert to uint64
-		u, _ := strconv.ParseUint(part[1:len(part)-1], 10, 64)
+	for len(arr) > 0 {
+		// get "n" from "[k][l][m][n]"
+		p1 := strings.LastIndexByte(arr, '[')
+		p2 := strings.LastIndexByte(arr, ']')
+		part := arr[p1+1 : p2]
+		// and convert to uint64
+		u, _ := strconv.ParseUint(part, 10, 64)
 		sizes = append(sizes, u)
-		arr = arr[:idx]
+		arr = arr[:p1]
 	}
 	return sizes
 }

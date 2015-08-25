@@ -200,7 +200,6 @@ func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDec
 		default:
 			decl.AddArray(0)
 		}
-
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		next = declr.DirectDeclarator
 		if isVoid(decl.Spec) {

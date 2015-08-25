@@ -214,8 +214,6 @@ func (gen *Generator) getUnpackHelper(gospec tl.GoTypeSpec, spec tl.CType) *Help
 
 func (gen *Generator) proxyFromGo(name string, decl tl.CDecl) (proxy string, nillable bool) {
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
-	nillable = true
-
 	if helper, ok := fromGoHelperMap[goSpec.String()]; ok {
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
@@ -236,20 +234,19 @@ func (gen *Generator) proxyFromGo(name string, decl tl.CDecl) (proxy string, nil
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(&%s[0]))", cgoSpec, name)
 		return
 	case isPlain: // ex: byte, [4]byte
+		if len(goSpec.Arrays) == 0 {
+			proxy = fmt.Sprintf("(%s)(%s)", cgoSpec, name)
+			return
+		}
 		ref := name
 		if goSpec.Pointers == 0 {
-			nillable = false
 			ref = "&" + name
 		}
-		var deref string
-		if cgoSpec.Pointers == 0 {
-			nillable = false
-			deref = "*"
-		}
-		proxy = fmt.Sprintf("%s(%s%s)(unsafe.Pointer(%s))", deref, cgoSpec, ref)
+		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(%s))", cgoSpec, ref)
 		return
 	default: // ex: *SomeType
-		proxy = fmt.Sprintf("%s.Ref()", name)
+		nillable = true
+		proxy = fmt.Sprintf("%s.PassRef()", name)
 		return
 	}
 }
@@ -385,17 +382,20 @@ func (gen *Generator) proxyToGo(name string, decl tl.CDecl) (proxy string, nilla
 			ptrs(goSpec.Pointers), goSpec.Base, name)
 		return
 	case isPlain: // ex: byte, [4]byte
+		nillable = false
+		if len(goSpec.Arrays) == 0 {
+			proxy = fmt.Sprintf("(%s)(%s)", goSpec, name)
+			return
+		}
 		ref := name
 		if goSpec.Pointers == 0 {
-			nillable = false
 			ref = "&" + name
 		}
 		var deref string
 		if cgoSpec.Pointers == 0 {
-			nillable = false
 			deref = "*"
 		}
-		proxy = fmt.Sprintf("%s(%s%s)(unsafe.Pointer(%s))", deref, cgoSpec, ref)
+		proxy = fmt.Sprintf("%s(%s%s)(unsafe.Pointer(%s))", deref, deref, goSpec, ref)
 		return
 	default: // ex: *SomeType
 		proxy = fmt.Sprintf("New%s(%s)", goSpec.Base, name)
@@ -407,9 +407,17 @@ func (gen *Generator) createProxies(decl tl.CDecl) []proxyDecl {
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	proxies := make([]proxyDecl, len(spec.ParamList))
 	for i, param := range spec.ParamList {
+		buf := new(bytes.Buffer)
 		refName := string(gen.tr.TransformName(tl.TargetPrivate, param.Name))
-		proxies[i].Name = "c" + refName
-		proxies[i].Decl, _ = gen.proxyFromGo(refName, param)
+		name := "c" + refName
+		proxy, nillable := gen.proxyFromGo(refName, param)
+		if nillable {
+			fmt.Fprintf(buf, "var %s %s\n", name, gen.tr.CGoSpec(param.Spec))
+			fmt.Fprintf(buf, "if %s != nil {\n%s = %s\n}", refName, name, proxy)
+		} else {
+			fmt.Fprintf(buf, "%s := %s", name, proxy)
+		}
+		proxies[i] = proxyDecl{Name: name, Decl: buf.String()}
 	}
 	return proxies
 }
@@ -433,8 +441,8 @@ func (gen *Generator) submitHelper(h *Helper) {
 func (gen *Generator) writeFunctionBody(wr io.Writer, decl tl.CDecl) {
 	writeStartFuncBody(wr)
 	proxies := gen.createProxies(decl)
-	for _, pDecl := range proxies {
-		fmt.Fprintf(wr, "%s := %s\n", pDecl.Name, pDecl.Decl)
+	for _, proxy := range proxies {
+		fmt.Fprintln(wr, proxy.Decl)
 	}
 	writeSpace(wr, 1)
 

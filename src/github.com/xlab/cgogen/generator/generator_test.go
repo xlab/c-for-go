@@ -16,10 +16,10 @@ import (
 func TestProxies(t *testing.T) {
 	assert := assert.New(t)
 	var (
-		originFile    = "test/proxy_test.h"
-		goHelpersFile = "test/proxy_helpers.go"
-		cHelpersFile  = "test/proxy_helpers.c"
-		resultFile    = "test/proxy.go"
+		originFile    = "test/test.h"
+		goHelpersFile = "test/test_helpers.go"
+		cHelpersFile  = "test/test_helpers.c"
+		resultFile    = "test/test.go"
 		//
 		goHelpersBuf = new(bytes.Buffer)
 		cHelpersBuf  = new(bytes.Buffer)
@@ -92,6 +92,9 @@ func getGenerator(originHeader string) (*Generator, error) {
 			tl.TargetGlobal: {
 				tl.RuleSpec{From: "test_", Action: tl.ActionAccept},
 				tl.RuleSpec{Transform: tl.TransformExport},
+			},
+			tl.TargetType: {
+				tl.RuleSpec{From: "_t$", Action: tl.ActionReplace},
 			},
 			tl.TargetPrivate: {
 				tl.RuleSpec{Transform: tl.TransformUnexport},

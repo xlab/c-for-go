@@ -50,6 +50,7 @@ func (gts GoTypeSpec) String() string {
 type CGoSpec struct {
 	Base     string
 	Pointers uint8
+	Arrays   []uint8
 }
 
 func (cgs CGoSpec) String() string {

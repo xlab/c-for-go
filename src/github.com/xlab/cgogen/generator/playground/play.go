@@ -3,6 +3,7 @@ package main
 // #include "play.h"
 import "C"
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"unsafe"
@@ -106,7 +107,22 @@ func passData(d Data) {
 	C.print_names(d.toC())
 }
 
+func printA() {
+	fmt.Printf("type of a1 is %T\n", C.a1)
+	fmt.Printf("type of a2 is %T\n", C.a2)
+	fmt.Printf("type of a3 is %T\n", C.a3)
+	fmt.Printf("type of a4 is %T\n", C.a4)
+	fmt.Printf("type of a5 is %T\n", C.a5)
+	fmt.Printf("type of a6 is %T\n", C.a6)
+	fmt.Printf("type of a7 is %T\n", C.a7)
+	fmt.Printf("type of a8 is %T\n", C.a8)
+	fmt.Printf("type of a9 is %T\n", C.a9)
+	fmt.Printf("type of a10 is %T\n", C.a10)
+	fmt.Printf("type of a11 is %T\n", C.a11)
+}
+
 func main() {
+	printA()
 	names := []string{"Maxim", "Xlab", "Yo", "Lol"}
 	d := Data{Names: names, Size: len(names)}
 	//C.lol((*C.lol_t)(unsafe.Pointer(&Lol{Flag: [4]bool{true, true, false, true}})))
