@@ -52,6 +52,11 @@ func (gen *Generator) writeGoHelpersHeader(wr io.Writer) {
 	writeSpace(wr, 1)
 	writePackageName(wr, gen.pkg)
 	writeSpace(wr, 1)
+	writeStartComment(wr)
+	for _, path := range gen.cfg.Includes {
+		writeInclude(wr, path)
+	}
+	writeEndComment(wr)
 	fmt.Fprintln(wr, `import "C"`)
 	writeSpace(wr, 1)
 }

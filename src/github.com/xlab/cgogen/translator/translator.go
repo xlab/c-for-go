@@ -246,11 +246,11 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 			Pointers: spec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
-			gospec.Arrays = getArraySizes(spec.GetArrays())
+			gospec.Arrays = spec.GetArrays()
 			return gospec
 		}
 		wrapper := GoTypeSpec{
-			Arrays: getArraySizes(spec.GetArrays()),
+			Arrays: spec.GetArrays(),
 		}
 		if lookupSpec.Pointers > 0 {
 			for lookupSpec.Pointers > 0 {
@@ -264,8 +264,11 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 					if lookupSpec.Pointers == 0 {
 						gospec.Slices += wrapper.Slices + 1
 						gospec.Pointers += wrapper.Pointers - 1
+					} else {
+						gospec.Slices += wrapper.Slices
+						gospec.Pointers += wrapper.Pointers
 					}
-					gospec.Arrays = append(wrapper.Arrays, gospec.Arrays...)
+					gospec.Arrays = wrapper.Arrays + gospec.Arrays
 					gospec.Pointers += spec.GetVarArrays()
 					return gospec
 				}
@@ -276,7 +279,7 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		return wrapper
 	case FunctionKind:
 		wrapper := GoTypeSpec{
-			Arrays: getArraySizes(spec.GetArrays()),
+			Arrays: spec.GetArrays(),
 		}
 		wrapper.splitPointers(spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
@@ -284,7 +287,7 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		return wrapper
 	default:
 		wrapper := GoTypeSpec{
-			Arrays: getArraySizes(spec.GetArrays()),
+			Arrays: spec.GetArrays(),
 		}
 		wrapper.splitPointers(spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
@@ -298,12 +301,12 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 }
 
 func (t *Translator) CGoSpec(spec CType) CGoSpec {
-	// char **s[1][2][3] -> *[2][3]**C.char
 	cgo := CGoSpec{
 		Pointers: spec.GetPointers(),
 	}
 	cgo.Pointers += spec.GetVarArrays()
-	cgo.Pointers += uint8(strings.Count(spec.GetArrays(), "["))
+	cgo.Arrays = GetArraySizes(spec.GetArrays())
+
 	if spec, ok := spec.(*CTypeSpec); ok {
 		switch base := spec.Base; base {
 		case "int", "short", "long", "char":

@@ -4,23 +4,21 @@ type CTypeMap map[CTypeSpec]GoTypeSpec
 type GoTypeMap map[string]GoTypeSpec
 
 var (
-	BoolSpec   = GoTypeSpec{Base: "bool"}
-	IntSpec    = GoTypeSpec{Base: "int"}
-	UintSpec   = GoTypeSpec{Base: "int", Unsigned: true}
-	Int8Spec   = GoTypeSpec{Base: "int", Bits: 8}
-	Uint8Spec  = GoTypeSpec{Base: "int", Bits: 8, Unsigned: true}
-	Int16Spec  = GoTypeSpec{Base: "int", Bits: 16}
-	Uint16Spec = GoTypeSpec{Base: "int", Bits: 16, Unsigned: true}
-	Int32Spec  = GoTypeSpec{Base: "int", Bits: 32}
-	Uint32Spec = GoTypeSpec{Base: "int", Bits: 32, Unsigned: true}
-	Int64Spec  = GoTypeSpec{Base: "int", Bits: 64}
-	Uint64Spec = GoTypeSpec{Base: "int", Bits: 64, Unsigned: true}
-	RuneSpec   = GoTypeSpec{Base: "rune"}
-	// RuneSliceSpec   = GoTypeSpec{Base: "rune", Slices: 1}
-	ByteSpec = GoTypeSpec{Base: "byte"}
-	// ByteSliceSpec   = GoTypeSpec{Base: "byte", Slices: 1}
-	StringSpec = GoTypeSpec{Base: "string"}
-	// StringSliceSpec = GoTypeSpec{Base: "string", Slices: 1}
+	BoolSpec    = GoTypeSpec{Base: "bool"}
+	IntSpec     = GoTypeSpec{Base: "int"}
+	UintSpec    = GoTypeSpec{Base: "int", Unsigned: true}
+	Int8Spec    = GoTypeSpec{Base: "int", Bits: 8}
+	Uint8Spec   = GoTypeSpec{Base: "int", Bits: 8, Unsigned: true}
+	Int16Spec   = GoTypeSpec{Base: "int", Bits: 16}
+	Uint16Spec  = GoTypeSpec{Base: "int", Bits: 16, Unsigned: true}
+	Int32Spec   = GoTypeSpec{Base: "int", Bits: 32}
+	Uint32Spec  = GoTypeSpec{Base: "int", Bits: 32, Unsigned: true}
+	Int64Spec   = GoTypeSpec{Base: "int", Bits: 64}
+	Uint64Spec  = GoTypeSpec{Base: "int", Bits: 64, Unsigned: true}
+	RuneSpec    = GoTypeSpec{Base: "rune"}
+	ByteSpec    = GoTypeSpec{Base: "byte"}
+	StringSpec  = GoTypeSpec{Base: "string"}
+	UStringSpec = GoTypeSpec{Base: "string", Unsigned: true}
 	Float32Spec = GoTypeSpec{Base: "float", Bits: 32}
 	Float64Spec = GoTypeSpec{Base: "float", Bits: 64}
 	PointerSpec = GoTypeSpec{Base: "unsafe.Pointer"}
@@ -41,7 +39,7 @@ var builtinCTypeMap = CTypeMap{
 	// unsigned char -> byte
 	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
 	// const unsigned char* -> string
-	CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}: StringSpec,
+	CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}: UStringSpec,
 
 	// SHORT TYPES
 	// -----------
@@ -95,7 +93,7 @@ var builtinCTypeMap = CTypeMap{
 
 	CTypeSpec{Base: "int8_t", Pointers: 1}:               StringSpec,
 	CTypeSpec{Base: "int8_t", Const: true, Pointers: 1}:  StringSpec,
-	CTypeSpec{Base: "uint8_t", Const: true, Pointers: 1}: StringSpec,
+	CTypeSpec{Base: "uint8_t", Const: true, Pointers: 1}: UStringSpec,
 	CTypeSpec{Base: "uint8_t"}:                           ByteSpec,
 
 	CTypeSpec{Base: "int8_t"}:    Int8Spec,

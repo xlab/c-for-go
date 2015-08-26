@@ -21,13 +21,13 @@ type CTypeSpec struct {
 
 func (c *CTypeSpec) AddArray(size uint64) {
 	if size > 0 {
-		c.Arrays = fmt.Sprintf("%s[%d]", c.Arrays, size)
+		c.Arrays += fmt.Sprintf("[%d]", size)
 		return
 	}
 	c.VarArrays++
 }
 
-func getArraySizes(arr string) []uint64 {
+func GetArraySizes(arr string) []uint64 {
 	if len(arr) == 0 {
 		return nil
 	}

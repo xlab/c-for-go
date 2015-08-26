@@ -1,83 +1,48 @@
 package translator
 
-// func init() {
-// 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-// }
+import (
+	"fmt"
+	"testing"
 
-// func TestWebInclude(t *testing.T) {
-// 	return
-// 	pCfg := parser.NewConfig("test/web_include_test.h")
-// 	pCfg.SysIncludePaths = []string{"/usr/include"}
-// 	pCfg.WebIncludesEnabled = true
-// 	p, err := parser.New(pCfg)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	unit, err := p.Parse()
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	buf := bufio.NewWriter(os.Stdout)
-// 	defer buf.Flush()
-// 	cfg := &Config{
-// 		ConstRules: ConstRules{
-// 			ConstEnum:    ConstEvalFull,
-// 			ConstDeclare: ConstExpand,
-// 		},
-// 	}
-// 	tl, err := New(cfg, buf)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	if err := tl.Learn(unit); err != nil {
-// 		t.Fatal(err)
-// 	}
+	"github.com/stretchr/testify/assert"
+)
 
-// 	// tl.Report()
-// }
-
-// func TestLearn(t *testing.T) {
-// 	pCfg := parser.NewConfig("test/translator_test.h")
-// 	pCfg.SysIncludePaths = []string{"/usr/include"}
-// 	p, err := parser.New(pCfg)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	unit, err := p.Parse()
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	buf := bufio.NewWriter(os.Stdout)
-// 	defer buf.Flush()
-
-// 	cfg := &Config{
-// 		Rules: Rules{
-// 			TargetGlobal: {
-// 				RuleSpec{From: "(?i)VPX_", Action: ActionAccept},
-// 				RuleSpec{Transform: TransformLower},
-// 			},
-// 			TargetConst: {
-// 				RuleSpec{From: "_INLINE$", Action: ActionIgnore},
-// 				RuleSpec{From: "vpx_", To: "_", Action: ActionReplace},
-// 				RuleSpec{From: "_abi", Transform: TransformUpper},
-// 				RuleSpec{From: "_img", To: "_image", Action: ActionReplace},
-// 				RuleSpec{From: "_fmt", To: "_format", Action: ActionReplace},
-// 				RuleSpec{From: "_([^_]+)", To: "$1", Action: ActionReplace, Transform: TransformTitle},
-// 			},
-// 		},
-// 		ConstRules: ConstRules{
-// 			ConstEnum:    ConstEvalFull,
-// 			ConstDeclare: ConstExpand,
-// 		},
-// 	}
-
-// 	tl, err := New(cfg, buf)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	if err := tl.Learn(unit); err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	// tl.Report()
-// }
+func TestCGoSpecAtLevel(t *testing.T) {
+	assert := assert.New(t)
+	tbl := []struct {
+		Spec     CGoSpec
+		Expected []string
+	}{
+		{CGoSpec{},
+			[]string{"", "", ""}},
+		{CGoSpec{Base: "char"},
+			[]string{"char", "char", "char"}},
+		{CGoSpec{Base: "char", Pointers: 1},
+			[]string{"*char", "char", "char"}},
+		{CGoSpec{Base: "char", Pointers: 2},
+			[]string{"**char", "*char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1}},
+			[]string{"*char", "char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1, 2}},
+			[]string{"*[2]char", "[2]char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1, 2, 3}},
+			[]string{"*[2][3]char", "[2][3]char", "[3]char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1, 2, 3}, Pointers: 1},
+			[]string{"*[2][3]*char", "[2][3]*char", "[3]*char", "*char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1, 2, 3}, Pointers: 2},
+			[]string{"*[2][3]**char", "[2][3]**char", "[3]**char", "**char", "*char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1, 2}, Pointers: 3},
+			[]string{"*[2]***char", "[2]***char", "***char", "**char", "*char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1, 2}, Pointers: 1},
+			[]string{"*[2]*char", "[2]*char", "*char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1}, Pointers: 2},
+			[]string{"***char", "**char", "*char", "char"}},
+		{CGoSpec{Base: "char", Arrays: []uint64{1}, Pointers: 1},
+			[]string{"**char", "*char", "char"}},
+	}
+	for _, test := range tbl {
+		for level, exp := range test.Expected {
+			assert.Equal(exp, test.Spec.AtLevel(uint8(level)), fmt.Sprintf("at level %d", level))
+		}
+	}
+}

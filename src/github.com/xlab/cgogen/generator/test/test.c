@@ -18,9 +18,9 @@ uint8_t* test_pass_bytes(unsigned char *b1, size_t n1, uint8_t *b2, size_t n2) {
 	return result;
 }
 
-ssize_t test_find_byte(char *b, size_t n, char c) {
-	for (ssize_t i = 0; i < n; i++) {
-		if (b[i] == c) {
+ssize_t test_find_char(char *s, char c) {
+	for (ssize_t i = 0; s[i] != 0; i++) {
+		if (s[i] == c) {
 			return i;
 		}
 	}
@@ -46,7 +46,7 @@ size_t test_send_message(test_message_t *m, uint8_t *buf) {
 	return size;
 }
 
-void test_a4_byte(char b[4], size_t n) {
+void test_a4_byte(uint8_t b[4]) {
 	for (int i = 0; i < 4; i++) {
 		b[i]++;
 	}
@@ -58,7 +58,7 @@ void test_a4_string(const char *s[4]) {
 	}
 }
 
-void test_a4_s_byte(char *b[4], size_t n) {
+void test_a4_s_byte(uint8_t *b[4], size_t n) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < n; j++) {
 			b[i][j]++;
@@ -74,7 +74,7 @@ void test_a4_s_string(const char **s[4], size_t n) {
 	}
 }
 
-void test_a2_a2_byte(char b[2][2]) {
+void test_a2_a2_byte(uint8_t b[2][2]) {
 	for (int i = 0; i < 2; i++) {
 		for (int j = 0; j < 2; j++) {
 			b[i][j]++;
@@ -90,7 +90,7 @@ void test_a2_a2_string(const char *s[2][2]) {
 	}
 }
 
-void test_a2_a2_s_byte(char *b[2][2], size_t n) {
+void test_a2_a2_s_byte(uint8_t *b[2][2], size_t n) {
 	for (int i = 0; i < 2; i++) {
 		for (int j = 0; j < 2; j++) {
 			for (int k = 0; k < n; k++) {
@@ -110,7 +110,7 @@ void test_a2_a2_s_string(const char **s[2][2], size_t n) {
 	}
 }
 
-void test_s_s_byte(char **b, size_t n1, size_t n2) {
+void test_s_s_byte(uint8_t **b, size_t n1, size_t n2) {
 	for (int i = 0; i < n1; i++) {
 		for (int j = 0; j < n2; j++) {
 			b[i][j]++;
@@ -126,7 +126,7 @@ void test_s_s_string(const char ***s, size_t n1, size_t n2) {
 	}
 }
 
-void test_a4_s_s_byte(char **b[4], size_t n1, size_t n2) {
+void test_a4_s_s_byte(uint8_t **b[4], size_t n1, size_t n2) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < n1; j++) {
 			for (int k = 0; k < n2; k++) {
@@ -146,7 +146,7 @@ void test_a4_s_s_string(const char ***s[4], size_t n1, size_t n2) {
 	}
 }
 
-void test_a2_a2_s_s_byte(char **b[2][2], size_t n1, size_t n2) {
+void test_a2_a2_s_s_byte(uint8_t **b[2][2], size_t n1, size_t n2) {
 	for (int i = 0; i < 2; i++) {
 		for (int j = 0; j < 2; j++) {
 			for (int j = 0; j < 2; j++) {
@@ -160,12 +160,12 @@ void test_a2_a2_s_s_byte(char **b[2][2], size_t n1, size_t n2) {
 	}
 }
 
-void test_a2_a2_s_s_string(const char ***s[2][2], size_t n1, size_t n2) {
+void test_a2_a2_s_s_string(const uint8_t ***s[2][2], size_t n1, size_t n2) {
 	for (int i = 0; i < 2; i++) {
 		for (int j = 0; j < 2; j++) {
 			for (int k = 0; k < n1; k++) {
 				for (int l = 0; l < n2; l++) {
-					s[i][j][k][l] = "go";
+					s[i][j][k][l] = (uint8_t*)"go";
 				}
 			}
 		}

@@ -7,7 +7,7 @@ import (
 )
 
 type GoTypeSpec struct {
-	Arrays   []uint64
+	Arrays   string
 	Slices   uint8
 	Pointers uint8
 	Unsigned bool
@@ -28,16 +28,16 @@ func (gts *GoTypeSpec) splitPointers(n uint8) {
 
 func (gts GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
-	for _, size := range gts.Arrays {
-		fmt.Fprintf(buf, "[%d]", size)
+	if len(gts.Arrays) > 0 {
+		buf.WriteString(gts.Arrays)
 	}
 	if gts.Slices > 0 {
 		buf.WriteString(strings.Repeat("[]", int(gts.Slices)))
 	}
 	if gts.Pointers > 0 {
-		buf.WriteString(strings.Repeat("*", int(gts.Pointers)))
+		buf.WriteString(ptrs(gts.Pointers))
 	}
-	if gts.Unsigned {
+	if gts.Unsigned && gts.Base == "int" {
 		buf.WriteString("u")
 	}
 	buf.WriteString(gts.Base)
@@ -50,9 +50,40 @@ func (gts GoTypeSpec) String() string {
 type CGoSpec struct {
 	Base     string
 	Pointers uint8
-	Arrays   []uint8
+	Arrays   []uint64
 }
 
 func (cgs CGoSpec) String() string {
-	return fmt.Sprintf("%s%s", strings.Repeat("*", int(cgs.Pointers)), cgs.Base)
+	buf := new(bytes.Buffer)
+	for _, size := range cgs.Arrays {
+		fmt.Fprintf(buf, "[%d]", size)
+	}
+	fmt.Fprintf(buf, "%s%s", ptrs(cgs.Pointers), cgs.Base)
+	return buf.String()
+}
+
+func (cgs *CGoSpec) AtLevel(level uint8) string {
+	buf := new(bytes.Buffer)
+	for i, size := range cgs.Arrays {
+		if i < int(level) {
+			continue
+		} else if i == 0 {
+			fmt.Fprint(buf, "*")
+			continue
+		}
+		fmt.Fprintf(buf, "[%d]", size)
+	}
+	if int(level) > len(cgs.Arrays) {
+		if delta := int(cgs.Pointers) + len(cgs.Arrays) - int(level); delta > 0 {
+			fmt.Fprint(buf, strings.Repeat("*", delta))
+		}
+	} else {
+		fmt.Fprint(buf, ptrs(cgs.Pointers))
+	}
+	fmt.Fprint(buf, cgs.Base)
+	return buf.String()
+}
+
+func ptrs(n uint8) string {
+	return strings.Repeat("*", int(n))
 }
