@@ -43,14 +43,14 @@ func TestTestFindChar(t *testing.T) {
 func TestTestA4Byte(t *testing.T) {
 	a := [4]byte{'a', 'a', 'a', 'a'}
 	b := [4]byte{'b', 'b', 'b', 'b'}
-	TestA4Byte(a)
+	TestA4Byte(&a)
 	assert.Equal(t, b, a)
 }
 
 func TestTestA4String(t *testing.T) {
 	a := [4]string{"g", "g", "g", "g"}
 	b := [4]string{"go", "go", "go", "go"}
-	TestA4String(a)
+	TestA4String(&a)
 	assert.Equal(t, b, a)
 }
 
@@ -67,7 +67,7 @@ func TestTestA4SByte(t *testing.T) {
 		{'b', 'b'},
 		{'b', 'b'},
 	}
-	TestA4SByte(a, 2)
+	TestA4SByte(&a, 2)
 	assert.Equal(t, b, a)
 }
 
@@ -84,6 +84,6 @@ func TestTestA4SString(t *testing.T) {
 		{"go", "go"},
 		{"go", "go"},
 	}
-	TestA4SString(a, 2)
+	TestA4SString(&a, 2)
 	assert.Equal(t, b, a)
 }

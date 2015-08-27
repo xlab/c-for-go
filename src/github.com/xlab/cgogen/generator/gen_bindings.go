@@ -117,6 +117,14 @@ func ptrs(n uint8) string {
 	return strings.Repeat("*", int(n))
 }
 
+func buildIndices(name string, level uint8) []byte {
+	buf := new(bytes.Buffer)
+	for i := uint8(0); i < level; i++ {
+		fmt.Fprintf(buf, "[i%d]", i)
+	}
+	return buf.Bytes()
+}
+
 func unpackPlain(buf io.Writer, cgoSpec tl.CGoSpec, pointers uint8, level uint8) {
 	uplevel := level - 1
 	ref := "x"
@@ -134,20 +142,21 @@ func unpackPlain(buf io.Writer, cgoSpec tl.CGoSpec, pointers uint8, level uint8)
 
 func unpackPlainSlice(buf io.Writer, cgoSpec tl.CGoSpec, level uint8) {
 	uplevel := level - 1
-	fmt.Fprintf(buf, "mem%d[i%d] = (%s)(unsafe.Pointer(&x%d[0]))\n",
-		uplevel, uplevel, cgoSpec.AtLevel(level), uplevel)
+	fmt.Fprintf(buf, "mem%d[i%d] = (%s)(unsafe.Pointer(&x%s[0]))\n",
+		uplevel, uplevel, cgoSpec.AtLevel(level), buildIndices("i", level))
 }
 
 func (gen *Generator) unpackObj(buf io.Writer, cgoSpec tl.CGoSpec, goSpec tl.GoTypeSpec, level uint8) *Helper {
 	uplevel := level - 1
+	indices := buildIndices("i", level)
 	if getHelperFunc, ok := fromGoHelperMap[goSpec]; ok {
 		helper := getHelperFunc(gen, cgoSpec)
-		fmt.Fprintf(buf, "mem%d[i%d] = %s(%sx%d)\n",
-			uplevel, uplevel, helper.Name, ptrs(goSpec.Pointers), uplevel)
+		fmt.Fprintf(buf, "mem%d[i%d] = %s(%sx%s)\n",
+			uplevel, uplevel, helper.Name, ptrs(goSpec.Pointers), indices)
 		return helper
 	}
-	fmt.Fprintf(buf, "if x%d == nil {\ncontinue\n}\n", uplevel)
-	fmt.Fprintf(buf, "mem%d[i%d] = x%d.Ref()\n", uplevel, uplevel, uplevel)
+	fmt.Fprintf(buf, "if x%s == nil {\ncontinue\n}\n", indices)
+	fmt.Fprintf(buf, "mem%d[i%d] = x%s.Ref()\n", uplevel, uplevel, indices)
 	return nil
 }
 
@@ -155,13 +164,13 @@ func unpackArray(buf1 io.Writer, buf2 *reverseBuffer, size uint64, cgoSpec tl.CG
 	uplevel := level - 1
 	if level == 0 {
 		fmt.Fprintf(buf1, "var mem0 %s\n", cgoSpec)
-		fmt.Fprintf(buf1, "for i0, x0 := range x {\n")
+		fmt.Fprintf(buf1, "for i0 := range x {\n")
 		buf2.Linef("return (%s)(unsafe.Pointer(&mem0))", cgoSpec.AtLevel(level))
 		buf2.Linef("}\n")
 		return
 	}
 	fmt.Fprintf(buf1, "var mem%d %s\n", level, cgoSpec.AtLevel(level))
-	fmt.Fprintf(buf1, "for i%d, x%d := range x%d {\n", level, level, uplevel)
+	fmt.Fprintf(buf1, "for i%d := range x%s {\n", level, buildIndices("i", level))
 	buf2.Linef("mem%d[i%d] = *(*%s)(unsafe.Pointer(&mem%d))\n",
 		uplevel, uplevel, cgoSpec.AtLevel(level), level)
 	buf2.Linef("}\n")
@@ -171,13 +180,14 @@ func unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level 
 	uplevel := level - 1
 	if level == 0 {
 		fmt.Fprintf(buf1, "mem0 := make([]%s, len(x))\n", cgoSpec.AtLevel(1))
-		fmt.Fprintf(buf1, "for i0, x0 := range x {\n")
+		fmt.Fprintf(buf1, "for i0 := range x {\n")
 		buf2.Linef("return (%s)(unsafe.Pointer(&mem0[0]))\n", cgoSpec.AtLevel(0))
 		buf2.Linef("}\n")
 		return
 	}
-	fmt.Fprintf(buf1, "mem%d := make([]%s, len(x%d))\n", level, cgoSpec.AtLevel(level+1), uplevel)
-	fmt.Fprintf(buf1, "for i%d, x%d := range x%d {\n", level, level, uplevel)
+	indices := buildIndices("i", level)
+	fmt.Fprintf(buf1, "mem%d := make([]%s, len(x%s))\n", level, cgoSpec.AtLevel(level+1), indices)
+	fmt.Fprintf(buf1, "for i%d := range x%s {\n", level, indices)
 	buf2.Linef("mem%d[i%d] = (%s)(unsafe.Pointer(&mem%d[0]))\n", uplevel, uplevel, cgoSpec.AtLevel(level), level)
 	buf2.Linef("}\n")
 }

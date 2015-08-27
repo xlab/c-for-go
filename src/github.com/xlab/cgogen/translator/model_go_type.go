@@ -26,9 +26,14 @@ func (gts *GoTypeSpec) splitPointers(n uint8) {
 	}
 }
 
+func (gts *GoTypeSpec) IsReference() bool {
+	return len(gts.Arrays) > 0
+}
+
 func (gts GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
 	if len(gts.Arrays) > 0 {
+		buf.WriteRune('*')
 		buf.WriteString(gts.Arrays)
 	}
 	if gts.Slices > 0 {
