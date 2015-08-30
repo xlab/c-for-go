@@ -28,6 +28,15 @@ func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl tl.CDecl, public b
 	fmt.Fprintf(wr, "%s %s", declName, goSpec)
 }
 
+func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
+	declName := gen.transformDeclName(decl.Name, public)
+	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
+	if declName != typeRef {
+		fmt.Fprintf(wr, "%s %s", declName, typeRef)
+		writeSpace(wr, 1)
+	}
+}
+
 func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
@@ -77,13 +86,4 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, public
 	writeSpace(wr, 1)
 	gen.writeStructMembers(wr, decl.Spec)
 	writeEndStruct(wr)
-}
-
-func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl tl.CDecl, public bool) {
-	declName := gen.transformDeclName(decl.Name, public)
-	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
-	if declName != typeRef {
-		fmt.Fprintf(wr, "%s %s", declName, typeRef)
-		writeSpace(wr, 1)
-	}
 }

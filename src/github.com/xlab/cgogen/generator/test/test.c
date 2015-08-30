@@ -31,8 +31,8 @@ size_t test_send_message(test_message_t *m, uint8_t *buf) {
 	if (m == 0) {
 		return 0;
 	}
-	size_t size;
-	buf = memcpy(buf, MESSAGE_HEADER, strlen(MESSAGE_HEADER));
+	size_t size = 0;
+	memcpy(buf, MESSAGE_HEADER, strlen(MESSAGE_HEADER));
 	size += strlen(MESSAGE_HEADER);
 	memcpy(buf + size, m->from, MAX_NAME_LEN);
 	size += MAX_NAME_LEN;

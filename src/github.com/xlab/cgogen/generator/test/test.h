@@ -28,8 +28,8 @@ void test_a2_a2_s_s_string(const uint8_t ***s[2][2], size_t n1, size_t n2);
 
 #define MESSAGE_HEADER "msg"
 #define MESSAGE_HEADER_LEN 3
-#define MAX_NAME_LEN 255
-#define MAX_MESSAGE_LEN 512
+#define MAX_NAME_LEN 50
+#define MAX_MESSAGE_LEN 140
 
 typedef struct test_message {
 	uint8_t from[MAX_NAME_LEN];

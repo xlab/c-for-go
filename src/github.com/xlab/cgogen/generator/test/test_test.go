@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,6 +39,37 @@ func TestTestFindChar(t *testing.T) {
 		result := TestFindChar(test.Input, test.Search)
 		assert.Equal(t, test.Index, result)
 	}
+}
+
+func TestTestSendMessage(t *testing.T) {
+	var from, to [50]byte
+	var message [140]byte
+	copy(from[:], []byte("Gopher Bob"))
+	copy(to[:], []byte("Gopher Anna"))
+	copy(message[:], []byte("Hello!"))
+
+	buf := make([]byte, 4096)
+	msg := &TestMessage{
+		From:      &from,
+		To:        &to,
+		Message:   &message,
+		Signature: " --xxx",
+	}
+	size := TestSendMessage(msg, buf)
+	assert.EqualValues(t, 249, size)
+	packed := []byte(`msgGopher BobGopher AnnaHello! --xxx`)
+	assert.Equal(t, packed, cleanBuf(buf))
+}
+
+func cleanBuf(buf []byte) []byte {
+	tmp := new(bytes.Buffer)
+	for i := range buf {
+		if buf[i] != 0 {
+			tmp.WriteByte(buf[i])
+			continue
+		}
+	}
+	return tmp.Bytes()
 }
 
 func TestTestA4Byte(t *testing.T) {

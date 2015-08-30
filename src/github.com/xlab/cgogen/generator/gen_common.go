@@ -27,6 +27,8 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structSpec tl.CType) {
 		}
 		writeSpace(wr, 1)
 	}
+	cgoSpec := gen.tr.CGoSpec(structSpec)
+	fmt.Fprintf(wr, "__ref *%s\n", cgoSpec)
 }
 
 func (gen *Generator) writeFunctionParams(wr io.Writer, funcSpec tl.CType) {
