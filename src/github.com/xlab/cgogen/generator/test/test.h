@@ -9,7 +9,7 @@
 int test_pass_int(int i1, int i2);
 const char* test_pass_string(const unsigned char *s1, const char *s2);
 uint8_t* test_pass_bytes(unsigned char *b1, size_t n1, uint8_t *b2, size_t n2);
-ssize_t test_find_char(char *b, char c);
+ssize_t test_find_char(char *s, char c);
 
 void test_a4_byte(uint8_t b[4]);
 void test_a4_string(const char *s[4]);
