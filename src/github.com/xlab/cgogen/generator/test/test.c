@@ -149,11 +149,9 @@ void test_a4_s_s_string(const char ***s[4], size_t n1, size_t n2) {
 void test_a2_a2_s_s_byte(uint8_t **b[2][2], size_t n1, size_t n2) {
 	for (int i = 0; i < 2; i++) {
 		for (int j = 0; j < 2; j++) {
-			for (int j = 0; j < 2; j++) {
-				for (int k = 0; k < n1; k++) {
-					for (int l = 0; l < n2; l++) {
-						b[i][j][k][l]++;
-					}
+			for (int k = 0; k < n1; k++) {
+				for (int l = 0; l < n2; l++) {
+					b[i][j][k][l]++;
 				}
 			}
 		}
