@@ -7,25 +7,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFooPassInt(t *testing.T) {
+func TestPassInt(t *testing.T) {
 	expected := 5
-	result := FooPassInt(2, 3)
+	result := PassInt(2, 3)
 	assert.Equal(t, expected, result)
 }
 
-func TestFooPassString(t *testing.T) {
+func TestPassString(t *testing.T) {
 	expected := "ab"
-	result := FooPassString("a", "b")
+	result := PassString("a", "b")
 	assert.Equal(t, expected, result)
 }
 
-func TestFooPassBytes(t *testing.T) {
+func TestPassBytes(t *testing.T) {
 	expected := []byte("abcd")
-	result := FooPassBytes([]byte("ab"), 2, []byte("cd"), 2)
+	result := PassBytes([]byte("ab"), 2, []byte("cd"), 2)
 	assert.Equal(t, expected, result[:4])
 }
 
-func TestFooFindChar(t *testing.T) {
+func TestFindChar(t *testing.T) {
 	tbl := []struct {
 		Input  string
 		Search byte
@@ -36,12 +36,12 @@ func TestFooFindChar(t *testing.T) {
 		{"fun", 'n', 2},
 	}
 	for _, test := range tbl {
-		result := FooFindChar(test.Input, test.Search)
+		result := FindChar(test.Input, test.Search)
 		assert.Equal(t, test.Index, result)
 	}
 }
 
-func TestFooSendMessage(t *testing.T) {
+func TestSendMessage(t *testing.T) {
 	var from, to [50]byte
 	var message [140]byte
 	copy(from[:], []byte("Gopher Bob"))
@@ -49,13 +49,13 @@ func TestFooSendMessage(t *testing.T) {
 	copy(message[:], []byte("Hello!"))
 
 	buf := make([]byte, 4096)
-	msg := &FooMessage{
+	msg := &Message{
 		From:      &from,
 		To:        &to,
 		Message:   &message,
 		Signature: " --xxx",
 	}
-	size := FooSendMessage(msg, buf)
+	size := SendMessage(msg, buf)
 	assert.EqualValues(t, 249, size)
 	packed := []byte(`msgGopher BobGopher AnnaHello! --xxx`)
 	assert.Equal(t, packed, cleanBuf(buf))
@@ -72,21 +72,21 @@ func cleanBuf(buf []byte) []byte {
 	return tmp.Bytes()
 }
 
-func TestFooA4Byte(t *testing.T) {
+func TestA4Byte(t *testing.T) {
 	a := [4]byte{'a', 'a', 'a', 'a'}
 	b := [4]byte{'b', 'b', 'b', 'b'}
-	FooA4Byte(&a)
+	A4Byte(&a)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA4String(t *testing.T) {
+func TestA4String(t *testing.T) {
 	a := [4]string{"g", "g", "g", "g"}
 	b := [4]string{"go", "go", "go", "go"}
-	FooA4String(&a)
+	A4String(&a)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA4SByte(t *testing.T) {
+func TestA4SByte(t *testing.T) {
 	a := [4][]byte{
 		{'a', 'a'},
 		{'a', 'a'},
@@ -99,11 +99,11 @@ func TestFooA4SByte(t *testing.T) {
 		{'b', 'b'},
 		{'b', 'b'},
 	}
-	FooA4SByte(&a, 2)
+	A4SByte(&a, 2)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA4SString(t *testing.T) {
+func TestA4SString(t *testing.T) {
 	a := [4][]string{
 		{"g", "g"},
 		{"g", "g"},
@@ -116,11 +116,11 @@ func TestFooA4SString(t *testing.T) {
 		{"go", "go"},
 		{"go", "go"},
 	}
-	FooA4SString(&a, 2)
+	A4SString(&a, 2)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA2A2Byte(t *testing.T) {
+func TestA2A2Byte(t *testing.T) {
 	a := [2][2]byte{
 		{'a', 'a'},
 		{'a', 'a'},
@@ -129,11 +129,11 @@ func TestFooA2A2Byte(t *testing.T) {
 		{'b', 'b'},
 		{'b', 'b'},
 	}
-	FooA2A2Byte(&a)
+	A2A2Byte(&a)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA2A2String(t *testing.T) {
+func TestA2A2String(t *testing.T) {
 	a := [2][2]string{
 		{"g", "g"},
 		{"g", "g"},
@@ -142,11 +142,11 @@ func TestFooA2A2String(t *testing.T) {
 		{"go", "go"},
 		{"go", "go"},
 	}
-	FooA2A2String(&a)
+	A2A2String(&a)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA2A2SByte(t *testing.T) {
+func TestA2A2SByte(t *testing.T) {
 	a := [2][2][]byte{
 		{{'a', 'a', 'a'}, {'a', 'a', 'a'}},
 		{{'a', 'a', 'a'}, {'a', 'a', 'a'}},
@@ -155,11 +155,11 @@ func TestFooA2A2SByte(t *testing.T) {
 		{{'b', 'b', 'b'}, {'b', 'b', 'b'}},
 		{{'b', 'b', 'b'}, {'b', 'b', 'b'}},
 	}
-	FooA2A2SByte(&a, 3)
+	A2A2SByte(&a, 3)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA2A2SString(t *testing.T) {
+func TestA2A2SString(t *testing.T) {
 	a := [2][2][]string{
 		{{"g", "g", "g"}, {"g", "g", "g"}},
 		{{"g", "g", "g"}, {"g", "g", "g"}},
@@ -168,11 +168,11 @@ func TestFooA2A2SString(t *testing.T) {
 		{{"go", "go", "go"}, {"go", "go", "go"}},
 		{{"go", "go", "go"}, {"go", "go", "go"}},
 	}
-	FooA2A2SString(&a, 3)
+	A2A2SString(&a, 3)
 	assert.Equal(t, b, a)
 }
 
-func TestFooSSByte(t *testing.T) {
+func TestSSByte(t *testing.T) {
 	a := [][]byte{
 		{'a', 'a'},
 		{'a', 'a'},
@@ -185,11 +185,11 @@ func TestFooSSByte(t *testing.T) {
 		{'b', 'b'},
 		{'b', 'b'},
 	}
-	FooSSByte(a, 4, 2)
+	SSByte(a, 4, 2)
 	assert.Equal(t, b, a)
 }
 
-func TestFooSSString(t *testing.T) {
+func TestSSString(t *testing.T) {
 	a := [][]string{
 		{"g", "g"},
 		{"g", "g"},
@@ -202,11 +202,11 @@ func TestFooSSString(t *testing.T) {
 		{"go", "go"},
 		{"go", "go"},
 	}
-	FooSSString(a, 4, 2)
+	SSString(a, 4, 2)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA4SSByte(t *testing.T) {
+func TestA4SSByte(t *testing.T) {
 	a := [4][][]byte{
 		{{'a', 'a', 'a'}, {'a', 'a', 'a'}},
 		{{'a', 'a', 'a'}, {'a', 'a', 'a'}},
@@ -219,11 +219,11 @@ func TestFooA4SSByte(t *testing.T) {
 		{{'b', 'b', 'b'}, {'b', 'b', 'b'}},
 		{{'b', 'b', 'b'}, {'b', 'b', 'b'}},
 	}
-	FooA4SSByte(&a, 2, 3)
+	A4SSByte(&a, 2, 3)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA4SSString(t *testing.T) {
+func TestA4SSString(t *testing.T) {
 	a := [4][][]string{
 		{{"g", "g", "g"}, {"g", "g", "g"}},
 		{{"g", "g", "g"}, {"g", "g", "g"}},
@@ -236,11 +236,11 @@ func TestFooA4SSString(t *testing.T) {
 		{{"go", "go", "go"}, {"go", "go", "go"}},
 		{{"go", "go", "go"}, {"go", "go", "go"}},
 	}
-	FooA4SSString(&a, 2, 3)
+	A4SSString(&a, 2, 3)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA2A2SSByte(t *testing.T) {
+func TestA2A2SSByte(t *testing.T) {
 	a := [2][2][][]byte{
 		{
 			{{'a', 'a'}, {'a', 'a'}, {'a', 'a'}},
@@ -261,11 +261,11 @@ func TestFooA2A2SSByte(t *testing.T) {
 			{{'b', 'b'}, {'b', 'b'}, {'b', 'b'}},
 		},
 	}
-	FooA2A2SSByte(&a, 3, 2)
+	A2A2SSByte(&a, 3, 2)
 	assert.Equal(t, b, a)
 }
 
-func TestFooA2A2SSString(t *testing.T) {
+func TestA2A2SSString(t *testing.T) {
 	a := [2][2][][]string{
 		{
 			{{"g", "g"}, {"g", "g"}, {"g", "g"}},
@@ -286,6 +286,6 @@ func TestFooA2A2SSString(t *testing.T) {
 			{{"go", "go"}, {"go", "go"}, {"go", "go"}},
 		},
 	}
-	FooA2A2SSString(&a, 3, 2)
+	A2A2SSString(&a, 3, 2)
 	assert.Equal(t, b, a)
 }

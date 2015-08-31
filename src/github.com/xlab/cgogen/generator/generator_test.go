@@ -90,7 +90,9 @@ func getGenerator(originHeader string) (*Generator, error) {
 		},
 		Rules: tl.Rules{
 			tl.TargetGlobal: {
-				tl.RuleSpec{From: "foo_", Action: tl.ActionAccept},
+				tl.RuleSpec{From: "(?i)foo_", Action: tl.ActionAccept},
+				tl.RuleSpec{Transform: tl.TransformLower},
+				tl.RuleSpec{From: "foo_", Action: tl.ActionReplace},
 				tl.RuleSpec{Transform: tl.TransformExport},
 			},
 			tl.TargetType: {
