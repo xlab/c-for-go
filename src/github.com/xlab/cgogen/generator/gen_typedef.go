@@ -88,7 +88,7 @@ func (gen *Generator) getStructHelpers(structName []byte, spec tl.CType) (helper
 	}`)
 	helpers = append(helpers, &Helper{
 		Name:        "Ref",
-		Description: "Ref returns a reference",
+		Description: "Ref returns a reference.",
 		Source:      buf.String(),
 	})
 

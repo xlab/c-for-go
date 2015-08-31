@@ -1,2 +1,2 @@
 clean:
-	rm -f test/test.go test/test_helpers.go test/test_helpers.c
+	rm -f test/foo.go test/foo_helpers.go test/foo_helpers.c
