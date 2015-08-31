@@ -74,36 +74,66 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl) {
 	gen.writeStructMembers(wr, decl.Spec)
 	writeEndStruct(wr)
 	writeSpace(wr, 1)
-	gen.writeStructMethods(wr, string(declName), decl.Spec)
+	for _, helper := range gen.getStructHelpers(declName, decl.Spec) {
+		gen.submitHelper(helper)
+	}
 }
 
-func (gen *Generator) writeStructMethods(wr io.Writer, structName string, spec tl.CType) {
+func (gen *Generator) getStructHelpers(structName []byte, spec tl.CType) (helpers []*Helper) {
 	cgoSpec := gen.tr.CGoSpec(spec)
-	fmt.Fprintf(wr, "func (x *%s) Ref() *%s", structName, cgoSpec)
-	fmt.Fprintln(wr, `{
+	buf := new(bytes.Buffer)
+	fmt.Fprintf(buf, "func (x *%s) Ref() *%s", structName, cgoSpec)
+	fmt.Fprintln(buf, `{
 		return x.__ref
 	}`)
-	writeSpace(wr, 1)
-	fmt.Fprintf(wr, "func (x *%s) Free()", structName)
-	fmt.Fprintln(wr, `{
+	helpers = append(helpers, &Helper{
+		Name:        "Ref",
+		Description: "Ref returns a reference",
+		Source:      buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func (x *%s) Free()", structName)
+	fmt.Fprintln(buf, `{
 		if x.__ref != nil {
 			C.free(unsafe.Pointer(x.__ref))
 			x.__ref = nil
 		}
 	}`)
-	fmt.Fprintf(wr, "func New%s(ref *%s) *%s", structName, cgoSpec, structName)
-	fmt.Fprintf(wr, `{
+	helpers = append(helpers, &Helper{
+		Name: "Free",
+		Description: "Free cleanups the memory using the free stdlib function on C side.\n" +
+			"Does nothing if object has no pointer.",
+		Source: buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func New%s(ref *%s) *%s", structName, cgoSpec, structName)
+	fmt.Fprintf(buf, `{
 		return &%s{
 			__ref: ref,
 		}
 	}`, structName)
-	writeSpace(wr, 2)
-	fmt.Fprintf(wr, "func (x *%s) PassRef() *%s {\n", structName, cgoSpec)
-	wr.Write(gen.getPassRefSource(structName, spec))
-	fmt.Fprintln(wr, "}")
+	name := fmt.Sprintf("New%s", structName)
+	helpers = append(helpers, &Helper{
+		Name:        name,
+		Description: name + " initialises a new struct holding the reference to the originaitng C struct.",
+		Source:      buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func (x *%s) PassRef() *%s {\n", structName, cgoSpec)
+	buf.Write(gen.getPassRefSource(spec))
+	buf.WriteRune('}')
+	helpers = append(helpers, &Helper{
+		Name:        "PassRef",
+		Description: "PassRef returns a reference and creates new C object if no refernce yet.",
+		Source:      buf.String(),
+	})
+	return
 }
 
-func (gen *Generator) getPassRefSource(structName string, structSpec tl.CType) []byte {
+func (gen *Generator) getPassRefSource(structSpec tl.CType) []byte {
 	cgoSpec := gen.tr.CGoSpec(structSpec)
 	spec := structSpec.(*tl.CStructSpec)
 	buf := new(bytes.Buffer)
