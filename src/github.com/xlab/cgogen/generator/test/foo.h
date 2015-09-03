@@ -35,7 +35,7 @@ typedef struct foo_message {
 	uint8_t from[FOO_NAME_LEN_MAX];
 	uint8_t to[FOO_NAME_LEN_MAX];
 	uint8_t message[FOO_MESSAGE_LEN_MAX];
-	const char *signature;
+	char *signature;
 	bool sent;
 } foo_message_t;
 

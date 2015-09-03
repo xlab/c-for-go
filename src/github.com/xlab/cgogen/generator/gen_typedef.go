@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"hash/crc32"
 	"io"
 
 	tl "github.com/xlab/cgogen/translator"
@@ -80,12 +81,14 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl) {
 }
 
 func (gen *Generator) getStructHelpers(structName []byte, spec tl.CType) (helpers []*Helper) {
+	crc := getRefCRC(spec)
 	cgoSpec := gen.tr.CGoSpec(spec)
+
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Ref() *%s", structName, cgoSpec)
-	fmt.Fprintln(buf, `{
-		return x.__ref
-	}`)
+	fmt.Fprintf(buf, `{
+		return x.ref%2x
+	}`, crc)
 	helpers = append(helpers, &Helper{
 		Name:        "Ref",
 		Description: "Ref returns a reference.",
@@ -94,12 +97,13 @@ func (gen *Generator) getStructHelpers(structName []byte, spec tl.CType) (helper
 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Free()", structName)
-	fmt.Fprintln(buf, `{
-		if x.__ref != nil {
-			C.free(unsafe.Pointer(x.__ref))
-			x.__ref = nil
+	fmt.Fprintf(buf, `{
+		if x != nil && x.ref%2x != nil {
+			runtime.SetFinalizer(x, nil)
+			C.free(unsafe.Pointer(x.ref%2x))
+			x.ref%2x = nil
 		}
-	}`)
+	}`, crc, crc, crc)
 	helpers = append(helpers, &Helper{
 		Name: "Free",
 		Description: "Free cleanups the memory using the free stdlib function on C side.\n" +
@@ -110,10 +114,17 @@ func (gen *Generator) getStructHelpers(structName []byte, spec tl.CType) (helper
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func New%s(ref *%s) *%s", structName, cgoSpec, structName)
 	fmt.Fprintf(buf, `{
-		return &%s{
-			__ref: ref,
+		if ref == nil {
+			ref = new(%s)
 		}
-	}`, structName)
+		obj := &%s{
+			ref%2x: ref,
+		}
+		runtime.SetFinalizer(obj, func(x *%s) {
+			x.Free()
+		})
+		return obj
+	}`, cgoSpec, structName, crc, structName)
 	name := fmt.Sprintf("New%s", structName)
 	helpers = append(helpers, &Helper{
 		Name:        name,
@@ -130,6 +141,16 @@ func (gen *Generator) getStructHelpers(structName []byte, spec tl.CType) (helper
 		Description: "PassRef returns a reference and creates new C object if no refernce yet.",
 		Source:      buf.String(),
 	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func (x *%s) Deref() {\n", structName)
+	buf.Write(gen.getDerefSource(spec))
+	buf.WriteRune('}')
+	helpers = append(helpers, &Helper{
+		Name:        "Deref",
+		Description: "Deref reads the internal fields of struct from its C pointer.",
+		Source:      buf.String(),
+	})
 	return
 }
 
@@ -137,11 +158,12 @@ func (gen *Generator) getPassRefSource(structSpec tl.CType) []byte {
 	cgoSpec := gen.tr.CGoSpec(structSpec)
 	spec := structSpec.(*tl.CStructSpec)
 	buf := new(bytes.Buffer)
-	fmt.Fprintf(buf, `if x.__ref != nil {
-		return x.__ref
-	}`)
+	crc := getRefCRC(structSpec)
+	fmt.Fprintf(buf, `if x.ref%2x != nil {
+		return x.ref%2x
+	}`, crc, crc)
 	writeSpace(buf, 1)
-	fmt.Fprintf(buf, "__ref := new(%s)\n", cgoSpec.Base)
+	fmt.Fprintf(buf, "ref%2x := new(%s)\n", crc, cgoSpec.Base)
 	for _, mem := range spec.Members {
 		if len(mem.Name) == 0 {
 			continue
@@ -151,12 +173,39 @@ func (gen *Generator) getPassRefSource(structSpec tl.CType) []byte {
 		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
 		fromProxy, nillable := gen.proxyValueFromGo(goName, goSpec, cgoSpec)
 		if nillable {
-			fmt.Fprintf(buf, "if %s != nil {\n__ref.%s = %s\n}\n", goName, mem.Name, fromProxy)
+			fmt.Fprintf(buf, "if %s != nil {\nref%2x.%s = %s\n}\n", goName, crc, mem.Name, fromProxy)
 		} else {
-			fmt.Fprintf(buf, "__ref.%s = %s\n", mem.Name, fromProxy)
+			fmt.Fprintf(buf, "ref%2x.%s = %s\n", crc, mem.Name, fromProxy)
 		}
 	}
-	fmt.Fprintln(buf, `x.__ref = __ref
-		return __ref`)
+	fmt.Fprintf(buf, `x.ref%2x = ref%2x
+		return ref%2x`, crc, crc, crc)
+	writeSpace(buf, 1)
+	return buf.Bytes()
+}
+
+func getRefCRC(spec tl.CType) uint32 {
+	return crc32.ChecksumIEEE([]byte(spec.String()))
+}
+
+func (gen *Generator) getDerefSource(structSpec tl.CType) []byte {
+	spec := structSpec.(*tl.CStructSpec)
+	buf := new(bytes.Buffer)
+	crc := getRefCRC(structSpec)
+	fmt.Fprintf(buf, `if x.ref%2x == nil {
+		return
+	}`, crc)
+	writeSpace(buf, 1)
+	for _, mem := range spec.Members {
+		if len(mem.Name) == 0 {
+			continue
+		}
+		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
+		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, mem.Name)
+		goSpec := gen.tr.TranslateSpec(mem.Spec)
+		cgoSpec := gen.tr.CGoSpec(mem.Spec)
+		toProxy, _ := gen.proxyValueToGo(goName, cgoName, goSpec, cgoSpec)
+		fmt.Fprintln(buf, toProxy)
+	}
 	return buf.Bytes()
 }
