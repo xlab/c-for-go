@@ -117,17 +117,17 @@ func (gen *Generator) getStructHelpers(goStructName []byte, decl tl.CDecl) (help
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func New%sRef(ref *%s) *%s", goStructName, cgoSpec, goStructName)
 	fmt.Fprintf(buf, `{
+		obj := &%s{}
 		if ref == nil {
-			ref = new(%s)
-		}
-		obj := &%s{
-			ref%2x: ref,
-		}
+			obj.ref%2x = new(%s)
+			return obj
+		} 
+		obj.ref%2x = ref
 		runtime.SetFinalizer(obj, func(x *%s) {
 			x.Free()
 		})
 		return obj
-	}`, cgoSpec, goStructName, crc, goStructName)
+	}`, goStructName, crc, cgoSpec, crc, goStructName)
 	name := fmt.Sprintf("New%sRef", goStructName)
 	helpers = append(helpers, &Helper{
 		Name:        name,
@@ -169,9 +169,6 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 	}`, crc, crc)
 	writeSpace(buf, 1)
 	fmt.Fprintf(buf, "ref%2x := new(%s)\n", crc, cgoSpec.Base)
-	fmt.Fprintf(buf, `runtime.SetFinalizer(x, func(x *%s) {
-		x.Free()
-	})`, goStructName)
 	writeSpace(buf, 1)
 
 	var nextPtrSpec tl.PointerSpec
