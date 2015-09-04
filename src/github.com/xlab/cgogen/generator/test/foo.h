@@ -26,16 +26,21 @@ void foo_a4_s_s_string(const char ***s[4], size_t n1, size_t n2);
 void foo_a2_a2_s_s_byte(uint8_t **b[2][2], size_t n1, size_t n2);
 void foo_a2_a2_s_s_string(const uint8_t ***s[2][2], size_t n1, size_t n2);
 
-#define FOO_MESSAGE_HEADER "msg"
-#define FOO_MESSAGE_HEADER_LEN 3
-#define FOO_NAME_LEN_MAX 50
-#define FOO_MESSAGE_LEN_MAX 140
+#define FOO_MESSAGE_HEADER "msg:"
+#define FOO_MESSAGE_HEADER_LEN 4
+#define FOO_ID_LEN 8
+
+typedef struct foo_attachment {
+	uint8_t *data;
+	size_t size;
+} foo_attachment_t;
 
 typedef struct foo_message {
-	uint8_t from[FOO_NAME_LEN_MAX];
-	uint8_t to[FOO_NAME_LEN_MAX];
-	uint8_t message[FOO_MESSAGE_LEN_MAX];
-	char *signature;
+	uint8_t from_id[FOO_ID_LEN];
+	uint8_t to_id[FOO_ID_LEN];
+	char *message;
+	size_t attachments_len;
+	foo_attachment_t* attachments;
 	bool sent;
 } foo_message_t;
 

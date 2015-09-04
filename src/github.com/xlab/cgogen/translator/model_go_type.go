@@ -15,15 +15,35 @@ type GoTypeSpec struct {
 	Bits     uint16
 }
 
-func (gts *GoTypeSpec) splitPointers(n uint8) {
-	for n > 0 {
+func (gts *GoTypeSpec) splitPointers(spec PointerSpec, n uint8) {
+	if n == 0 {
+		return
+	}
+	switch spec {
+	case PointerArr:
 		if n > 1 {
+			gts.Slices += n
+		} else {
 			gts.Slices++
+		}
+	case PointerRef:
+		if n > 1 {
+			gts.Slices += n - 1
+			gts.Pointers++
 		} else {
 			gts.Pointers++
 		}
-		n--
 	}
+}
+
+func (gts GoTypeSpec) IsPlain() bool {
+	switch gts.Base {
+	case "int", "byte", "rune", "float32", "float64", "void", "unsafe.Pointer", "bool":
+		return true
+	case "string":
+		return false
+	}
+	return false
 }
 
 func (gts *GoTypeSpec) IsReference() bool {

@@ -28,20 +28,23 @@ ssize_t foo_find_char(char *s, char c) {
 }
 
 size_t foo_send_message(foo_message_t *m, uint8_t *buf) {
-	if (m == 0) {
+	if (m == 0 || buf == 0) {
 		return 0;
 	}
 	size_t size = 0;
 	memcpy(buf, FOO_MESSAGE_HEADER, FOO_MESSAGE_HEADER_LEN);
 	size += FOO_MESSAGE_HEADER_LEN;
-	memcpy(buf + size, m->from, FOO_NAME_LEN_MAX);
-	size += FOO_NAME_LEN_MAX;
-	memcpy(buf + size, m->to, FOO_NAME_LEN_MAX);
-	size += FOO_NAME_LEN_MAX;
-	memcpy(buf + size, m->message, FOO_MESSAGE_LEN_MAX);
-	size += FOO_MESSAGE_LEN_MAX;
-	memcpy(buf + size, m->signature, strlen(m->signature));
-	size += strlen(m->signature);
+	memcpy(buf + size, m->from_id, FOO_ID_LEN);
+	size += FOO_ID_LEN;
+	memcpy(buf + size, m->to_id, FOO_ID_LEN);
+	size += FOO_ID_LEN;
+	memcpy(buf + size, m->message, strlen(m->message));
+	size += strlen(m->message);
+	for (int i = 0; i < m->attachments_len; i++) {
+		foo_attachment_t att = m->attachments[i];
+		memcpy(buf + size, att.data, att.size);
+		size += att.size;
+	}
 	m->sent = true;
 	return size;
 }

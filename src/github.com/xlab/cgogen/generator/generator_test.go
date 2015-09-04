@@ -88,11 +88,16 @@ func getGenerator(originHeader string) (*Generator, error) {
 			tl.ConstEnum:    tl.ConstEvalFull,
 			tl.ConstDeclare: tl.ConstExpand,
 		},
+		PointerLayouts: tl.PointerLayouts{
+			tl.PointerScopeFunction: {
+				{Name: "_message$", Layout: []tl.PointerSpec{tl.PointerRef}},
+			},
+		},
 		Rules: tl.Rules{
 			tl.TargetGlobal: {
 				tl.RuleSpec{From: "(?i)foo_", Action: tl.ActionAccept},
 				tl.RuleSpec{Transform: tl.TransformLower},
-				tl.RuleSpec{From: "foo_", Action: tl.ActionReplace},
+				tl.RuleSpec{From: "foo_", To: "_", Action: tl.ActionReplace},
 				tl.RuleSpec{Transform: tl.TransformExport},
 			},
 			tl.TargetType: {
@@ -102,6 +107,7 @@ func getGenerator(originHeader string) (*Generator, error) {
 				tl.RuleSpec{Transform: tl.TransformUnexport},
 			},
 			tl.TargetPostGlobal: {
+				tl.RuleSpec{From: "_id?|$", Transform: tl.TransformUpper},
 				tl.RuleSpec{Load: "snakecase"},
 			},
 		},

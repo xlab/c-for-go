@@ -4,25 +4,25 @@ type CTypeMap map[CTypeSpec]GoTypeSpec
 type GoTypeMap map[string]GoTypeSpec
 
 var (
-	BoolSpec    = GoTypeSpec{Base: "bool"}
-	IntSpec     = GoTypeSpec{Base: "int"}
-	UintSpec    = GoTypeSpec{Base: "int", Unsigned: true}
-	Int8Spec    = GoTypeSpec{Base: "int", Bits: 8}
-	Uint8Spec   = GoTypeSpec{Base: "int", Bits: 8, Unsigned: true}
-	Int16Spec   = GoTypeSpec{Base: "int", Bits: 16}
-	Uint16Spec  = GoTypeSpec{Base: "int", Bits: 16, Unsigned: true}
-	Int32Spec   = GoTypeSpec{Base: "int", Bits: 32}
-	Uint32Spec  = GoTypeSpec{Base: "int", Bits: 32, Unsigned: true}
-	Int64Spec   = GoTypeSpec{Base: "int", Bits: 64}
-	Uint64Spec  = GoTypeSpec{Base: "int", Bits: 64, Unsigned: true}
-	RuneSpec    = GoTypeSpec{Base: "rune"}
-	ByteSpec    = GoTypeSpec{Base: "byte"}
-	StringSpec  = GoTypeSpec{Base: "string"}
-	UStringSpec = GoTypeSpec{Base: "string", Unsigned: true}
-	Float32Spec = GoTypeSpec{Base: "float", Bits: 32}
-	Float64Spec = GoTypeSpec{Base: "float", Bits: 64}
-	PointerSpec = GoTypeSpec{Base: "unsafe.Pointer"}
-	UintptrSpec = GoTypeSpec{Base: "uintptr"}
+	BoolSpec          = GoTypeSpec{Base: "bool"}
+	IntSpec           = GoTypeSpec{Base: "int"}
+	UintSpec          = GoTypeSpec{Base: "int", Unsigned: true}
+	Int8Spec          = GoTypeSpec{Base: "int", Bits: 8}
+	Uint8Spec         = GoTypeSpec{Base: "int", Bits: 8, Unsigned: true}
+	Int16Spec         = GoTypeSpec{Base: "int", Bits: 16}
+	Uint16Spec        = GoTypeSpec{Base: "int", Bits: 16, Unsigned: true}
+	Int32Spec         = GoTypeSpec{Base: "int", Bits: 32}
+	Uint32Spec        = GoTypeSpec{Base: "int", Bits: 32, Unsigned: true}
+	Int64Spec         = GoTypeSpec{Base: "int", Bits: 64}
+	Uint64Spec        = GoTypeSpec{Base: "int", Bits: 64, Unsigned: true}
+	RuneSpec          = GoTypeSpec{Base: "rune"}
+	ByteSpec          = GoTypeSpec{Base: "byte"}
+	StringSpec        = GoTypeSpec{Base: "string"}
+	UStringSpec       = GoTypeSpec{Base: "string", Unsigned: true}
+	Float32Spec       = GoTypeSpec{Base: "float", Bits: 32}
+	Float64Spec       = GoTypeSpec{Base: "float", Bits: 64}
+	UnsafePointerSpec = GoTypeSpec{Base: "unsafe.Pointer"}
+	UintptrSpec       = GoTypeSpec{Base: "uintptr"}
 	//
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
@@ -80,7 +80,7 @@ var builtinCTypeMap = CTypeMap{
 	// OTHER TYPES
 	// ----------
 	// void* -> unsafe.Pointer
-	CTypeSpec{Base: "void", Pointers: 1}: PointerSpec,
+	CTypeSpec{Base: "void", Pointers: 1}: UnsafePointerSpec,
 
 	// DEFINED TYPES
 	// ----------

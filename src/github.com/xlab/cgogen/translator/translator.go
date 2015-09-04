@@ -2,7 +2,6 @@ package translator
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -13,11 +12,13 @@ import (
 )
 
 type Translator struct {
-	rules       Rules
-	prefixEnums bool
-	compiledRxs map[RuleAction]RxMap
-	constRules  ConstRules
-	typemap     CTypeMap
+	rules          Rules
+	prefixEnums    bool
+	compiledRxs    map[RuleAction]RxMap
+	compiledPtrRxs PtrLayoutRxMap
+	constRules     ConstRules
+	ptrLayouts     PointerLayouts
+	typemap        CTypeMap
 
 	valueMap map[string]Value
 	exprMap  map[string]Expression
@@ -40,10 +41,20 @@ type Rx struct {
 	Transform RuleTransform
 }
 
+type PtrLayoutRxMap map[PointerScope][]PtrLayoutRx
+
+type PtrLayoutRx struct {
+	Name *regexp.Regexp
+	//
+	Layout  []PointerSpec
+	Default PointerSpec
+}
+
 type Config struct {
-	Rules      Rules      `yaml:"Rules"`
-	ConstRules ConstRules `yaml:"ConstRules"`
-	Typemap    CTypeMap   `yaml:"Typemap"`
+	Rules          Rules          `yaml:"Rules"`
+	ConstRules     ConstRules     `yaml:"ConstRules"`
+	PointerLayouts PointerLayouts `yaml:"PointerLayouts"`
+	Typemap        CTypeMap       `yaml:"Typemap"`
 }
 
 func New(cfg *Config) (*Translator, error) {
@@ -53,8 +64,10 @@ func New(cfg *Config) (*Translator, error) {
 	t := &Translator{
 		rules:          cfg.Rules,
 		constRules:     cfg.ConstRules,
+		ptrLayouts:     cfg.PointerLayouts,
 		typemap:        cfg.Typemap,
 		compiledRxs:    make(map[RuleAction]RxMap),
+		compiledPtrRxs: make(PtrLayoutRxMap),
 		valueMap:       make(map[string]Value),
 		exprMap:        make(map[string]Expression),
 		tagMap:         make(map[string]CDecl),
@@ -67,6 +80,11 @@ func New(cfg *Config) (*Translator, error) {
 		} else {
 			t.compiledRxs[action] = rxMap
 		}
+	}
+	if ptrRxMap, err := getPtrRxs(t.ptrLayouts); err != nil {
+		return nil, err
+	} else {
+		t.compiledPtrRxs = ptrRxMap
 	}
 	return t, nil
 }
@@ -98,7 +116,7 @@ func getRuleActionRxs(rules Rules, action RuleAction) (RxMap, error) {
 			}
 			rxFrom, err := regexp.Compile(spec.From)
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("translator: %s rules: invalid regexp %s", target, spec.From))
+				return nil, fmt.Errorf("translator: %s rules: invalid regexp %s", target, spec.From)
 			}
 			rx := Rx{From: rxFrom, To: []byte(spec.To)}
 			if spec.Action == ActionReplace {
@@ -108,6 +126,33 @@ func getRuleActionRxs(rules Rules, action RuleAction) (RxMap, error) {
 		}
 	}
 	return rxMap, nil
+}
+
+func getPtrRxs(layouts PointerLayouts) (PtrLayoutRxMap, error) {
+	ptrRxMap := make(PtrLayoutRxMap, len(layouts))
+	for scope, specs := range layouts {
+		for _, spec := range specs {
+			if len(spec.Name) == 0 {
+				continue
+			}
+			rxName, err := regexp.Compile(spec.Name)
+			if err != nil {
+				return nil, fmt.Errorf("translator: pointer in %s scope: invalid regexp %s",
+					scope, spec.Name)
+			}
+			ptrRx := PtrLayoutRx{
+				Name:   rxName,
+				Layout: spec.Layout,
+			}
+			if len(spec.Default) > 0 {
+				ptrRx.Default = spec.Default
+			} else {
+				ptrRx.Default = PointerArr
+			}
+			ptrRxMap[scope] = append(ptrRxMap[scope], ptrRx)
+		}
+	}
+	return ptrRxMap, nil
 }
 
 type declList []CDecl
@@ -231,7 +276,37 @@ func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	return GoTypeSpec{}, false
 }
 
-func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
+func NextPointerSpec(layout []PointerSpec, fallback PointerSpec) (PointerSpec, []PointerSpec) {
+	if len(layout) > 0 {
+		spec := layout[0]
+		layout = layout[1:]
+		return spec, layout
+	}
+	return fallback, nil
+}
+
+func (t *Translator) PointerLayout(scope PointerScope, name string) ([]PointerSpec, PointerSpec) {
+	for _, rx := range t.compiledPtrRxs[scope] {
+		if rx.Name.MatchString(name) {
+			return rx.Layout, rx.Default
+		}
+	}
+	if scope != PointerScopeAny {
+		for _, rx := range t.compiledPtrRxs[PointerScopeAny] {
+			if rx.Name.MatchString(name) {
+				return rx.Layout, rx.Default
+			}
+		}
+	}
+	return nil, PointerArr
+}
+
+func (t *Translator) TranslateSpec(spec CType, ptrSpecs ...PointerSpec) GoTypeSpec {
+	ptrSpec := PointerArr
+	if len(ptrSpecs) > 0 {
+		ptrSpec = ptrSpecs[0]
+	}
+
 	switch spec.Kind() {
 	case TypeKind:
 		spec := spec.(*CTypeSpec)
@@ -254,14 +329,19 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		}
 		if lookupSpec.Pointers > 0 {
 			for lookupSpec.Pointers > 0 {
-				if lookupSpec.Pointers > 1 {
-					wrapper.Slices++
+				if ptrSpec == PointerRef {
+					if lookupSpec.Pointers > 1 {
+						wrapper.Slices++
+					} else {
+						wrapper.Pointers++
+					}
 				} else {
-					wrapper.Pointers++
+					wrapper.Slices++
 				}
+
 				lookupSpec.Pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {
-					if lookupSpec.Pointers == 0 {
+					if lookupSpec.Pointers == 0 && ptrSpec == PointerRef {
 						gospec.Slices += wrapper.Slices + 1
 						gospec.Pointers += wrapper.Pointers - 1
 					} else {
@@ -281,7 +361,7 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		wrapper := GoTypeSpec{
 			Arrays: spec.GetArrays(),
 		}
-		wrapper.splitPointers(spec.GetPointers())
+		wrapper.splitPointers(ptrSpec, spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Base = "func"
 		return wrapper
@@ -289,7 +369,7 @@ func (t *Translator) TranslateSpec(spec CType) GoTypeSpec {
 		wrapper := GoTypeSpec{
 			Arrays: spec.GetArrays(),
 		}
-		wrapper.splitPointers(spec.GetPointers())
+		wrapper.splitPointers(ptrSpec, spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
 		if fallback, ok := t.IsBaseDefined(spec); ok {
 			wrapper.Base = string(t.TransformName(TargetType, spec.GetBase()))

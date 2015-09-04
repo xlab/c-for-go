@@ -2,6 +2,7 @@ package translator
 
 type Rules map[RuleTarget][]RuleSpec
 type ConstRules map[ConstScope]ConstRule
+type PointerLayouts map[PointerScope][]PointerLayoutSpec
 
 type RuleSpec struct {
 	From, To  string
@@ -61,6 +62,27 @@ type ConstScope string
 const (
 	ConstEnum    ConstScope = "enums"
 	ConstDeclare ConstScope = "declares"
+)
+
+type PointerSpec string
+
+const (
+	PointerRef PointerSpec = "ref"
+	PointerArr PointerSpec = "arr"
+)
+
+type PointerLayoutSpec struct {
+	Name    string
+	Layout  []PointerSpec
+	Default PointerSpec
+}
+
+type PointerScope string
+
+const (
+	PointerScopeAny      PointerScope = "any"
+	PointerScopeStruct   PointerScope = "struct"
+	PointerScopeFunction PointerScope = "function"
 )
 
 var builtinRules = map[string]RuleSpec{
