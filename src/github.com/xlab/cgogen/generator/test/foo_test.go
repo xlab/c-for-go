@@ -43,25 +43,34 @@ func TestFindChar(t *testing.T) {
 
 func TestSendMessage(t *testing.T) {
 	buf := make([]byte, 4096) // 4kB
+	attaches := [][]byte{
+		[]byte("pic1.jpg"),
+		[]byte("pic16.jpg"),
+	}
 	msg := &Message{
 		FromID:         &[4]byte{0x1},
 		ToID:           &[4]byte{0x2},
 		Message:        "Hey there! Check out these cool pictures attached. -xoxo",
 		AttachmentsLen: 2,
 		Attachments: []Attachment{
-			{Data: []byte("pic1.jpg"), Size: 8},
-			{Data: []byte("pic16.jpg"), Size: 9},
+			{Data: attaches[0], Size: uint64(len(attaches[0]))},
+			{Data: attaches[1], Size: uint64(len(attaches[1]))},
 		},
 	}
 	size := SendMessage(msg, buf)
 	assert.EqualValues(t, 85, size)
+	msg.Deref()
+	for i, att := range msg.Attachments {
+		att.Deref()
+		assert.Equal(t, attaches[i], att.Data[:att.Size:att.Size])
+	}
 	assert.Equal(t, true, msg.Sent)
 	packed := []byte("msg:")
 	packed = append(packed, 0x01, 0x00, 0x00, 0x00)
 	packed = append(packed, 0x02, 0x00, 0x00, 0x00)
 	packed = append(packed, "Hey there! Check out these cool pictures attached. -xoxo"...)
-	packed = append(packed, "pic1.jpg"...)
-	packed = append(packed, "pic16.jpg"...)
+	packed = append(packed, attaches[0]...)
+	packed = append(packed, attaches[1]...)
 	assert.Equal(t, packed, buf[:size])
 }
 

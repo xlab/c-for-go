@@ -350,8 +350,10 @@ func packPlain(buf io.Writer, cgoSpec tl.CGoSpec, base string, pointers uint8, l
 }
 
 func packPlainSlice(buf io.Writer, base string, pointers uint8, level uint8) {
-	fmt.Fprintf(buf, "(*sliceHeader)(unsafe.Pointer(&mem%s)).Data = uintptr(unsafe.Pointer(ptr%d))\n",
-		genIndices("i", level), level)
+	fmt.Fprintf(buf, "h := (*sliceHeader)(unsafe.Pointer(&mem%s))\n", genIndices("i", level))
+	fmt.Fprintf(buf, "h.Data = uintptr(unsafe.Pointer(ptr%d))\n", level)
+	fmt.Fprintln(buf, "h.Cap = 0x7fffffff")
+	fmt.Fprintln(buf, "// h.Len = ?")
 }
 
 func (gen *Generator) packObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec, level uint8) *Helper {
@@ -542,8 +544,12 @@ func (gen *Generator) proxyValueToGo(memName, ptrName string,
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices > 0: // ex: []byte
 		gen.submitHelper(sliceHeader)
-		proxy = fmt.Sprintf("(*sliceHeader)(unsafe.Pointer(&%s)).Data = uintptr(unsafe.Pointer(%s))\n",
-			memName, ptrName)
+		buf := new(bytes.Buffer)
+		fmt.Fprintf(buf, "h := (*sliceHeader)(unsafe.Pointer(&%s))\n", memName)
+		fmt.Fprintf(buf, "h.Data = uintptr(unsafe.Pointer(%s))\n", ptrName)
+		fmt.Fprintln(buf, "h.Cap = 0x7fffffff")
+		fmt.Fprintln(buf, "// h.Len = ?")
+		proxy = buf.String()
 		return
 	case isPlain: // ex: byte, [4]byte
 		if len(goSpec.Arrays) == 0 {
