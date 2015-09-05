@@ -12,23 +12,24 @@ var skipName = []byte("_")
 
 func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec tl.CType) {
 	structSpec := spec.(*tl.CStructSpec)
+	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeStruct, structName)
 
-	var nextPtrSpec tl.PointerSpec
-	ptrLayout, fallback := gen.tr.PointerLayout(tl.PointerScopeStruct, structName)
-
-	for _, member := range structSpec.Members {
-		nextPtrSpec, ptrLayout = tl.NextPointerSpec(ptrLayout, fallback)
+	for i, member := range structSpec.Members {
+		ptrTip := ptrTipSpecRx.TipAt(i)
+		if !ptrTip.IsValid() {
+			ptrTip = tl.TipPtrArr
+		}
 		// declName := gen.tr.TransformName(tl.TargetPublic, member.Name)
 		// fmt.Fprintf(wr, "// %s member as declared in %s\n", declName, tl.SrcLocation(member.Pos))
 		switch member.Spec.Kind() {
 		case tl.TypeKind:
-			gen.writeTypeDeclaration(wr, member, nextPtrSpec, true)
+			gen.writeTypeDeclaration(wr, member, ptrTip, true)
 		case tl.StructKind:
-			gen.writeArgStruct(wr, member, nextPtrSpec, true)
+			gen.writeArgStruct(wr, member, ptrTip, true)
 		case tl.EnumKind:
-			gen.writeEnumDeclaration(wr, member, nextPtrSpec, true)
+			gen.writeEnumDeclaration(wr, member, ptrTip, true)
 		case tl.FunctionKind:
-			gen.writeArgFunction(wr, member, nextPtrSpec, true)
+			gen.writeArgFunction(wr, member, ptrTip, true)
 		}
 		writeSpace(wr, 1)
 	}
@@ -42,22 +43,23 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 
 func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpec tl.CType) {
 	spec := funcSpec.(*tl.CFunctionSpec)
-
-	var nextPtrSpec tl.PointerSpec
-	ptrLayout, fallback := gen.tr.PointerLayout(tl.PointerScopeFunction, funcName)
+	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeFunction, funcName)
 
 	writeStartParams(wr)
 	for i, param := range spec.ParamList {
-		nextPtrSpec, ptrLayout = tl.NextPointerSpec(ptrLayout, fallback)
+		ptrTip := ptrTipSpecRx.TipAt(i)
+		if !ptrTip.IsValid() {
+			ptrTip = tl.TipPtrArr
+		}
 		switch param.Spec.Kind() {
 		case tl.TypeKind:
-			gen.writeTypeDeclaration(wr, param, nextPtrSpec, false)
+			gen.writeTypeDeclaration(wr, param, ptrTip, false)
 		case tl.StructKind:
-			gen.writeArgStruct(wr, param, nextPtrSpec, false)
+			gen.writeArgStruct(wr, param, ptrTip, false)
 		case tl.EnumKind:
-			gen.writeEnumDeclaration(wr, param, nextPtrSpec, false)
+			gen.writeEnumDeclaration(wr, param, ptrTip, false)
 		case tl.FunctionKind:
-			gen.writeArgFunction(wr, param, nextPtrSpec, false)
+			gen.writeArgFunction(wr, param, ptrTip, false)
 		}
 		if i < len(spec.ParamList)-1 {
 			fmt.Fprintf(wr, ", ")

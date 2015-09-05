@@ -15,18 +15,18 @@ type GoTypeSpec struct {
 	Bits     uint16
 }
 
-func (gts *GoTypeSpec) splitPointers(spec PointerSpec, n uint8) {
+func (gts *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
 	if n == 0 {
 		return
 	}
-	switch spec {
-	case PointerArr:
+	switch ptrTip {
+	case TipPtrArr:
 		if n > 1 {
 			gts.Slices += n
 		} else {
 			gts.Slices++
 		}
-	case PointerRef:
+	case TipPtrRef:
 		if n > 1 {
 			gts.Slices += n - 1
 			gts.Pointers++

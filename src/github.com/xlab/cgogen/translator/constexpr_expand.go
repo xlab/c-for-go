@@ -287,7 +287,7 @@ func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) Expressio
 	switch ex.Case {
 	case 0: // IDENTIFIER
 		name := ex.Token.S()
-		switch t.constRules[ConstDeclare] {
+		switch t.constRules[ConstDecl] {
 		case ConstExpandFull:
 			if expr, ok := t.exprMap[string(name)]; ok {
 				return bytesWrap(expr, "(", ")")

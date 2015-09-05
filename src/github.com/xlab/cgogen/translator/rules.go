@@ -2,7 +2,8 @@ package translator
 
 type Rules map[RuleTarget][]RuleSpec
 type ConstRules map[ConstScope]ConstRule
-type PointerLayouts map[PointerScope][]PointerLayoutSpec
+type PtrTips map[TipScope][]TipSpec
+type MemTips []TipSpec
 
 type RuleSpec struct {
 	From, To  string
@@ -60,30 +61,43 @@ const (
 type ConstScope string
 
 const (
-	ConstEnum    ConstScope = "enums"
-	ConstDeclare ConstScope = "declares"
+	ConstEnum ConstScope = "enum"
+	ConstDecl ConstScope = "decl"
 )
 
-type PointerSpec string
+type Tip string
 
 const (
-	PointerRef PointerSpec = "ref"
-	PointerArr PointerSpec = "arr"
+	TipPtrRef Tip = "ref"
+	TipPtrArr Tip = "arr"
+	TipMemRaw Tip = "raw"
 )
 
-type PointerLayoutSpec struct {
-	Name    string
-	Layout  []PointerSpec
-	Default PointerSpec
+func (t Tip) IsValid() bool {
+	switch t {
+	case TipPtrArr, TipPtrRef, TipMemRaw:
+		return true
+	default:
+		return false
+	}
 }
 
-type PointerScope string
+type TipSpec struct {
+	Target  string
+	Tips    Tips
+	Self    Tip
+	Default Tip
+}
+
+type TipScope string
 
 const (
-	PointerScopeAny      PointerScope = "any"
-	PointerScopeStruct   PointerScope = "struct"
-	PointerScopeFunction PointerScope = "function"
+	TipScopeAny      TipScope = "any"
+	TipScopeStruct   TipScope = "struct"
+	TipScopeFunction TipScope = "function"
 )
+
+type Tips []Tip
 
 var builtinRules = map[string]RuleSpec{
 	"snakecase": RuleSpec{From: "_([^_]+)", To: "$1", Action: ActionReplace, Transform: TransformTitle},

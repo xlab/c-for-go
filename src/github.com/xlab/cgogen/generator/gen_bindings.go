@@ -632,13 +632,15 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 	spec := funcSpec.(*tl.CFunctionSpec)
 	from = make([]proxyDecl, len(spec.ParamList))
 	to = make([]proxyDecl, 0, len(spec.ParamList))
-
-	var nextPtrSpec tl.PointerSpec
-	ptrLayout, fallback := gen.tr.PointerLayout(tl.PointerScopeFunction, funcName)
+	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeFunction, funcName)
 
 	for i, param := range spec.ParamList {
-		nextPtrSpec, ptrLayout = tl.NextPointerSpec(ptrLayout, fallback)
-		goSpec := gen.tr.TranslateSpec(param.Spec, nextPtrSpec)
+		var goSpec tl.GoTypeSpec
+		if ptrTip := ptrTipSpecRx.TipAt(i); ptrTip.IsValid() {
+			goSpec = gen.tr.TranslateSpec(param.Spec, ptrTip)
+		} else {
+			goSpec = gen.tr.TranslateSpec(param.Spec)
+		}
 		cgoSpec := gen.tr.CGoSpec(param.Spec)
 		refName := string(gen.tr.TransformName(tl.TargetPrivate, param.Name))
 		fromBuf := new(bytes.Buffer)
@@ -716,7 +718,7 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl tl.CDecl) {
 	// wr2 being populated above
 	wr2.WriteTo(wr)
 	if spec.Return != nil {
-		goSpec := gen.tr.TranslateSpec((*spec).Return.Spec, tl.PointerRef)
+		goSpec := gen.tr.TranslateSpec((*spec).Return.Spec, tl.TipPtrRef)
 		cgoSpec := gen.tr.CGoSpec((*spec).Return.Spec)
 		retProxy, nillable := gen.proxyRetToGo("mem", "ret", goSpec, cgoSpec)
 		if nillable {

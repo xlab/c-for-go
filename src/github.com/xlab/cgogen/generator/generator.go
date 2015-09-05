@@ -162,19 +162,19 @@ func (gen *Generator) WriteDeclares(wr io.Writer) {
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
-			gen.writeStructDeclaration(wr, decl, tl.PointerRef, true)
+			gen.writeStructDeclaration(wr, decl, tl.TipPtrRef, true)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
 				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 					continue
 				}
-				gen.writeEnumDeclaration(wr, decl, tl.PointerRef, true)
+				gen.writeEnumDeclaration(wr, decl, tl.TipPtrRef, true)
 			}
 		case tl.FunctionKind:
 			if !gen.tr.IsAcceptableName(tl.TargetFunction, decl.Name) {
 				continue
 			}
-			gen.writeFunctionDeclaration(wr, decl, tl.PointerRef, true)
+			gen.writeFunctionDeclaration(wr, decl, tl.TipPtrRef, true)
 		}
 		writeSpace(wr, 1)
 	}

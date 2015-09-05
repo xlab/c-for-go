@@ -85,13 +85,16 @@ func getGenerator(originHeader string) (*Generator, error) {
 
 	t, err := tl.New(&tl.Config{
 		ConstRules: tl.ConstRules{
-			tl.ConstEnum:    tl.ConstEvalFull,
-			tl.ConstDeclare: tl.ConstExpand,
+			tl.ConstEnum: tl.ConstEvalFull,
+			tl.ConstDecl: tl.ConstExpand,
 		},
-		PointerLayouts: tl.PointerLayouts{
-			tl.PointerScopeFunction: {
-				{Name: "_message$", Layout: []tl.PointerSpec{tl.PointerRef}},
+		PtrTips: tl.PtrTips{
+			tl.TipScopeFunction: {
+				{Target: "_message$", Tips: tl.Tips{tl.TipPtrRef}},
 			},
+		},
+		MemTips: tl.MemTips{
+			{Target: "_raw$", Self: tl.TipMemRaw},
 		},
 		Rules: tl.Rules{
 			tl.TargetGlobal: {

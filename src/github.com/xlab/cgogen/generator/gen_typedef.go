@@ -36,7 +36,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		returnRef = gen.tr.TranslateSpec(spec.Return.Spec, tl.PointerRef).String()
+		returnRef = gen.tr.TranslateSpec(spec.Return.Spec, tl.TipPtrRef).String()
 	}
 
 	goFuncName := gen.tr.TransformName(tl.TargetType, decl.Name)
@@ -171,15 +171,17 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 	fmt.Fprintf(buf, "ref%2x := new(%s)\n", crc, cgoSpec.Base)
 	writeSpace(buf, 1)
 
-	var nextPtrSpec tl.PointerSpec
-	ptrLayout, fallback := gen.tr.PointerLayout(tl.PointerScopeStruct, cStructName)
-
-	for _, mem := range spec.Members {
+	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeStruct, cStructName)
+	for i, mem := range spec.Members {
 		if len(mem.Name) == 0 {
 			continue
 		}
-		nextPtrSpec, ptrLayout = tl.NextPointerSpec(ptrLayout, fallback)
-		goSpec := gen.tr.TranslateSpec(mem.Spec, nextPtrSpec)
+		var goSpec tl.GoTypeSpec
+		if ptrTip := ptrTipSpecRx.TipAt(i); ptrTip.IsValid() {
+			goSpec = gen.tr.TranslateSpec(mem.Spec, ptrTip)
+		} else {
+			goSpec = gen.tr.TranslateSpec(mem.Spec)
+		}
 		cgoSpec := gen.tr.CGoSpec(mem.Spec)
 		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
 		fromProxy, nillable := gen.proxyValueFromGo(goName, goSpec, cgoSpec)
@@ -208,17 +210,19 @@ func (gen *Generator) getDerefSource(structName string, structSpec tl.CType) []b
 	}`, crc)
 	writeSpace(buf, 1)
 
-	var nextPtrSpec tl.PointerSpec
-	ptrLayout, fallback := gen.tr.PointerLayout(tl.PointerScopeStruct, structName)
-
-	for _, mem := range spec.Members {
+	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeStruct, structName)
+	for i, mem := range spec.Members {
 		if len(mem.Name) == 0 {
 			continue
 		}
-		nextPtrSpec, ptrLayout = tl.NextPointerSpec(ptrLayout, fallback)
+		var goSpec tl.GoTypeSpec
+		if ptrTip := ptrTipSpecRx.TipAt(i); ptrTip.IsValid() {
+			goSpec = gen.tr.TranslateSpec(mem.Spec, ptrTip)
+		} else {
+			goSpec = gen.tr.TranslateSpec(mem.Spec)
+		}
 		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
 		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, mem.Name)
-		goSpec := gen.tr.TranslateSpec(mem.Spec, nextPtrSpec)
 		cgoSpec := gen.tr.CGoSpec(mem.Spec)
 		toProxy, _ := gen.proxyValueToGo(goName, cgoName, goSpec, cgoSpec)
 		fmt.Fprintln(buf, toProxy)
