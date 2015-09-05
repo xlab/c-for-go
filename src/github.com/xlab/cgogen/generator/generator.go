@@ -121,7 +121,9 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 		}
 		switch decl.Kind() {
 		case tl.StructKind:
-			seenTags[decl.Spec.GetBase()] = true
+			if tag := decl.Spec.GetBase(); len(tag) > 0 {
+				seenTags[tag] = true
+			}
 			gen.writeStructTypedef(wr, decl)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
@@ -140,9 +142,10 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 			if seenTags[tag] {
 				continue
 			}
-			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+			if !gen.tr.IsAcceptableName(tl.TargetPublic, tag) {
 				continue
 			}
+			decl.Name = tag
 			gen.writeStructTypedef(wr, decl)
 			writeSpace(wr, 1)
 		}

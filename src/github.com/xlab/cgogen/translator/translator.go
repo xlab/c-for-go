@@ -371,7 +371,7 @@ func (t *Translator) TranslateSpec(spec CType, ptrSpecs ...PointerSpec) GoTypeSp
 		}
 		wrapper.splitPointers(ptrSpec, spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
-		if fallback, ok := t.IsBaseDefined(spec); ok {
+		if fallback, ok := t.IsBaseDefined(spec); ok && t.IsAcceptableName(TargetType, spec.GetBase()) {
 			wrapper.Base = string(t.TransformName(TargetType, spec.GetBase()))
 		} else {
 			wrapper.Base = fallback
@@ -431,20 +431,14 @@ func (t *Translator) cgoName(spec CType) string {
 			return "C.enum_" + name
 		}
 	}
-	return "C." + name
+	if len(name) > 0 {
+		return "C." + name
+	}
+	return ""
 }
 
 func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
 	name := spec.GetBase()
-	decl, ok := t.tagMap[name]
-	if ok && decl.IsTemplate() {
-		// sucessfully resolved up to template
-		return
-	}
-	if _, ok = t.typedefsSet[name]; ok {
-		return
-	}
-	// let's construct a fallback reference to some template in C land
 	switch spec.Kind() {
 	case StructKind:
 		fallback = "C.struct_" + name
@@ -454,6 +448,13 @@ func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
 		fallback = "C.enum_" + name
 	default:
 		fallback = "C." + name
+	}
+	decl, ok := t.tagMap[name]
+	if ok && decl.IsTemplate() {
+		return
+	}
+	if _, ok = t.typedefsSet[name]; ok {
+		return
 	}
 	return
 }

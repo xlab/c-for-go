@@ -155,9 +155,8 @@ func (gen *Generator) unpackObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.
 			uplevel, uplevel, helper.Name, ptrs(goSpec.Pointers), indices)
 		return helper
 	}
-	//	fmt.Fprintf(buf, "if x%s == nil {\ncontinue\n}\n", indices)
 	var deref string
-	if goSpec.Pointers == 0 {
+	if cgoSpec.PointersAtLevel(level) == 0 {
 		deref = "*"
 	}
 	fmt.Fprintf(buf, "mem%d[i%d] = %sx%s.PassRef()\n", uplevel, uplevel, deref, indices)
@@ -301,8 +300,11 @@ func (gen *Generator) proxyValueFromGo(name string,
 		proxy = fmt.Sprintf("*(*%s)(unsafe.Pointer(%s))", cgoSpec, name)
 		return
 	default: // ex: *SomeType
-		nillable = true
-		proxy = fmt.Sprintf("%s.PassRef()", name)
+		var deref string
+		if cgoSpec.Pointers == 0 {
+			deref = "*"
+		}
+		proxy = fmt.Sprintf("%s%s.PassRef()", deref, name)
 		return
 	}
 }
@@ -337,8 +339,11 @@ func (gen *Generator) proxyArgFromGo(name string,
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(%s))", cgoSpec.AtLevel(0), name)
 		return
 	default: // ex: *SomeType
-		nillable = true
-		proxy = fmt.Sprintf("%s.PassRef()", name)
+		var deref string
+		if cgoSpec.Pointers == 0 {
+			deref = "*"
+		}
+		proxy = fmt.Sprintf("%s%s.PassRef()", deref, name)
 		return
 	}
 }
@@ -365,7 +370,7 @@ func (gen *Generator) packObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CG
 	}
 	var deref string
 	var ref string
-	if goSpec.Pointers == 0 {
+	if cgoSpec.PointersAtLevel(level) == 0 {
 		deref = "*"
 		ref = "&"
 	}
@@ -559,7 +564,13 @@ func (gen *Generator) proxyValueToGo(memName, ptrName string,
 		proxy = fmt.Sprintf("%s = (%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
-		proxy = fmt.Sprintf("%s = New%sRef(%s)", memName, goSpec.Base, ptrName)
+		var deref string
+		var ref string
+		if cgoSpec.Pointers == 0 {
+			deref = "*"
+			ref = "&"
+		}
+		proxy = fmt.Sprintf("%s = %sNew%sRef(%s%s)", memName, deref, goSpec.Base, ref, ptrName)
 		return
 	}
 }
@@ -606,7 +617,13 @@ func (gen *Generator) proxyRetToGo(memName, ptrName string,
 		proxy = fmt.Sprintf("%s := %s(%s%s)(unsafe.Pointer(%s))", memName, deref, deref, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
-		proxy = fmt.Sprintf("%s := New%sRef(%s)", memName, goSpec.Base, ptrName)
+		var deref string
+		var ref string
+		if cgoSpec.Pointers == 0 {
+			deref = "*"
+			ref = "&"
+		}
+		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", memName, deref, goSpec.Base, ref, ptrName)
 		return
 	}
 }

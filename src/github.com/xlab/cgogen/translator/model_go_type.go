@@ -87,6 +87,22 @@ func (cgs CGoSpec) String() string {
 	return buf.String()
 }
 
+func (cgs *CGoSpec) PointersAtLevel(level uint8) uint8 {
+	// var pointers uint8
+	// if len(cgs.Arrays) > 0 {
+	// 	pointers++
+	// }
+	if int(level) > len(cgs.Arrays) {
+		if delta := int(cgs.Pointers) + len(cgs.Arrays) - int(level); delta > 0 {
+			return uint8(delta)
+		}
+	}
+	if level <= cgs.Pointers {
+		return cgs.Pointers - level
+	}
+	return 0
+}
+
 func (cgs *CGoSpec) AtLevel(level uint8) string {
 	buf := new(bytes.Buffer)
 	for i, size := range cgs.Arrays {

@@ -50,6 +50,20 @@ func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
 			}
 		}
 	}
+	switch spec := refDecl.Spec.(type) {
+	case *CStructSpec:
+		for _, m := range spec.Members {
+			if tag := m.Spec.GetBase(); m.Kind() == StructKind && len(tag) > 0 {
+				if prev, ok := t.tagMap[tag]; !ok {
+					// first time seen -> store the tag
+					t.tagMap[tag] = m
+				} else if !prev.IsTemplate() {
+					// overwrite with a template declaration
+					t.tagMap[tag] = m
+				}
+			}
+		}
+	}
 
 	// prepare to collect declares
 	var declares []CDecl

@@ -54,6 +54,10 @@ foo_message_t* foo_new_message() {
 	return m;
 }
 
+int foo_pass_anon_tag(struct foo_anon_tag a, struct foo_anon_tag b) {
+	return a.n + b.n;
+}
+
 void foo_a4_byte(uint8_t b[4]) {
 	for (int i = 0; i < 4; i++) {
 		b[i]++;

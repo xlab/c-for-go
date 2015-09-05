@@ -10,13 +10,13 @@ import (
 
 var skipName = []byte("_")
 
-func (gen *Generator) writeStructMembers(wr io.Writer, structName string, structSpec tl.CType) {
-	spec := structSpec.(*tl.CStructSpec)
+func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec tl.CType) {
+	structSpec := spec.(*tl.CStructSpec)
 
 	var nextPtrSpec tl.PointerSpec
 	ptrLayout, fallback := gen.tr.PointerLayout(tl.PointerScopeStruct, structName)
 
-	for _, member := range spec.Members {
+	for _, member := range structSpec.Members {
 		nextPtrSpec, ptrLayout = tl.NextPointerSpec(ptrLayout, fallback)
 		// declName := gen.tr.TransformName(tl.TargetPublic, member.Name)
 		// fmt.Fprintf(wr, "// %s member as declared in %s\n", declName, tl.SrcLocation(member.Pos))
@@ -24,16 +24,19 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, struct
 		case tl.TypeKind:
 			gen.writeTypeDeclaration(wr, member, nextPtrSpec, true)
 		case tl.StructKind:
-			gen.writeStructDeclaration(wr, member, nextPtrSpec, true)
+			gen.writeArgStruct(wr, member, nextPtrSpec, true)
 		case tl.EnumKind:
 			gen.writeEnumDeclaration(wr, member, nextPtrSpec, true)
 		case tl.FunctionKind:
-			gen.writeFunctionDeclaration(wr, member, nextPtrSpec, true)
+			gen.writeArgFunction(wr, member, nextPtrSpec, true)
 		}
 		writeSpace(wr, 1)
 	}
 	crc := getRefCRC(structSpec)
 	cgoSpec := gen.tr.CGoSpec(structSpec)
+	if len(cgoSpec.Base) == 0 {
+		return
+	}
 	fmt.Fprintf(wr, "ref%2x *%s\n", crc, cgoSpec)
 }
 
@@ -50,11 +53,11 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 		case tl.TypeKind:
 			gen.writeTypeDeclaration(wr, param, nextPtrSpec, false)
 		case tl.StructKind:
-			gen.writeStructDeclaration(wr, param, nextPtrSpec, false)
+			gen.writeArgStruct(wr, param, nextPtrSpec, false)
 		case tl.EnumKind:
 			gen.writeEnumDeclaration(wr, param, nextPtrSpec, false)
 		case tl.FunctionKind:
-			gen.writeFunctionDeclaration(wr, param, nextPtrSpec, false)
+			gen.writeArgFunction(wr, param, nextPtrSpec, false)
 		}
 		if i < len(spec.ParamList)-1 {
 			fmt.Fprintf(wr, ", ")
@@ -72,7 +75,7 @@ func writeEndParams(wr io.Writer) {
 }
 
 func writeEndStruct(wr io.Writer) {
-	fmt.Fprintln(wr, "}")
+	fmt.Fprint(wr, "}")
 }
 
 func writeStartFuncBody(wr io.Writer) {

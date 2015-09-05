@@ -47,3 +47,24 @@ typedef struct foo_message {
 foo_message_t* foo_new_message();
 size_t foo_send_message(foo_message_t *m, uint8_t *buf);
 
+// doesn't work in CGO yet
+// int foo_anon_test(struct {int n;} a, struct {int n;} b);
+
+struct foo_anon_tag {
+	int n;
+};
+
+int foo_pass_anon_tag(struct foo_anon_tag a, struct foo_anon_tag b);
+
+struct foo_has_anon_tag {
+	struct foo_inner_anon_tag {
+		int n;
+	} a;
+};
+
+struct foo_has_anon {
+	int a;
+	struct {
+		int n;
+	};
+};
