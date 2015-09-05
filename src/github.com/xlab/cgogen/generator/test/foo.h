@@ -44,4 +44,6 @@ typedef struct foo_message {
 	bool sent;
 } foo_message_t;
 
+foo_message_t* foo_new_message();
 size_t foo_send_message(foo_message_t *m, uint8_t *buf);
+

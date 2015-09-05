@@ -114,12 +114,14 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 }
 
 func (gen *Generator) WriteTypedefs(wr io.Writer) {
+	seenTags := make(map[string]bool)
 	for _, decl := range gen.tr.Typedefs() {
 		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
 			continue
 		}
 		switch decl.Kind() {
 		case tl.StructKind:
+			seenTags[decl.Spec.GetBase()] = true
 			gen.writeStructTypedef(wr, decl)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
@@ -131,6 +133,19 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 			gen.writeFunctionTypedef(wr, decl)
 		}
 		writeSpace(wr, 1)
+	}
+	for tag, decl := range gen.tr.TagMap() {
+		switch decl.Kind() {
+		case tl.StructKind:
+			if seenTags[tag] {
+				continue
+			}
+			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+				continue
+			}
+			gen.writeStructTypedef(wr, decl)
+			writeSpace(wr, 1)
+		}
 	}
 }
 

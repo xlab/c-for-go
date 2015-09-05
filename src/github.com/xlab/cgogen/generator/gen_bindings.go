@@ -682,8 +682,6 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl tl.CDecl) {
 		// wr2 will be handled below
 		wr2.Line(proxy.Decl)
 	}
-	writeSpace(wr, 1)
-
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
 		fmt.Fprint(wr, "ret := ")

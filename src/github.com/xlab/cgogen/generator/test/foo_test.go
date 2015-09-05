@@ -74,6 +74,18 @@ func TestSendMessage(t *testing.T) {
 	assert.Equal(t, packed, buf[:size])
 }
 
+func TestNewMessage(t *testing.T) {
+	m := NewMessage()
+	assert.NotNil(t, m.Ref())
+	assert.NotPanics(t, func() {
+		m.Deref()
+	})
+	assert.NotPanics(t, func() {
+		m.Free()
+	})
+	assert.Nil(t, m.Ref())
+}
+
 func cleanBuf(buf []byte) []byte {
 	tmp := new(bytes.Buffer)
 	for i := range buf {
