@@ -162,6 +162,42 @@ func (n *NameTransformCache) Set(target RuleTarget, name string, result []byte) 
 	n.mux.Unlock()
 }
 
+type TipCache struct {
+	mux   sync.RWMutex
+	cache map[struct {
+		TipScope
+		string
+	}]TipSpecRx
+}
+
+func (n *TipCache) Get(scope TipScope, name string) (TipSpecRx, bool) {
+	n.mux.RLock()
+	if cached, ok := n.cache[struct {
+		TipScope
+		string
+	}{scope, name}]; ok {
+		n.mux.RUnlock()
+		return cached, true
+	}
+	n.mux.RUnlock()
+	return TipSpecRx{}, false
+}
+
+func (n *TipCache) Set(scope TipScope, name string, result TipSpecRx) {
+	n.mux.Lock()
+	if n.cache == nil {
+		n.cache = make(map[struct {
+			TipScope
+			string
+		}]TipSpecRx)
+	}
+	n.cache[struct {
+		TipScope
+		string
+	}{scope, name}] = result
+	n.mux.Unlock()
+}
+
 func getVarArrayCount(arraySizes []uint32) (count uint8) {
 	for i := range arraySizes {
 		if arraySizes[i] == 0 {

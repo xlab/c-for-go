@@ -30,7 +30,7 @@ void foo_a2_a2_s_s_string(const uint8_t ***s[2][2], size_t n1, size_t n2);
 #define FOO_MESSAGE_HEADER_LEN 4
 #define FOO_ID_LEN 4
 
-typedef struct foo_attachment {
+typedef struct foo_attachment_raw {
 	uint8_t *data;
 	size_t size;
 } foo_attachment_t;

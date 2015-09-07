@@ -30,6 +30,8 @@ type Translator struct {
 
 	typedefsSet    map[string]struct{}
 	transformCache *NameTransformCache
+	ptrTipCache    *TipCache
+	memTipCache    *TipCache
 }
 
 type RxMap map[RuleTarget][]Rx
@@ -90,6 +92,8 @@ func New(cfg *Config) (*Translator, error) {
 		tagMap:            make(map[string]CDecl),
 		typedefsSet:       make(map[string]struct{}),
 		transformCache:    &NameTransformCache{},
+		ptrTipCache:       &TipCache{},
+		memTipCache:       &TipCache{},
 	}
 	for _, action := range ruleActions {
 		if rxMap, err := getRuleActionRxs(t.rules, action); err != nil {
@@ -316,29 +320,53 @@ func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	return GoTypeSpec{}, false
 }
 
-func (t *Translator) PtrTipSpecRx(scope TipScope, name string) TipSpecRx {
+func (t *Translator) PtrTipSpecRx(scope TipScope, name string) (TipSpecRx, bool) {
+	if rx, ok := t.ptrTipCache.Get(scope, name); ok {
+		return rx, true
+	}
 	for _, rx := range t.compiledPtrTipRxs[scope] {
 		if rx.Target.MatchString(name) {
-			return rx
+			t.ptrTipCache.Set(scope, name, rx)
+			return rx, true
 		}
 	}
 	if scope != TipScopeAny {
 		for _, rx := range t.compiledPtrTipRxs[TipScopeAny] {
 			if rx.Target.MatchString(name) {
-				return rx
+				t.ptrTipCache.Set(scope, name, rx)
+				return rx, true
 			}
 		}
 	}
-	return TipSpecRx{}
+	return TipSpecRx{}, false
 }
 
-func (t *Translator) MemTipSpecRx(name string) TipSpecRx {
+func (t *Translator) MemTipSpecRx(name string) (TipSpecRx, bool) {
+	if rx, ok := t.memTipCache.Get(TipScopeStruct, name); ok {
+		return rx, true
+	}
 	for _, rx := range t.compiledMemTipRxs {
 		if rx.Target.MatchString(name) {
-			return rx
+			t.memTipCache.Set(TipScopeStruct, name, rx)
+			return rx, true
 		}
 	}
-	return TipSpecRx{}
+	return TipSpecRx{}, false
+}
+
+func (t *Translator) TipsRxForDecl(scope TipScope, decl CDecl) (ptr, mem TipSpecRx) {
+	var ptrOk, memOk bool
+	if tag := decl.Spec.GetBase(); len(tag) > 0 {
+		ptr, ptrOk = t.PtrTipSpecRx(scope, tag)
+		mem, memOk = t.MemTipSpecRx(tag)
+	}
+	if !ptrOk {
+		ptr, _ = t.PtrTipSpecRx(scope, decl.Name)
+	}
+	if !memOk {
+		mem, _ = t.MemTipSpecRx(decl.Name)
+	}
+	return
 }
 
 func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {

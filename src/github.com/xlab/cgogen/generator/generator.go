@@ -121,10 +121,19 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 		}
 		switch decl.Kind() {
 		case tl.StructKind:
+			var memTip tl.Tip
 			if tag := decl.Spec.GetBase(); len(tag) > 0 {
 				seenTags[tag] = true
+				if memTipRx, ok := gen.tr.MemTipSpecRx(tag); ok {
+					memTip = memTipRx.Self()
+				}
 			}
-			gen.writeStructTypedef(wr, decl)
+			if !memTip.IsValid() {
+				if memTipRx, ok := gen.tr.MemTipSpecRx(decl.Name); ok {
+					memTip = memTipRx.Self()
+				}
+			}
+			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
 				gen.writeEnumTypedef(wr, decl)
@@ -146,7 +155,10 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 				continue
 			}
 			decl.Name = tag
-			gen.writeStructTypedef(wr, decl)
+			if memTipRx, ok := gen.tr.MemTipSpecRx(tag); ok {
+				gen.writeStructTypedef(wr, decl, memTipRx.Self() == tl.TipMemRaw)
+			}
+			gen.writeStructTypedef(wr, decl, false)
 			writeSpace(wr, 1)
 		}
 	}

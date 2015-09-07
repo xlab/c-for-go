@@ -49,7 +49,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl, raw bool) {
 	var goStructName []byte
 	if len(decl.Name) > 0 {
 		goStructName = gen.tr.TransformName(tl.TargetType, decl.Name)
@@ -75,6 +75,12 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl) {
 	gen.writeStructMembers(wr, decl.Name, decl.Spec)
 	writeEndStruct(wr)
 	writeSpace(wr, 1)
+	if raw {
+		for _, helper := range gen.getRawStructHelpers(goStructName, decl) {
+			gen.submitHelper(helper)
+		}
+		return
+	}
 	for _, helper := range gen.getStructHelpers(goStructName, decl) {
 		gen.submitHelper(helper)
 	}
@@ -137,7 +143,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, decl tl.CDecl) (help
 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) PassRef() *%s {\n", goStructName, cgoSpec)
-	buf.Write(gen.getPassRefSource(goStructName, decl.Name, decl.Spec))
+	buf.Write(gen.getPassRefSource(goStructName, decl))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.PassRef", goStructName),
@@ -147,7 +153,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, decl tl.CDecl) (help
 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Deref() {\n", goStructName)
-	buf.Write(gen.getDerefSource(decl.Name, decl.Spec))
+	buf.Write(gen.getDerefSource(decl))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.Deref", goStructName),
@@ -157,11 +163,70 @@ func (gen *Generator) getStructHelpers(goStructName []byte, decl tl.CDecl) (help
 	return
 }
 
-func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, structSpec tl.CType) []byte {
-	cgoSpec := gen.tr.CGoSpec(structSpec)
-	spec := structSpec.(*tl.CStructSpec)
+func (gen *Generator) getRawStructHelpers(goStructName []byte, decl tl.CDecl) (helpers []*Helper) {
+	cgoSpec := gen.tr.CGoSpec(decl.Spec)
+
 	buf := new(bytes.Buffer)
-	crc := getRefCRC(structSpec)
+	fmt.Fprintf(buf, "func (x *%s) Ref() *%s", goStructName, cgoSpec)
+	fmt.Fprintf(buf, `{
+		if x == nil {
+			return nil
+		}
+		return (*%s)(unsafe.Pointer(x))
+	}`, cgoSpec)
+	helpers = append(helpers, &Helper{
+		Name:        fmt.Sprintf("%s.Ref", goStructName),
+		Description: "Ref returns a reference.",
+		Source:      buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func (x *%s) Free()", goStructName)
+	fmt.Fprint(buf, `{
+		if x != nil  {
+			C.free(unsafe.Pointer(x))
+		}
+	}`)
+	helpers = append(helpers, &Helper{
+		Name: fmt.Sprintf("%s.Free", goStructName),
+		Description: "Free cleanups the memory using the free stdlib function on C side.\n" +
+			"Does nothing if object has no pointer.",
+		Source: buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func New%sRef(ref *%s) *%s", goStructName, cgoSpec, goStructName)
+	fmt.Fprintf(buf, `{
+		return (*%s)(unsafe.Pointer(ref))
+	}`, goStructName)
+	name := fmt.Sprintf("New%sRef", goStructName)
+	helpers = append(helpers, &Helper{
+		Name:        name,
+		Description: name + " initialises a new struct.",
+		Source:      buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func (x *%s) PassRef() *%s", goStructName, cgoSpec)
+	fmt.Fprintf(buf, `{
+		if x == nil {
+			x = new(%s)
+		}
+		return (*%s)(unsafe.Pointer(x))
+	}`, goStructName, cgoSpec)
+	helpers = append(helpers, &Helper{
+		Name:        fmt.Sprintf("%s.PassRef", goStructName),
+		Description: "PassRef returns a reference and creates new object if no refernce yet.",
+		Source:      buf.String(),
+	})
+	return
+}
+
+func (gen *Generator) getPassRefSource(goStructName []byte, decl tl.CDecl) []byte {
+	cgoSpec := gen.tr.CGoSpec(decl.Spec)
+	spec := decl.Spec.(*tl.CStructSpec)
+	buf := new(bytes.Buffer)
+	crc := getRefCRC(decl.Spec)
 	fmt.Fprintf(buf, `if x == nil {
 		return nil
 	} else if x.ref%2x != nil {
@@ -171,7 +236,7 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 	fmt.Fprintf(buf, "ref%2x := new(%s)\n", crc, cgoSpec.Base)
 	writeSpace(buf, 1)
 
-	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeStruct, cStructName)
+	ptrTipSpecRx, memTipSpecRx := gen.tr.TipsRxForDecl(tl.TipScopeStruct, decl)
 	for i, mem := range spec.Members {
 		if len(mem.Name) == 0 {
 			continue
@@ -184,6 +249,19 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 		}
 		cgoSpec := gen.tr.CGoSpec(mem.Spec)
 		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
+
+		if memTip := memTipSpecRx.TipAt(i); memTip == tl.TipMemRaw {
+			var ref string
+			var deref string
+			if cgoSpec.Pointers == 0 {
+				ref = "&"
+				deref = "*"
+			}
+			fmt.Fprintf(buf, "ref%2x.%s = %s(%s%s)(unsafe.Pointer(%s%s))\n",
+				crc, mem.Name, deref, deref, cgoSpec, ref, goName)
+			continue
+		}
+
 		fromProxy, nillable := gen.proxyValueFromGo(goName, goSpec, cgoSpec)
 		if nillable {
 			fmt.Fprintf(buf, "if %s != nil {\nref%2x.%s = %s\n}\n", goName, crc, mem.Name, fromProxy)
@@ -201,16 +279,16 @@ func getRefCRC(spec tl.CType) uint32 {
 	return crc32.ChecksumIEEE([]byte(spec.String()))
 }
 
-func (gen *Generator) getDerefSource(structName string, structSpec tl.CType) []byte {
-	spec := structSpec.(*tl.CStructSpec)
+func (gen *Generator) getDerefSource(decl tl.CDecl) []byte {
+	spec := decl.Spec.(*tl.CStructSpec)
 	buf := new(bytes.Buffer)
-	crc := getRefCRC(structSpec)
+	crc := getRefCRC(decl.Spec)
 	fmt.Fprintf(buf, `if x.ref%2x == nil {
 		return
 	}`, crc)
 	writeSpace(buf, 1)
 
-	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeStruct, structName)
+	ptrTipSpecRx, memTipSpecRx := gen.tr.TipsRxForDecl(tl.TipScopeStruct, decl)
 	for i, mem := range spec.Members {
 		if len(mem.Name) == 0 {
 			continue
@@ -224,6 +302,19 @@ func (gen *Generator) getDerefSource(structName string, structSpec tl.CType) []b
 		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
 		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, mem.Name)
 		cgoSpec := gen.tr.CGoSpec(mem.Spec)
+
+		if memTip := memTipSpecRx.TipAt(i); memTip == tl.TipMemRaw {
+			var ref string
+			var deref string
+			if cgoSpec.Pointers == 0 {
+				ref = "&"
+				deref = "*"
+			}
+			fmt.Fprintf(buf, "%s = %s(%s%s)(unsafe.Pointer(%s%s))\n",
+				goName, deref, deref, goSpec, ref, cgoName)
+			continue
+		}
+
 		toProxy, _ := gen.proxyValueToGo(goName, cgoName, goSpec, cgoSpec)
 		fmt.Fprintln(buf, toProxy)
 	}

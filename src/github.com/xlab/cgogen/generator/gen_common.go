@@ -12,7 +12,10 @@ var skipName = []byte("_")
 
 func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec tl.CType) {
 	structSpec := spec.(*tl.CStructSpec)
-	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeStruct, structName)
+	ptrTipSpecRx, ok := gen.tr.PtrTipSpecRx(tl.TipScopeStruct, structName)
+	if !ok {
+		ptrTipSpecRx, _ = gen.tr.PtrTipSpecRx(tl.TipScopeStruct, spec.GetBase())
+	}
 
 	for i, member := range structSpec.Members {
 		ptrTip := ptrTipSpecRx.TipAt(i)
@@ -33,6 +36,15 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 		}
 		writeSpace(wr, 1)
 	}
+
+	memTipSpecRx, ok := gen.tr.MemTipSpecRx(structName)
+	if !ok {
+		memTipSpecRx, _ = gen.tr.MemTipSpecRx(spec.GetBase())
+	}
+	if self := memTipSpecRx.Self(); self.IsValid() && self == tl.TipMemRaw {
+		return
+	}
+
 	crc := getRefCRC(structSpec)
 	cgoSpec := gen.tr.CGoSpec(structSpec)
 	if len(cgoSpec.Base) == 0 {
@@ -43,7 +55,7 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 
 func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpec tl.CType) {
 	spec := funcSpec.(*tl.CFunctionSpec)
-	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeFunction, funcName)
+	ptrTipSpecRx, _ := gen.tr.PtrTipSpecRx(tl.TipScopeFunction, funcName)
 
 	writeStartParams(wr)
 	for i, param := range spec.ParamList {

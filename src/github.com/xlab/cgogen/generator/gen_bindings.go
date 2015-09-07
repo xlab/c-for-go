@@ -632,7 +632,7 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 	spec := funcSpec.(*tl.CFunctionSpec)
 	from = make([]proxyDecl, len(spec.ParamList))
 	to = make([]proxyDecl, 0, len(spec.ParamList))
-	ptrTipSpecRx := gen.tr.PtrTipSpecRx(tl.TipScopeFunction, funcName)
+	ptrTipSpecRx, _ := gen.tr.PtrTipSpecRx(tl.TipScopeFunction, funcName)
 
 	for i, param := range spec.ParamList {
 		var goSpec tl.GoTypeSpec
