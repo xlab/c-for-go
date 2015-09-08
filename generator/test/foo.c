@@ -51,6 +51,7 @@ size_t foo_send_message(foo_message_t *m, uint8_t *buf) {
 
 foo_message_t* foo_new_message() {
 	foo_message_t* m = (foo_message_t*)malloc(sizeof(foo_message_t));
+	memset(m, 0, sizeof(foo_message_t));
 	return m;
 }
 
