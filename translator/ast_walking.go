@@ -3,7 +3,7 @@ package translator
 import (
 	"fmt"
 
-	"github.com/cznic/c/internal/cc"
+	"github.com/cznic/c/cc"
 )
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) (next *cc.TranslationUnit) {

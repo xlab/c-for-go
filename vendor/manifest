@@ -2,18 +2,18 @@
 	"version": 0,
 	"dependencies": [
 		{
-			"importpath": "github.com/cznic/c/internal/cc",
+			"importpath": "github.com/cznic/c/cc",
 			"repository": "https://github.com/cznic/c",
 			"revision": "ca1153faf2e15dfab994094fa3d5d79642ce027f",
 			"branch": "master",
-			"path": "/internal/cc"
+			"path": "/cc"
 		},
 		{
-			"importpath": "github.com/cznic/c/internal/xc",
+			"importpath": "github.com/cznic/c/xc",
 			"repository": "https://github.com/cznic/c",
 			"revision": "ca1153faf2e15dfab994094fa3d5d79642ce027f",
 			"branch": "master",
-			"path": "/internal/xc"
+			"path": "/xc"
 		},
 		{
 			"importpath": "github.com/cznic/golex/lex",

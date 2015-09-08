@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cznic/c/internal/cc"
+	"github.com/cznic/c/cc"
 )
 
 type Config struct {

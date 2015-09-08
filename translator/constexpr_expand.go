@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cznic/c/internal/cc"
-	"github.com/cznic/c/internal/xc"
+	"github.com/cznic/c/cc"
+	"github.com/cznic/c/xc"
 )
 
 type (

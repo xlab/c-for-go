@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/cznic/c/internal/cc"
+	"github.com/cznic/c/cc"
 )
 
 func TestParse(t *testing.T) {
