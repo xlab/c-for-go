@@ -103,10 +103,6 @@ func getGenerator(originHeader string) (*Generator, error) {
 		},
 		MemTips: tl.MemTips{
 			{Target: "_raw$", Self: tl.TipMemRaw},
-			{Target: "foo_message$", Tips: tl.Tips{
-				tl.NoTip, tl.NoTip, tl.NoTip, tl.NoTip,
-				tl.TipMemRaw, // attachments
-			}},
 		},
 		Rules: tl.Rules{
 			tl.TargetGlobal: {

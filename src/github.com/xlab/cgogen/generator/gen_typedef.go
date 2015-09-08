@@ -248,6 +248,12 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 		if len(mem.Name) == 0 {
 			continue
 		}
+		memTip := memTipRx.TipAt(i)
+		if tag := mem.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
+			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
+				memTip = memTipRx.TipAt(i)
+			}
+		}
 		var goSpec tl.GoTypeSpec
 		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
 			goSpec = gen.tr.TranslateSpec(mem.Spec, ptrTip)
@@ -256,7 +262,7 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 		}
 		cgoSpec := gen.tr.CGoSpec(mem.Spec)
 		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
-		fromProxy, nillable := gen.proxyValueFromGo(memTipRx.TipAt(i), goName, goSpec, cgoSpec)
+		fromProxy, nillable := gen.proxyValueFromGo(memTip, goName, goSpec, cgoSpec)
 		if nillable {
 			fmt.Fprintf(buf, "if %s != nil {\nref%2x.%s = %s\n}\n", goName, crc, mem.Name, fromProxy)
 		} else {
@@ -287,6 +293,12 @@ func (gen *Generator) getDerefSource(cStructName string, spec tl.CType) []byte {
 		if len(mem.Name) == 0 {
 			continue
 		}
+		memTip := memTipRx.TipAt(i)
+		if tag := mem.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
+			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
+				memTip = memTipRx.TipAt(i)
+			}
+		}
 		var goSpec tl.GoTypeSpec
 		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
 			goSpec = gen.tr.TranslateSpec(mem.Spec, ptrTip)
@@ -296,7 +308,7 @@ func (gen *Generator) getDerefSource(cStructName string, spec tl.CType) []byte {
 		goName := "x." + string(gen.tr.TransformName(tl.TargetPublic, mem.Name))
 		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, mem.Name)
 		cgoSpec := gen.tr.CGoSpec(mem.Spec)
-		toProxy, _ := gen.proxyValueToGo(memTipRx.TipAt(i), goName, cgoName, goSpec, cgoSpec)
+		toProxy, _ := gen.proxyValueToGo(memTip, goName, cgoName, goSpec, cgoSpec)
 		fmt.Fprintln(buf, toProxy)
 	}
 	return buf.Bytes()
