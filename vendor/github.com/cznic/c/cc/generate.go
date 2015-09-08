@@ -25,7 +25,7 @@ func yy() (nm string, err error) {
 	nm = y.Name()
 	cmd := exec.Command(
 		"yy",
-		"-astImport", `"github.com/cznic/c/internal/xc"; "go/token"`,
+		"-astImport", `"github.com/cznic/c/xc"; "go/token"`,
 		"-kind", "Case",
 		"-node", "item",
 		"-o", nm,

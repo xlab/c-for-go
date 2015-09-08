@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cznic/c/internal/xc"
+	"github.com/cznic/c/xc"
 	"github.com/cznic/golex/lex"
 )
 

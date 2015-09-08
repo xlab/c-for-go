@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cznic/c/internal/xc"
+	"github.com/cznic/c/xc"
 	"github.com/cznic/mathutil"
 	"github.com/cznic/sortutil"
 )

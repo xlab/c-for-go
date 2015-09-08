@@ -15,7 +15,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/cznic/c/internal/xc"
+	"github.com/cznic/c/xc"
 	"github.com/cznic/golex/lex"
 )
 

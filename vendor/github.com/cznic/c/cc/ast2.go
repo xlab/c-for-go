@@ -7,7 +7,7 @@ package cc
 import (
 	"go/token"
 
-	"github.com/cznic/c/internal/xc"
+	"github.com/cznic/c/xc"
 )
 
 var (

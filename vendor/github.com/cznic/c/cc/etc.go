@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/cznic/c/internal/xc"
+	"github.com/cznic/c/xc"
 	"github.com/cznic/mathutil"
 	"github.com/cznic/strutil"
 )

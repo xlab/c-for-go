@@ -11,7 +11,7 @@ package cc
 import __yyfmt__ "fmt"
 
 import (
-	"github.com/cznic/c/internal/xc"
+	"github.com/cznic/c/xc"
 	"github.com/cznic/golex/lex"
 	"github.com/cznic/mathutil"
 )

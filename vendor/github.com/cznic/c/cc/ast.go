@@ -7,8 +7,9 @@
 package cc
 
 import (
-	"github.com/cznic/c/internal/xc"
 	"go/token"
+
+	"github.com/cznic/c/xc"
 )
 
 // AbstractDeclarator represents data reduced by productions:
