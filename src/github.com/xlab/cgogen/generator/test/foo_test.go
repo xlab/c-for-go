@@ -3,6 +3,7 @@ package foo
 import (
 	"bytes"
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -53,16 +54,16 @@ func TestSendMessage(t *testing.T) {
 		Message:        "Hey there! Check out these cool pictures attached. -xoxo",
 		AttachmentsLen: 2,
 		Attachments: []Attachment{
-			{Data: attaches[0], Size: uint64(len(attaches[0]))},
-			{Data: attaches[1], Size: uint64(len(attaches[1]))},
+			{Data: (*byte)(unsafe.Pointer(&attaches[0][0])), Size: uint64(len(attaches[0]))},
+			{Data: (*byte)(unsafe.Pointer(&attaches[1][0])), Size: uint64(len(attaches[1]))},
 		},
 	}
 	size := SendMessage(msg, buf)
 	assert.EqualValues(t, 85, size)
 	msg.Deref()
 	for i, att := range msg.Attachments {
-		att.Deref()
-		assert.Equal(t, attaches[i], att.Data[:att.Size:att.Size])
+		assert.NotNil(t, att.Data)
+		assert.EqualValues(t, len(attaches[i]), att.Size)
 	}
 	assert.Equal(t, true, msg.Sent)
 	packed := []byte("msg:")

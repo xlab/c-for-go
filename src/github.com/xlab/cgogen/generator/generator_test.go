@@ -90,13 +90,22 @@ func getGenerator(originHeader string) (*Generator, error) {
 		},
 		PtrTips: tl.PtrTips{
 			tl.TipScopeFunction: {
-				{Target: "_message$", Tips: tl.Tips{tl.TipPtrRef}},
+				{Target: "_message$", Tips: tl.Tips{
+					tl.TipPtrRef, // object reference in message's functions
+				}},
+				{Target: "_bytes$", Self: tl.TipPtrArr},
+			},
+			tl.TipScopeStruct: {
+				{Target: "_attachment_raw$", Tips: tl.Tips{
+					tl.TipPtrRef, // attachment's data raw reference
+				}},
 			},
 		},
 		MemTips: tl.MemTips{
 			{Target: "_raw$", Self: tl.TipMemRaw},
 			{Target: "foo_message$", Tips: tl.Tips{
-				tl.NoTip, tl.NoTip, tl.NoTip, tl.NoTip, tl.TipMemRaw,
+				tl.NoTip, tl.NoTip, tl.NoTip, tl.NoTip,
+				tl.TipMemRaw, // attachments
 			}},
 		},
 		Rules: tl.Rules{

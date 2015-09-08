@@ -124,12 +124,12 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 			var memTip tl.Tip
 			if tag := decl.Spec.GetBase(); len(tag) > 0 {
 				seenTags[tag] = true
-				if memTipRx, ok := gen.tr.MemTipSpecRx(tag); ok {
+				if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
 					memTip = memTipRx.Self()
 				}
 			}
 			if !memTip.IsValid() {
-				if memTipRx, ok := gen.tr.MemTipSpecRx(decl.Name); ok {
+				if memTipRx, ok := gen.tr.MemTipRx(decl.Name); ok {
 					memTip = memTipRx.Self()
 				}
 			}
@@ -155,7 +155,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 				continue
 			}
 			decl.Name = tag
-			if memTipRx, ok := gen.tr.MemTipSpecRx(tag); ok {
+			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
 				gen.writeStructTypedef(wr, decl, memTipRx.Self() == tl.TipMemRaw)
 			}
 			gen.writeStructTypedef(wr, decl, false)
@@ -174,19 +174,26 @@ func (gen *Generator) WriteDeclares(wr io.Writer) {
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
-			gen.writeStructDeclaration(wr, decl, tl.TipPtrRef, true)
+			gen.writeStructDeclaration(wr, decl, tl.NoTip, true)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
 				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 					continue
 				}
-				gen.writeEnumDeclaration(wr, decl, tl.TipPtrRef, true)
+				gen.writeEnumDeclaration(wr, decl, tl.NoTip, true)
 			}
 		case tl.FunctionKind:
 			if !gen.tr.IsAcceptableName(tl.TargetFunction, decl.Name) {
 				continue
 			}
-			gen.writeFunctionDeclaration(wr, decl, tl.TipPtrRef, true)
+			// defaults to ref for the returns
+			ptrTip := tl.TipPtrRef
+			if ptrTipRx, ok := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name); ok {
+				if tip := ptrTipRx.Self(); tip.IsValid() {
+					ptrTip = tip
+				}
+			}
+			gen.writeFunctionDeclaration(wr, decl, ptrTip, true)
 		}
 		writeSpace(wr, 1)
 	}

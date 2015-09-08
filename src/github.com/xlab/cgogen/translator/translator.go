@@ -320,7 +320,7 @@ func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
 	return GoTypeSpec{}, false
 }
 
-func (t *Translator) PtrTipSpecRx(scope TipScope, name string) (TipSpecRx, bool) {
+func (t *Translator) PtrTipRx(scope TipScope, name string) (TipSpecRx, bool) {
 	if rx, ok := t.ptrTipCache.Get(scope, name); ok {
 		return rx, true
 	}
@@ -341,7 +341,7 @@ func (t *Translator) PtrTipSpecRx(scope TipScope, name string) (TipSpecRx, bool)
 	return TipSpecRx{}, false
 }
 
-func (t *Translator) MemTipSpecRx(name string) (TipSpecRx, bool) {
+func (t *Translator) MemTipRx(name string) (TipSpecRx, bool) {
 	if rx, ok := t.memTipCache.Get(TipScopeStruct, name); ok {
 		return rx, true
 	}
@@ -354,17 +354,17 @@ func (t *Translator) MemTipSpecRx(name string) (TipSpecRx, bool) {
 	return TipSpecRx{}, false
 }
 
-func (t *Translator) TipsRxForDecl(scope TipScope, decl CDecl) (ptr, mem TipSpecRx) {
+func (t *Translator) PtrMemTipRxForSpec(scope TipScope, name string, spec CType) (ptr, mem TipSpecRx) {
 	var ptrOk, memOk bool
-	if tag := decl.Spec.GetBase(); len(tag) > 0 {
-		ptr, ptrOk = t.PtrTipSpecRx(scope, tag)
-		mem, memOk = t.MemTipSpecRx(tag)
+	if tag := spec.GetBase(); len(tag) > 0 {
+		ptr, ptrOk = t.PtrTipRx(scope, tag)
+		mem, memOk = t.MemTipRx(tag)
 	}
 	if !ptrOk {
-		ptr, _ = t.PtrTipSpecRx(scope, decl.Name)
+		ptr, _ = t.PtrTipRx(scope, name)
 	}
 	if !memOk {
-		mem, _ = t.MemTipSpecRx(decl.Name)
+		mem, _ = t.MemTipRx(name)
 	}
 	return
 }
@@ -390,6 +390,12 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
 			gospec.Arrays = spec.GetArrays()
+			if ptrTip == TipPtrRef {
+				if gospec.Pointers == 0 && gospec.Slices > 0 {
+					gospec.Slices--
+					gospec.Pointers++
+				}
+			}
 			return gospec
 		}
 		wrapper := GoTypeSpec{
@@ -409,15 +415,15 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 
 				lookupSpec.Pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {
-					if lookupSpec.Pointers == 0 && ptrTip == TipPtrRef {
-						gospec.Slices += wrapper.Slices + 1
-						gospec.Pointers += wrapper.Pointers - 1
-					} else {
-						gospec.Slices += wrapper.Slices
-						gospec.Pointers += wrapper.Pointers
-					}
+					gospec.Slices += wrapper.Slices
+					gospec.Pointers += wrapper.Pointers
 					gospec.Arrays = wrapper.Arrays + gospec.Arrays
 					gospec.Pointers += spec.GetVarArrays()
+					// if !ptrTip.IsValid() {
+					// 	ptrTip = TipPtrArr
+					// }
+					// log.Println(spec, "->", lookupSpec, "(found) wrapped", wrapper,
+					// 	"ptrTip:", ptrTip, "-> return:", gospec)
 					return gospec
 				}
 			}
