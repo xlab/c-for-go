@@ -54,20 +54,23 @@ func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
 	return gen, nil
 }
 
-func (gen *Generator) WriteConst(wr io.Writer) {
+func (gen *Generator) WriteConst(wr io.Writer) int {
+	var count int
 	gen.writeDefinesGroup(wr, gen.tr.Defines())
 	writeSpace(wr, 1)
 	tagsSeen := make(map[string]bool)
 	namesSeen := make(map[string]bool)
 
-	expandEnum := func(decl tl.CDecl) {
+	expandEnum := func(decl tl.CDecl) bool {
 		if tag := decl.Spec.GetBase(); len(tag) == 0 {
 			gen.expandEnumAnonymous(wr, decl, namesSeen)
+			return true
 		} else if tagsSeen[tag] {
-			return
+			return false
 		} else {
 			gen.expandEnum(wr, decl)
 			tagsSeen[tag] = true
+			return true
 		}
 	}
 
@@ -80,7 +83,9 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 		if !gen.tr.IsAcceptableName(tl.TargetType, tag) {
 			continue
 		}
-		expandEnum(decl)
+		if expandEnum(decl) {
+			count++
+		}
 	}
 	for _, decl := range gen.tr.Typedefs() {
 		if decl.Spec.Kind() != tl.EnumKind {
@@ -91,7 +96,9 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
 			continue
 		}
-		expandEnum(decl)
+		if expandEnum(decl) {
+			count++
+		}
 	}
 	for _, decl := range gen.tr.Declares() {
 		if decl.IsStatic {
@@ -110,10 +117,13 @@ func (gen *Generator) WriteConst(wr io.Writer) {
 		}
 		gen.writeConstDeclaration(wr, decl)
 		writeSpace(wr, 1)
+		count++
 	}
+	return count
 }
 
-func (gen *Generator) WriteTypedefs(wr io.Writer) {
+func (gen *Generator) WriteTypedefs(wr io.Writer) int {
+	var count int
 	seenTags := make(map[string]bool)
 	for _, decl := range gen.tr.Typedefs() {
 		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
@@ -144,6 +154,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 			gen.writeFunctionTypedef(wr, decl)
 		}
 		writeSpace(wr, 1)
+		count++
 	}
 	for tag, decl := range gen.tr.TagMap() {
 		switch decl.Kind() {
@@ -160,11 +171,14 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) {
 			}
 			gen.writeStructTypedef(wr, decl, false)
 			writeSpace(wr, 1)
+			count++
 		}
 	}
+	return count
 }
 
-func (gen *Generator) WriteDeclares(wr io.Writer) {
+func (gen *Generator) WriteDeclares(wr io.Writer) int {
+	var count int
 	for _, decl := range gen.tr.Declares() {
 		if decl.IsStatic {
 			continue
@@ -196,7 +210,9 @@ func (gen *Generator) WriteDeclares(wr io.Writer) {
 			gen.writeFunctionDeclaration(wr, decl, ptrTip, true)
 		}
 		writeSpace(wr, 1)
+		count++
 	}
+	return count
 }
 
 func (gen *Generator) Close() {

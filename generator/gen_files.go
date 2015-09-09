@@ -12,14 +12,22 @@ func genLabel() string {
 	return fmt.Sprintf(tpl, time.Now().Format(time.RFC1123))
 }
 
-func (gen *Generator) WriteDoc(wr io.Writer) {
-	writeTextBlock(wr, gen.cfg.PackageLicense)
-	writeSpace(wr, 1)
+func (gen *Generator) WriteDoc(wr io.Writer) bool {
+	var hasDoc bool
+	if len(gen.cfg.PackageLicense) > 0 {
+		writeTextBlock(wr, gen.cfg.PackageLicense)
+		writeSpace(wr, 1)
+		hasDoc = true
+	}
 	writeTextBlock(wr, genLabel())
 	writeSpace(wr, 1)
-	writeLongTextBlock(wr, gen.cfg.PackageDescription)
+	if len(gen.cfg.PackageDescription) > 0 {
+		writeLongTextBlock(wr, gen.cfg.PackageDescription)
+		hasDoc = true
+	}
 	writePackageName(wr, gen.pkg)
 	writeSpace(wr, 1)
+	return hasDoc
 }
 
 func (gen *Generator) WriteIncludes(wr io.Writer) {
@@ -35,14 +43,21 @@ func (gen *Generator) WriteIncludes(wr io.Writer) {
 	for _, path := range gen.cfg.Includes {
 		writeInclude(wr, path)
 	}
+	if !hasStdLib(gen.cfg.SysIncludes) {
+		writeCStdIncludes(wr)
+	}
 	writeEndComment(wr)
 	fmt.Fprintln(wr, `import "C"`)
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) WriteImportC(wr io.Writer) {
-	fmt.Fprintln(wr, `import "C"`)
-	writeSpace(wr, 1)
+func hasStdLib(paths []string) bool {
+	for _, str := range paths {
+		if str == "stdlib.h" {
+			return true
+		}
+	}
+	return false
 }
 
 func (gen *Generator) writeGoHelpersHeader(wr io.Writer) {
@@ -52,13 +67,7 @@ func (gen *Generator) writeGoHelpersHeader(wr io.Writer) {
 	writeSpace(wr, 1)
 	writePackageName(wr, gen.pkg)
 	writeSpace(wr, 1)
-	writeStartComment(wr)
-	for _, path := range gen.cfg.Includes {
-		writeInclude(wr, path)
-	}
-	writeEndComment(wr)
-	fmt.Fprintln(wr, `import "C"`)
-	writeSpace(wr, 1)
+	gen.WriteIncludes(wr)
 }
 
 func (gen *Generator) writeCHelpersHeader(wr io.Writer) {
