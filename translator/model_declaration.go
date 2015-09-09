@@ -10,8 +10,10 @@ type CTypeKind int
 
 const (
 	TypeKind CTypeKind = iota
+	PlainTypeKind
 	DefineKind
 	StructKind
+	OpaqueStructKind
 	UnionKind
 	FunctionKind
 	EnumKind
@@ -26,6 +28,7 @@ type CType interface {
 	AddArray(uint64)
 	//
 	IsConst() bool
+	IsOpaque() bool
 	Kind() CTypeKind
 	String() string
 	Copy() CType
@@ -61,6 +64,10 @@ func (c *CDecl) IsTemplate() bool {
 
 func (c *CDecl) Kind() CTypeKind {
 	return c.Spec.Kind()
+}
+
+func (c *CDecl) IsOpaque() bool {
+	return c.Spec.IsOpaque()
 }
 
 func (c *CDecl) IsConst() bool {

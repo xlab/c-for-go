@@ -37,8 +37,12 @@ func (c *CFunctionSpec) SetPointers(n uint8) {
 	c.Pointers = n
 }
 
-func (c CFunctionSpec) Kind() CTypeKind {
+func (c *CFunctionSpec) Kind() CTypeKind {
 	return FunctionKind
+}
+
+func (c *CFunctionSpec) IsOpaque() bool {
+	return len(c.ParamList) == 0
 }
 
 func (c CFunctionSpec) Copy() CType {

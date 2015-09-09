@@ -130,7 +130,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 			continue
 		}
 		switch decl.Kind() {
-		case tl.StructKind:
+		case tl.StructKind, tl.OpaqueStructKind:
 			var memTip tl.Tip
 			if tag := decl.Spec.GetBase(); len(tag) > 0 {
 				seenTags[tag] = true
@@ -158,7 +158,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 	}
 	for tag, decl := range gen.tr.TagMap() {
 		switch decl.Kind() {
-		case tl.StructKind:
+		case tl.StructKind, tl.OpaqueStructKind:
 			if seenTags[tag] {
 				continue
 			}
@@ -184,7 +184,7 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 			continue
 		}
 		switch decl.Kind() {
-		case tl.StructKind:
+		case tl.StructKind, tl.OpaqueStructKind:
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}

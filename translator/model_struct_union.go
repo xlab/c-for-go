@@ -51,11 +51,19 @@ func (c *CStructSpec) SetPointers(n uint8) {
 	c.Pointers = n
 }
 
-func (c CStructSpec) Kind() CTypeKind {
-	if c.IsUnion {
+func (c *CStructSpec) Kind() CTypeKind {
+	switch {
+	case c.IsUnion:
 		return UnionKind
+	case len(c.Members) == 0:
+		return OpaqueStructKind
+	default:
+		return StructKind
 	}
-	return StructKind
+}
+
+func (c *CStructSpec) IsOpaque() bool {
+	return len(c.Members) == 0
 }
 
 func (c CStructSpec) Copy() CType {

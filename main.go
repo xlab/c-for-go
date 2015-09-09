@@ -38,7 +38,9 @@ func main() {
 			Errorf(err.Error())
 		}
 		cgogen.Generate()
-		cgogen.Close()
+		if err := cgogen.Flush(); err != nil {
+			Errorf(err.Error())
+		}
 		log.Printf("done in %v\n", time.Now().Sub(ts))
 	}
 }

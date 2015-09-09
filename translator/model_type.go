@@ -71,6 +71,10 @@ func (c *CTypeSpec) SetPointers(n uint8) {
 	c.Pointers = n
 }
 
+func (c *CTypeSpec) IsOpaque() bool {
+	return true
+}
+
 func (c CTypeSpec) Kind() CTypeKind {
 	return TypeKind
 }

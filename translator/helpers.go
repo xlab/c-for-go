@@ -162,6 +162,30 @@ func (n *NameTransformCache) Set(target RuleTarget, name string, result []byte) 
 	n.mux.Unlock()
 }
 
+// type SpecTranslateCache struct {
+// 	mux   sync.RWMutex
+// 	cache map[string]GoTypeSpec
+// }
+
+// func (s *SpecTranslateCache) Get(spec CType) (GoTypeSpec, bool) {
+// 	s.mux.RLock()
+// 	if cached, ok := s.cache[spec.String()]; ok {
+// 		s.mux.RUnlock()
+// 		return cached, true
+// 	}
+// 	s.mux.RUnlock()
+// 	return nil, false
+// }
+
+// func (n *SpecTranslateCache) Set(spec CType, goSpec GoTypeSpec) {
+// 	n.mux.Lock()
+// 	if n.cache == nil {
+// 		n.cache = make(map[string]GoTypeSpec)
+// 	}
+// 	n.cache[spec.String()] = goSpec
+// 	n.mux.Unlock()
+// }
+
 type TipCache struct {
 	mux   sync.RWMutex
 	cache map[struct {

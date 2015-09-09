@@ -28,7 +28,9 @@ type Translator struct {
 	typedefs []CDecl
 	declares []CDecl
 
-	typedefsSet    map[string]struct{}
+	typedefsSet  map[string]struct{}
+	typedefKinds map[string]CTypeKind
+	//	translateCache *SpecTranslateCache
 	transformCache *NameTransformCache
 	ptrTipCache    *TipCache
 	memTipCache    *TipCache
@@ -91,6 +93,7 @@ func New(cfg *Config) (*Translator, error) {
 		exprMap:           make(map[string]Expression),
 		tagMap:            make(map[string]CDecl),
 		typedefsSet:       make(map[string]struct{}),
+		typedefKinds:      make(map[string]CTypeKind),
 		transformCache:    &NameTransformCache{},
 		ptrTipCache:       &TipCache{},
 		memTipCache:       &TipCache{},
@@ -238,9 +241,24 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 	for unit != nil {
 		unit = t.walkTranslationUnit(unit)
 	}
+	t.resolveTypedefs(t.typedefs)
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
 	return xc.Compilation.Errors(true)
+}
+
+func (t *Translator) resolveTypedefs(typedefs []CDecl) {
+	for _, decl := range typedefs {
+		if decl.Kind() != TypeKind {
+			t.typedefKinds[decl.Name] = decl.Kind()
+			continue
+		}
+		if goSpec := t.TranslateSpec(decl.Spec); goSpec.IsPlain() {
+			t.typedefKinds[decl.Name] = PlainTypeKind
+		} else if goSpec.Kind != TypeKind {
+			t.typedefKinds[decl.Name] = goSpec.Kind
+		}
+	}
 }
 
 func (t *Translator) TransformName(target RuleTarget, str string) []byte {
@@ -377,16 +395,16 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 
 	switch spec.Kind() {
 	case TypeKind:
-		spec := spec.(*CTypeSpec)
+		typeSpec := spec.(*CTypeSpec)
 		lookupSpec := CTypeSpec{
-			Base:     spec.Base,
-			Const:    spec.Const,
-			Unsigned: spec.Unsigned,
-			Short:    spec.Short,
-			Long:     spec.Long,
+			Base:     typeSpec.Base,
+			Const:    typeSpec.Const,
+			Unsigned: typeSpec.Unsigned,
+			Short:    typeSpec.Short,
+			Long:     typeSpec.Long,
 			// Arrays skip
 			// VarArrays skip
-			Pointers: spec.Pointers,
+			Pointers: typeSpec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
 			gospec.Arrays = spec.GetArrays()
@@ -396,9 +414,19 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 					gospec.Pointers++
 				}
 			}
+			if gospec.Kind == TypeKind {
+				if gospec.Kind = t.typedefKinds[gospec.Base]; gospec.Kind == TypeKind {
+					if gospec.Kind = t.typedefKinds[lookupSpec.Base]; gospec.Kind == TypeKind {
+						if gospec.IsPlain() {
+							gospec.Kind = PlainTypeKind
+						}
+					}
+				}
+			}
 			return gospec
 		}
 		wrapper := GoTypeSpec{
+			Kind:   t.typedefKinds[lookupSpec.Base],
 			Arrays: spec.GetArrays(),
 		}
 		if lookupSpec.Pointers > 0 {
@@ -419,6 +447,18 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 					gospec.Pointers += wrapper.Pointers
 					gospec.Arrays = wrapper.Arrays + gospec.Arrays
 					gospec.Pointers += spec.GetVarArrays()
+					if gospec.Kind == TypeKind {
+						if wrapper.Kind == TypeKind {
+							if gospec.Kind = t.typedefKinds[lookupSpec.Base]; gospec.Kind == TypeKind {
+								if gospec.IsPlain() {
+									gospec.Kind = PlainTypeKind
+								}
+							}
+						} else {
+							gospec.Kind = wrapper.Kind
+						}
+					}
+
 					// if !ptrTip.IsValid() {
 					// 	ptrTip = TipPtrArr
 					// }
@@ -430,9 +470,15 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		}
 		wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Base = string(t.TransformName(TargetType, lookupSpec.Base))
+		if wrapper.Kind == TypeKind {
+			if wrapper.IsPlain() {
+				wrapper.Kind = PlainTypeKind
+			}
+		}
 		return wrapper
 	case FunctionKind:
 		wrapper := GoTypeSpec{
+			Kind:   spec.Kind(),
 			Arrays: spec.GetArrays(),
 		}
 		wrapper.splitPointers(ptrTip, spec.GetPointers())
@@ -441,6 +487,7 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		return wrapper
 	default:
 		wrapper := GoTypeSpec{
+			Kind:   spec.Kind(),
 			Arrays: spec.GetArrays(),
 		}
 		wrapper.splitPointers(ptrTip, spec.GetPointers())
@@ -483,6 +530,9 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 			}
 			return cgo
 		case "void":
+			if cgo.Pointers > 0 {
+				cgo.Base = "void"
+			}
 			return cgo
 		default:
 			cgo.Base = "C." + spec.Base
@@ -497,7 +547,7 @@ func (t *Translator) cgoName(spec CType) string {
 	name := spec.GetBase()
 	if _, ok := t.tagMap[name]; ok {
 		switch spec.Kind() {
-		case StructKind:
+		case StructKind, OpaqueStructKind:
 			return "C.struct_" + name
 		case UnionKind:
 			return "C.union_" + name
@@ -514,7 +564,7 @@ func (t *Translator) cgoName(spec CType) string {
 func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
 	name := spec.GetBase()
 	switch spec.Kind() {
-	case StructKind:
+	case StructKind, OpaqueStructKind:
 		fallback = "C.struct_" + name
 	case UnionKind:
 		fallback = "C.union_" + name

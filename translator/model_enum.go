@@ -111,8 +111,12 @@ func (c *CEnumSpec) SetPointers(n uint8) {
 	c.Pointers = n
 }
 
-func (c CEnumSpec) Kind() CTypeKind {
+func (c *CEnumSpec) Kind() CTypeKind {
 	return EnumKind
+}
+
+func (c *CEnumSpec) IsOpaque() bool {
+	return len(c.Enumerators) == 0
 }
 
 func (c CEnumSpec) Copy() CType {

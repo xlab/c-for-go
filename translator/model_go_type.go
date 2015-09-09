@@ -11,6 +11,7 @@ type GoTypeSpec struct {
 	Slices   uint8
 	Pointers uint8
 	Unsigned bool
+	Kind     CTypeKind
 	Base     string
 	Bits     uint16
 }
@@ -37,6 +38,10 @@ func (gts *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
 }
 
 func (gts GoTypeSpec) IsPlain() bool {
+	switch gts.Kind {
+	case PlainTypeKind, EnumKind, OpaqueStructKind:
+		return true
+	}
 	switch gts.Base {
 	case "int", "byte", "rune", "float32", "float64", "void", "unsafe.Pointer", "bool":
 		return true
