@@ -230,3 +230,18 @@ func getVarArrayCount(arraySizes []uint32) (count uint8) {
 	}
 	return
 }
+
+func tagAnonymousMembers(decl CDecl) {
+	if decl.Kind() != StructKind {
+		return
+	}
+	structSpec := decl.Spec.(*CStructSpec)
+	for i := range structSpec.Members {
+		switch spec := structSpec.Members[i].Spec.(type) {
+		case *CStructSpec:
+			if len(spec.Tag) == 0 {
+				spec.Tag = fmt.Sprintf("%s_%s", decl.Name, structSpec.Members[i].Name)
+			}
+		}
+	}
+}

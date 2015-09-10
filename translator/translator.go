@@ -314,8 +314,9 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 	if target != TargetGlobal && target != TargetPostGlobal {
 		// apply post-global rules in the end
 		name = t.TransformName(TargetPostGlobal, string(name))
+		t.transformCache.Set(target, str, name)
+		return name
 	}
-	t.transformCache.Set(target, str, name)
 	return name
 }
 
@@ -415,11 +416,11 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 				}
 			}
 			if gospec.Kind == TypeKind {
-				if gospec.Kind = t.typedefKinds[gospec.Base]; gospec.Kind == TypeKind {
-					if gospec.Kind = t.typedefKinds[lookupSpec.Base]; gospec.Kind == TypeKind {
-						if gospec.IsPlain() {
-							gospec.Kind = PlainTypeKind
-						}
+				if gospec.IsPlain() {
+					gospec.Kind = PlainTypeKind
+				} else if gospec.Kind = t.typedefKinds[gospec.Base]; gospec.Kind == TypeKind {
+					if kind := t.typedefKinds[lookupSpec.Base]; kind != PlainTypeKind {
+						gospec.Kind = kind
 					}
 				}
 			}
@@ -448,11 +449,11 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 					gospec.Arrays = wrapper.Arrays + gospec.Arrays
 					gospec.Pointers += spec.GetVarArrays()
 					if gospec.Kind == TypeKind {
-						if wrapper.Kind == TypeKind {
-							if gospec.Kind = t.typedefKinds[lookupSpec.Base]; gospec.Kind == TypeKind {
-								if gospec.IsPlain() {
-									gospec.Kind = PlainTypeKind
-								}
+						if gospec.IsPlain() {
+							gospec.Kind = PlainTypeKind
+						} else if wrapper.Kind == TypeKind || wrapper.Kind == PlainTypeKind {
+							if kind := t.typedefKinds[lookupSpec.Base]; kind != PlainTypeKind {
+								gospec.Kind = kind
 							}
 						} else {
 							gospec.Kind = wrapper.Kind
@@ -474,6 +475,12 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			if wrapper.IsPlain() {
 				wrapper.Kind = PlainTypeKind
 			}
+		} else if wrapper.Kind == UnionKind {
+			return GoTypeSpec{
+				Kind:   UnionKind,
+				Arrays: fmt.Sprintf("%s[%sSize]", wrapper.Arrays, spec.GetBase()),
+				Base:   "byte",
+			}
 		}
 		return wrapper
 	case FunctionKind:
@@ -485,6 +492,12 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Base = "func"
 		return wrapper
+	case UnionKind:
+		return GoTypeSpec{
+			Kind:   UnionKind,
+			Arrays: fmt.Sprintf("%s[%sSize]", spec.GetArrays(), spec.GetBase()),
+			Base:   "byte",
+		}
 	default:
 		wrapper := GoTypeSpec{
 			Kind:   spec.Kind(),
@@ -508,7 +521,8 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 	cgo.Pointers += spec.GetVarArrays()
 	cgo.Arrays = GetArraySizes(spec.GetArrays())
 
-	if spec, ok := spec.(*CTypeSpec); ok {
+	switch spec := spec.(type) {
+	case *CTypeSpec:
 		switch base := spec.Base; base {
 		case "int", "short", "long", "char":
 			cgo.Base = "C."
@@ -531,14 +545,24 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 			return cgo
 		case "void":
 			if cgo.Pointers > 0 {
-				cgo.Base = "void"
+				cgo.Pointers--
+				cgo.Base = "unsafe.Pointer"
 			}
 			return cgo
 		default:
 			cgo.Base = "C." + spec.Base
 			return cgo
 		}
+	case *CStructSpec:
+		if spec.IsUnion {
+			arrays := fmt.Sprintf("%s[%sSize]", spec.Arrays, spec.GetBase())
+			return CGoSpec{
+				Arrays: GetArraySizes(arrays),
+				Base:   "byte",
+			}
+		}
 	}
+
 	cgo.Base = t.cgoName(spec)
 	return cgo
 }

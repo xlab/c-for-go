@@ -49,8 +49,8 @@ func TestSendMessage(t *testing.T) {
 		[]byte("pic16.jpg"),
 	}
 	msg := &Message{
-		FromID:         &[4]byte{0x1},
-		ToID:           &[4]byte{0x2},
+		FromID:         [4]byte{0x1},
+		ToID:           [4]byte{0x2},
 		Message:        "Hey there! Check out these cool pictures attached. -xoxo",
 		AttachmentsLen: 2,
 		Attachments: []Attachment{

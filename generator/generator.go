@@ -3,6 +3,7 @@ package generator
 import (
 	"errors"
 	"io"
+	"math/rand"
 
 	tl "github.com/xlab/cgogen/translator"
 )
@@ -15,6 +16,7 @@ type Generator struct {
 	closed        bool
 	closeC, doneC chan struct{}
 	helpersChan   chan *Helper
+	rand          *rand.Rand
 }
 
 type ArchFlagSet struct {
@@ -50,6 +52,7 @@ func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
 		helpersChan: make(chan *Helper, 1),
 		closeC:      make(chan struct{}),
 		doneC:       make(chan struct{}),
+		rand:        rand.New(rand.NewSource(+79269965690)),
 	}
 	return gen, nil
 }
@@ -124,7 +127,8 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 
 func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 	var count int
-	seenTags := make(map[string]bool)
+	seenStructTags := make(map[string]bool)
+	seenUnionTags := make(map[string]bool)
 	for _, decl := range gen.tr.Typedefs() {
 		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
 			continue
@@ -133,7 +137,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		case tl.StructKind, tl.OpaqueStructKind:
 			var memTip tl.Tip
 			if tag := decl.Spec.GetBase(); len(tag) > 0 {
-				seenTags[tag] = true
+				seenStructTags[tag] = true
 				if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
 					memTip = memTipRx.Self()
 				}
@@ -144,6 +148,11 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 				}
 			}
 			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw)
+		case tl.UnionKind:
+			if tag := decl.Spec.GetBase(); len(tag) > 0 {
+				seenUnionTags[tag] = true
+			}
+			gen.writeUnionTypedef(wr, decl)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
 				gen.writeEnumTypedef(wr, decl)
@@ -159,7 +168,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 	for tag, decl := range gen.tr.TagMap() {
 		switch decl.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
-			if seenTags[tag] {
+			if seenStructTags[tag] {
 				continue
 			}
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, tag) {
@@ -170,6 +179,17 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 				gen.writeStructTypedef(wr, decl, memTipRx.Self() == tl.TipMemRaw)
 			}
 			gen.writeStructTypedef(wr, decl, false)
+			writeSpace(wr, 1)
+			count++
+		case tl.UnionKind:
+			if seenUnionTags[tag] {
+				continue
+			}
+			if !gen.tr.IsAcceptableName(tl.TargetPublic, tag) {
+				continue
+			}
+			decl.Name = tag
+			gen.writeUnionTypedef(wr, decl)
 			writeSpace(wr, 1)
 			count++
 		}
@@ -189,6 +209,11 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 				continue
 			}
 			gen.writeStructDeclaration(wr, decl, tl.NoTip, true)
+		case tl.UnionKind:
+			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+				continue
+			}
+			gen.writeUnionDeclaration(wr, decl, tl.NoTip, true)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
 				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
@@ -283,4 +308,9 @@ func (gen *Generator) MonitorAndWriteHelpers(goWr, cWr io.Writer, initWrFunc ...
 			writeSpace(wr, 1)
 		}
 	}
+}
+
+// randPostfix generates a simply random 4-byte postfix. Doesn't require a crypto package.
+func (gen *Generator) randPostfix() int32 {
+	return 0x0f000000 + gen.rand.Int31n(0x00ffffff)
 }

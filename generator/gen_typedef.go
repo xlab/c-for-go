@@ -313,3 +313,20 @@ func (gen *Generator) getDerefSource(cStructName string, spec tl.CType) []byte {
 	}
 	return buf.Bytes()
 }
+
+func (gen *Generator) writeUnionTypedef(wr io.Writer, decl tl.CDecl) {
+	var goUnionName []byte
+	if len(decl.Name) > 0 {
+		goUnionName = gen.tr.TransformName(tl.TargetType, decl.Name)
+	} else {
+		return
+	}
+	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
+
+	if typeName := string(goUnionName); typeName != typeRef {
+		fmt.Fprintf(wr, "// %s as declared in %s\n", goUnionName, tl.SrcLocation(decl.Pos))
+		fmt.Fprintf(wr, "type %s %s", goUnionName, typeRef)
+		writeSpace(wr, 1)
+		return
+	}
+}

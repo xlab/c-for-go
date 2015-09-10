@@ -27,19 +27,27 @@ func (c *CTypeSpec) AddArray(size uint64) {
 	c.VarArrays++
 }
 
-func GetArraySizes(arr string) []uint64 {
+type ArraySizeSpec struct {
+	N   uint64
+	Str string
+}
+
+func GetArraySizes(arr string) (sizes []ArraySizeSpec) {
 	if len(arr) == 0 {
-		return nil
+		return
 	}
-	var sizes []uint64
 	for len(arr) > 0 {
 		// get "n" from "[k][l][m][n]"
 		p1 := strings.LastIndexByte(arr, '[')
 		p2 := strings.LastIndexByte(arr, ']')
 		part := arr[p1+1 : p2]
-		// and convert to uint64
-		u, _ := strconv.ParseUint(part, 10, 64)
-		sizes = append(sizes, u)
+		// and try to convert uint64
+		if u, err := strconv.ParseUint(part, 10, 64); err != nil {
+			// use size spec as-is (i.e. unsafe.Sizeof(x))
+			sizes = append(sizes, ArraySizeSpec{Str: part})
+		} else {
+			sizes = append(sizes, ArraySizeSpec{N: u})
+		}
 		arr = arr[:p1]
 	}
 	return sizes

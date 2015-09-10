@@ -50,7 +50,10 @@ type proxyDecl struct {
 func getHelperName(goSpec tl.GoTypeSpec) string {
 	buf := new(bytes.Buffer)
 	for _, size := range tl.GetArraySizes(goSpec.Arrays) {
-		fmt.Fprintf(buf, "A%d", size)
+		if len(size.Str) > 0 {
+			fmt.Fprintf(buf, "AX")
+		}
+		fmt.Fprintf(buf, "A%d", size.N)
 	}
 	buf.WriteString(strings.Repeat("S", int(goSpec.Slices)))
 	buf.WriteString(strings.Repeat("P", int(goSpec.Pointers)))
@@ -68,7 +71,10 @@ func (gen *Generator) getTypedHelperName(goBase string, spec tl.CGoSpec) string 
 	specName := gen.tr.TransformName(tl.TargetType, spec.Base)
 	buf := new(bytes.Buffer)
 	for _, size := range spec.Arrays {
-		fmt.Fprintf(buf, "A%d", size)
+		if len(size.Str) > 0 {
+			fmt.Fprintf(buf, "AX")
+		}
+		fmt.Fprintf(buf, "A%d", size.N)
 	}
 	buf.WriteString(strings.Repeat("P", int(spec.Pointers)))
 	buf.Write(bytes.Title(specName))
@@ -163,12 +169,25 @@ func (gen *Generator) unpackObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.
 	return nil
 }
 
-func unpackArray(buf1 io.Writer, buf2 *reverseBuffer, size uint64, cgoSpec tl.CGoSpec, level uint8) {
+func cgoSpecArg(cgoSpec tl.CGoSpec, level uint8, isArg bool) string {
+	if isArg {
+		return cgoSpec.AtLevel(level)
+	} else if level == 0 {
+		return cgoSpec.String()
+	}
+	return cgoSpec.AtLevel(level)
+}
+
+func unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level uint8, isArg bool) {
 	uplevel := level - 1
 	if level == 0 {
 		fmt.Fprintf(buf1, "var mem0 %s\n", cgoSpec)
 		fmt.Fprintf(buf1, "for i0 := range x {\n")
-		buf2.Linef("return (%s)(unsafe.Pointer(&mem0))", cgoSpec.AtLevel(level))
+		if isArg {
+			buf2.Linef("return (%s)(unsafe.Pointer(&mem0))", cgoSpec.AtLevel(0))
+		} else {
+			buf2.Linef("return mem0")
+		}
 		buf2.Linef("}\n")
 		return
 	}
@@ -185,14 +204,14 @@ func notNilBarrier(buf io.Writer, name string) {
 	}`, name)
 }
 
-func unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level uint8) {
+func unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level uint8, isArg bool) {
 	uplevel := level - 1
 	if level == 0 {
 		notNilBarrier(buf1, "x")
 		writeSpace(buf1, 1)
 		fmt.Fprintf(buf1, "mem0 := make([]%s, len(x))\n", cgoSpec.AtLevel(1))
 		fmt.Fprintf(buf1, "for i0 := range x {\n")
-		buf2.Linef("return (%s)(unsafe.Pointer(&mem0[0]))\n", cgoSpec.AtLevel(0))
+		buf2.Linef("return (%s)(unsafe.Pointer(&mem0[0]))\n", cgoSpecArg(cgoSpec, 0, isArg))
 		buf2.Linef("}\n")
 		return
 	}
@@ -220,10 +239,25 @@ func (gen *Generator) getUnpackStringHelper(cgoSpec tl.CGoSpec) *Helper {
 	}
 }
 
-func (gen *Generator) getUnpackHelper(goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) *Helper {
-	name := "unpack" + getHelperName(goSpec)
+func goSpecArg(goSpec tl.GoTypeSpec, isArg bool) string {
+	if !isArg {
+		return goSpec.String()
+	}
+	if len(goSpec.Arrays) > 0 {
+		return "*" + goSpec.String()
+	}
+	return goSpec.String()
+}
+
+func (gen *Generator) getUnpackHelper(goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec, isArg bool) *Helper {
+	name := "unpack"
+	if isArg {
+		name += "Arg" + getHelperName(goSpec)
+	} else {
+		name += getHelperName(goSpec)
+	}
 	code := new(bytes.Buffer)
-	fmt.Fprintf(code, "func %s(x %s) %s {\n", name, goSpec, cgoSpec.AtLevel(0))
+	fmt.Fprintf(code, "func %s(x %s) %s {\n", name, goSpecArg(goSpec, isArg), cgoSpecArg(cgoSpec, 0, isArg))
 	h := &Helper{
 		Name:        name,
 		Description: fmt.Sprintf("%s transforms a sliced Go data structure into plain C format.", name),
@@ -232,19 +266,19 @@ func (gen *Generator) getUnpackHelper(goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) 
 	buf1 := new(bytes.Buffer)
 	buf2 := new(reverseBuffer)
 
-	for _, size := range tl.GetArraySizes(goSpec.Arrays) {
-		unpackArray(buf1, buf2, size, cgoSpec, level)
+	for range tl.GetArraySizes(goSpec.Arrays) {
+		unpackArray(buf1, buf2, cgoSpec, level, isArg)
 		level++
 	}
 	goSpec.Arrays = ""
 
 	for goSpec.Slices > 1 {
 		goSpec.Slices--
-		unpackSlice(buf1, buf2, cgoSpec, level)
+		unpackSlice(buf1, buf2, cgoSpec, level, isArg)
 		level++
 	}
 	isSlice := goSpec.Slices > 0
-	isPlain := goSpec.IsPlain()
+	isPlain := goSpec.IsPlain() || goSpec.IsPlainKind()
 
 	switch {
 	case isPlain && isSlice:
@@ -252,7 +286,7 @@ func (gen *Generator) getUnpackHelper(goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) 
 	case isPlain:
 		unpackPlain(buf1, goSpec, cgoSpec, level)
 	case isSlice:
-		unpackSlice(buf1, buf2, cgoSpec, level)
+		unpackSlice(buf1, buf2, cgoSpec, level, isArg)
 		goSpec.Slices = 0
 		if helper := gen.unpackObj(buf1, goSpec, cgoSpec, level+1); helper != nil {
 			h.Requires = append(h.Requires, helper)
@@ -280,12 +314,12 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		return proxy, helper.Nillable
 	}
 
-	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain()
+	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
 	case !isPlain && (goSpec.Slices > 0 || len(goSpec.Arrays) > 0), // ex: []string
 		isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte
 		isPlain && goSpec.Slices > 1:                           // ex: [][]byte
-		helper := gen.getUnpackHelper(goSpec, cgoSpec)
+		helper := gen.getUnpackHelper(goSpec, cgoSpec, false)
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
 		return proxy, helper.Nillable
@@ -293,11 +327,11 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(&%s[0]))", cgoSpec, name)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
 			proxy = fmt.Sprintf("(%s)(%s)", cgoSpec, name)
 			return
 		}
-		proxy = fmt.Sprintf("*(*%s)(unsafe.Pointer(%s))", cgoSpec, name)
+		proxy = fmt.Sprintf("*(*%s)(unsafe.Pointer(&%s))", cgoSpec, name)
 		return
 	default: // ex: *SomeType
 		var deref string
@@ -319,12 +353,12 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 		return proxy, helper.Nillable
 	}
 
-	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain()
+	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
 	case !isPlain && (goSpec.Slices > 0 || len(goSpec.Arrays) > 0), // ex: []string
 		isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte
 		isPlain && goSpec.Slices > 1:                           // ex: [][]byte
-		helper := gen.getUnpackHelper(goSpec, cgoSpec)
+		helper := gen.getUnpackHelper(goSpec, cgoSpec, true)
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
 		return proxy, helper.Nillable
@@ -332,11 +366,11 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(&%s[0]))", cgoSpec.AtLevel(0), name)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
 			proxy = fmt.Sprintf("(%s)(%s)", cgoSpec.AtLevel(0), name)
 			return
 		}
-		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(%s))", cgoSpec.AtLevel(0), name)
+		proxy = fmt.Sprintf("*(*%s)(unsafe.Pointer(&%s))", cgoSpec.AtLevel(0), name)
 		return
 	default: // ex: *SomeType
 		var deref string
@@ -354,11 +388,12 @@ func packPlain(buf io.Writer, cgoSpec tl.CGoSpec, base string, pointers uint8, l
 		genIndices("i", level), ptrs(pointers-uplevel), base, ptrs(cgoSpec.Pointers-level), level)
 }
 
-func packPlainSlice(buf io.Writer, base string, pointers uint8, level uint8) {
-	fmt.Fprintf(buf, "h := (*sliceHeader)(unsafe.Pointer(&mem%s))\n", genIndices("i", level))
-	fmt.Fprintf(buf, "h.Data = uintptr(unsafe.Pointer(ptr%d))\n", level)
-	fmt.Fprintln(buf, "h.Cap = 0x7fffffff")
-	fmt.Fprintln(buf, "// h.Len = ?")
+func (gen *Generator) packPlainSlice(buf io.Writer, base string, pointers uint8, level uint8) {
+	postfix := gen.randPostfix()
+	fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&mem%s))\n", postfix, genIndices("i", level))
+	fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(ptr%d))\n", postfix, level)
+	fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
+	fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 }
 
 func (gen *Generator) packObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec, level uint8) *Helper {
@@ -436,7 +471,7 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	if len(goSpec.Arrays) > 0 {
 		ref = "*"
 	}
-	fmt.Fprintf(code, "func %s(mem %s, ptr0 %s%s) {\n", name, goSpec, ref, cgoSpec)
+	fmt.Fprintf(code, "func %s(mem %s%s, ptr0 %s%s) {\n", name, ref, goSpec, ref, cgoSpec)
 	h := &Helper{
 		Name:        name,
 		Description: fmt.Sprintf("%s reads sliced Go data structure out from plain C format.", name),
@@ -457,12 +492,12 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 		level++
 	}
 	isSlice := goSpec.Slices > 0
-	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain()
+	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 
 	switch {
 	case isPlain && isSlice:
 		gen.submitHelper(sliceHeader)
-		packPlainSlice(buf1, goSpec.Base, goSpec.Pointers, level)
+		gen.packPlainSlice(buf1, goSpec.Base, goSpec.Pointers, level)
 	case isPlain:
 		packPlain(buf1, cgoSpec, goSpec.Base, goSpec.Pointers, level)
 	case isSlice:
@@ -495,7 +530,7 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, memName, ptrName string,
 		return proxy, helper.Nillable
 	}
 
-	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain()
+	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
 	case !isPlain && (goSpec.Slices > 0 || len(goSpec.Arrays) > 0), // ex: []string
 		isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte
@@ -511,11 +546,11 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, memName, ptrName string,
 		// skip because slice data can be edited either way
 		return
 	case isPlain: // ex: byte, [4]byte
-		if len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
 			proxy = fmt.Sprintf("*%s = *(%s)(%s)", memName, goSpec, ptrName)
 			return
 		}
-		proxy = fmt.Sprintf("*%s = *(%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
+		proxy = fmt.Sprintf("*%s = *(*%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
 		proxy = fmt.Sprintf("*%s = *(New%sRef(%s))", memName, goSpec.Base, ptrName)
@@ -534,7 +569,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, memName, ptrName string,
 		return proxy, helper.Nillable
 	}
 
-	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain()
+	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
 	case !isPlain && (goSpec.Slices > 0 || len(goSpec.Arrays) > 0), // ex: []string
 		isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte
@@ -542,7 +577,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, memName, ptrName string,
 		helper := gen.getPackHelper(memTip, goSpec, cgoSpec)
 		gen.submitHelper(helper)
 		if len(goSpec.Arrays) > 0 {
-			ptrName = fmt.Sprintf("(*%s)(unsafe.Pointer(%s))", cgoSpec, ptrName)
+			ptrName = fmt.Sprintf("(*%s)(unsafe.Pointer(&%s))", cgoSpec, ptrName)
 		}
 		gen.submitHelper(sliceHeader)
 		proxy = fmt.Sprintf("%s(%s, %s)", helper.Name, memName, ptrName)
@@ -550,18 +585,19 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, memName, ptrName string,
 	case isPlain && goSpec.Slices > 0: // ex: []byte
 		gen.submitHelper(sliceHeader)
 		buf := new(bytes.Buffer)
-		fmt.Fprintf(buf, "h := (*sliceHeader)(unsafe.Pointer(&%s))\n", memName)
-		fmt.Fprintf(buf, "h.Data = uintptr(unsafe.Pointer(%s))\n", ptrName)
-		fmt.Fprintln(buf, "h.Cap = 0x7fffffff")
-		fmt.Fprintln(buf, "// h.Len = ?")
+		postfix := gen.randPostfix()
+		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, memName)
+		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
+		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
+		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 		proxy = buf.String()
 		return
 	case isPlain: // ex: byte, [4]byte
-		if len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
 			proxy = fmt.Sprintf("%s = (%s)(%s)", memName, goSpec, ptrName)
 			return
 		}
-		proxy = fmt.Sprintf("%s = (%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
+		proxy = fmt.Sprintf("%s = *(*%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
 		var deref string
@@ -585,7 +621,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, memName, ptrName string,
 		return proxy, helper.Nillable
 	}
 
-	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain()
+	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
 	case !isPlain && (goSpec.Slices > 0 || len(goSpec.Arrays) > 0), // ex: []string
 		isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte
@@ -603,18 +639,11 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, memName, ptrName string,
 			memName, ptrs(goSpec.Pointers), goSpec.Base, ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
 			proxy = fmt.Sprintf("%s := (%s)(%s)", memName, goSpec, ptrName)
 			return
 		}
-		if goSpec.Pointers == 0 {
-			ptrName = "&" + ptrName
-		}
-		var deref string
-		if cgoSpec.Pointers == 0 {
-			deref = "*"
-		}
-		proxy = fmt.Sprintf("%s := %s(%s%s)(unsafe.Pointer(%s))", memName, deref, deref, goSpec, ptrName)
+		proxy = fmt.Sprintf("%s := *(*%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
 		var deref string
@@ -655,7 +684,7 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 		}
 		from[i] = proxyDecl{Name: name, Decl: fromBuf.String()}
 
-		isPlain := goSpec.IsPlain()
+		isPlain := goSpec.IsPlain() || goSpec.IsPlainKind()
 		switch {
 		case !isPlain && (goSpec.Slices > 0 || len(goSpec.Arrays) > 0), // ex: []string
 			isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte

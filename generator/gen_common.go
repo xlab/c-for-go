@@ -25,6 +25,8 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 			gen.writeTypeDeclaration(wr, member, ptrTip, true)
 		case tl.StructKind, tl.OpaqueStructKind:
 			gen.writeArgStruct(wr, member, ptrTip, true)
+		case tl.UnionKind:
+			gen.writeArgUnion(wr, member, ptrTip, true)
 		case tl.EnumKind:
 			gen.writeEnumDeclaration(wr, member, ptrTip, true)
 		case tl.FunctionKind:
@@ -57,9 +59,11 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 		}
 		switch param.Spec.Kind() {
 		case tl.TypeKind:
-			gen.writeTypeDeclaration(wr, param, ptrTip, false)
+			gen.writeArgType(wr, param, ptrTip, false)
 		case tl.StructKind, tl.OpaqueStructKind:
 			gen.writeArgStruct(wr, param, ptrTip, false)
+		case tl.UnionKind:
+			gen.writeArgUnion(wr, param, ptrTip, false)
 		case tl.EnumKind:
 			gen.writeEnumDeclaration(wr, param, ptrTip, false)
 		case tl.FunctionKind:

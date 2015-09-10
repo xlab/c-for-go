@@ -37,11 +37,15 @@ func (gts *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
 	}
 }
 
-func (gts GoTypeSpec) IsPlain() bool {
+func (gts GoTypeSpec) IsPlainKind() bool {
 	switch gts.Kind {
-	case PlainTypeKind, EnumKind, OpaqueStructKind:
+	case PlainTypeKind, EnumKind, OpaqueStructKind, UnionKind:
 		return true
 	}
+	return false
+}
+
+func (gts GoTypeSpec) IsPlain() bool {
 	switch gts.Base {
 	case "int", "byte", "rune", "float32", "float64", "void", "unsafe.Pointer", "bool":
 		return true
@@ -58,7 +62,6 @@ func (gts *GoTypeSpec) IsReference() bool {
 func (gts GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
 	if len(gts.Arrays) > 0 {
-		buf.WriteRune('*')
 		buf.WriteString(gts.Arrays)
 	}
 	if gts.Slices > 0 {
@@ -77,16 +80,24 @@ func (gts GoTypeSpec) String() string {
 	return buf.String()
 }
 
+func (a ArraySizeSpec) String() string {
+	if len(a.Str) > 0 {
+		return fmt.Sprintf("[%s]", a.Str)
+	} else {
+		return fmt.Sprintf("[%d]", a.N)
+	}
+}
+
 type CGoSpec struct {
 	Base     string
 	Pointers uint8
-	Arrays   []uint64
+	Arrays   []ArraySizeSpec
 }
 
 func (cgs CGoSpec) String() string {
 	buf := new(bytes.Buffer)
 	for _, size := range cgs.Arrays {
-		fmt.Fprintf(buf, "[%d]", size)
+		buf.WriteString(size.String())
 	}
 	fmt.Fprintf(buf, "%s%s", ptrs(cgs.Pointers), cgs.Base)
 	return buf.String()
@@ -117,7 +128,7 @@ func (cgs *CGoSpec) AtLevel(level uint8) string {
 			fmt.Fprint(buf, "*")
 			continue
 		}
-		fmt.Fprintf(buf, "[%d]", size)
+		buf.WriteString(size.String())
 	}
 	if int(level) > len(cgs.Arrays) {
 		if delta := int(cgs.Pointers) + len(cgs.Arrays) - int(level); delta > 0 {

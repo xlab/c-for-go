@@ -365,6 +365,7 @@ func (t *Translator) walkSUSpecifier(suSpec *cc.StructOrUnionSpecifier, decl *CD
 			decl.Spec = &CStructSpec{
 				Tag: string(suSpec.Token.S()),
 			}
+
 		case 1: // union
 			decl.Spec = &CStructSpec{
 				IsUnion: true,

@@ -28,6 +28,16 @@ func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl tl.CDecl, ptrTip t
 	fmt.Fprintf(wr, "%s %s", declName, goSpec)
 }
 
+func (gen *Generator) writeArgType(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip, public bool) {
+	declName := gen.transformDeclName(decl.Name, public)
+	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+	if len(goSpec.Arrays) > 0 {
+		fmt.Fprintf(wr, "%s *%s", declName, goSpec)
+	} else {
+		fmt.Fprintf(wr, "%s %s", declName, goSpec)
+	}
+}
+
 func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip, public bool) {
 	declName := gen.transformDeclName(decl.Name, public)
 	typeRef := gen.tr.TranslateSpec(decl.Spec, ptrTip).String()
@@ -89,6 +99,13 @@ func (gen *Generator) writeArgStruct(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip,
 	writeEndStruct(wr)
 }
 
+func (gen *Generator) writeArgUnion(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip, public bool) {
+	declName := gen.transformDeclName(decl.Name, public)
+	cgoSpec := gen.tr.CGoSpec(decl.Spec)
+	fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
+	return
+}
+
 func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip, public bool) {
 	declName := gen.transformDeclName(decl.Name, public)
 	if tag := decl.Spec.GetBase(); len(tag) > 0 {
@@ -105,4 +122,11 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl tl.CDecl, ptrTip
 	gen.writeStructMembers(wr, decl.Name, decl.Spec)
 	writeEndStruct(wr)
 	writeSpace(wr, 1)
+}
+
+func (gen *Generator) writeUnionDeclaration(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip, public bool) {
+	declName := gen.transformDeclName(decl.Name, public)
+	cgoSpec := gen.tr.CGoSpec(decl.Spec)
+	fmt.Fprintf(wr, "var %s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
+	return
 }
