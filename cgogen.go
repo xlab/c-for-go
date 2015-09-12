@@ -74,6 +74,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 			cfg.Parser = &parser.Config{}
 		}
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, paths...)
+		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, filepath.Dir(configPath))
 	} else {
 		return nil, errors.New("cgogen: generator config was not specified")
 	}

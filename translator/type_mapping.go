@@ -32,8 +32,12 @@ var builtinCTypeMap = CTypeMap{
 	// ----------
 	// char -> byte
 	CTypeSpec{Base: "char"}: ByteSpec,
+
+	// Sould work but it won't since C developers
+	// sometimes may use char* buffers to read uint8_t from it. Well played.
 	// char* -> string
-	CTypeSpec{Base: "char", Pointers: 1}: StringSpec,
+	// CTypeSpec{Base: "char", Pointers: 1}: StringSpec,
+
 	// const char* -> string
 	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
 	// unsigned char -> byte
@@ -91,7 +95,6 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "int_t"}:   IntSpec,
 	CTypeSpec{Base: "uint_t"}:  UintSpec,
 
-	CTypeSpec{Base: "int8_t", Pointers: 1}:               StringSpec,
 	CTypeSpec{Base: "int8_t", Const: true, Pointers: 1}:  StringSpec,
 	CTypeSpec{Base: "uint8_t", Const: true, Pointers: 1}: UStringSpec,
 	CTypeSpec{Base: "uint8_t"}:                           ByteSpec,
