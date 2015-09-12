@@ -43,9 +43,9 @@ const (
 	//
 	TargetConst    RuleTarget = "const"
 	TargetType     RuleTarget = "type"
+	TargetFunction RuleTarget = "function"
 	TargetPublic   RuleTarget = "public"
 	TargetPrivate  RuleTarget = "private"
-	TargetFunction RuleTarget = "function"
 )
 
 type ConstRule string

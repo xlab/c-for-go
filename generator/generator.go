@@ -203,23 +203,24 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 		if decl.IsStatic {
 			continue
 		}
+		const public = true
 		switch decl.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
-			gen.writeStructDeclaration(wr, decl, tl.NoTip, true)
+			gen.writeStructDeclaration(wr, decl, tl.NoTip, public)
 		case tl.UnionKind:
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
-			gen.writeUnionDeclaration(wr, decl, tl.NoTip, true)
+			gen.writeUnionDeclaration(wr, decl, tl.NoTip, public)
 		case tl.EnumKind:
 			if !decl.IsTemplate() {
 				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 					continue
 				}
-				gen.writeEnumDeclaration(wr, decl, tl.NoTip, true)
+				gen.writeEnumDeclaration(wr, decl, tl.NoTip, public)
 			}
 		case tl.FunctionKind:
 			if !gen.tr.IsAcceptableName(tl.TargetFunction, decl.Name) {
@@ -232,7 +233,7 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 					ptrTip = tip
 				}
 			}
-			gen.writeFunctionDeclaration(wr, decl, ptrTip, true)
+			gen.writeFunctionDeclaration(wr, decl, ptrTip, public)
 		}
 		writeSpace(wr, 1)
 		count++

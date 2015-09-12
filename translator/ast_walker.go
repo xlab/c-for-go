@@ -148,7 +148,7 @@ func (t *Translator) walkDirectDeclarator2(declr *cc.DirectDeclarator2, decl *CD
 		nextList := declr.ParameterTypeList.ParameterList
 		var paramDecl *CDecl
 		for nextList != nil {
-			if nextList, paramDecl = t.walkParameterList(nextList); paramDecl != nil {
+			if nextList, paramDecl = t.walkParameterList(nextList); paramDecl != nil && !IsVoid(paramDecl.Spec) {
 				spec.ParamList = append(spec.ParamList, *paramDecl)
 			}
 		}
@@ -214,7 +214,7 @@ func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDec
 		}
 	case 6: // DirectDeclarator '(' DirectDeclarator2
 		next = declr.DirectDeclarator
-		if decl.Spec.GetBase() == "void" && decl.Spec.GetPointers() == 0 {
+		if IsVoid(decl.Spec) {
 			decl.Spec = &CFunctionSpec{}
 		} else {
 			decl.Spec = &CFunctionSpec{
@@ -228,6 +228,13 @@ func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDec
 		t.walkDirectDeclarator2(declr.DirectDeclarator2, decl)
 	}
 	return
+}
+
+func IsVoid(spec CType) bool {
+	if spec.GetBase() == "void" && spec.GetPointers() == 0 {
+		return true
+	}
+	return false
 }
 
 func walkPointers(popt *cc.PointerOpt, decl *CDecl) {

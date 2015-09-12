@@ -15,7 +15,7 @@ func (gen *Generator) transformDeclName(declName string, public bool) string {
 	} else {
 		target = tl.TargetPrivate
 	}
-	name = string(gen.tr.TransformName(target, declName))
+	name = string(gen.tr.TransformName(target, declName, public))
 	if len(name) == 0 {
 		name = "_"
 	}
@@ -47,7 +47,7 @@ func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl tl.CDecl, ptrTip t
 	}
 }
 
-func (gen *Generator) writeArgFunction(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeFunctionAsArg(wr io.Writer, decl tl.CDecl, ptrTip tl.Tip, public bool) {
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
@@ -70,7 +70,7 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl tl.CDecl, ptrT
 	}
 	declName := gen.transformDeclName(decl.Name, public)
 	if returnRef == declName {
-		declName = string(gen.tr.TransformName(tl.TargetFunction, "new_"+decl.Name))
+		declName = string(gen.tr.TransformName(tl.TargetFunction, "new_"+decl.Name, public))
 	}
 	fmt.Fprintf(wr, "// %s method as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
 	fmt.Fprintf(wr, "func %s", declName)

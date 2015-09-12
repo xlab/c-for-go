@@ -327,7 +327,7 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(&%s[0]))", cgoSpec, name)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("(%s)(%s)", cgoSpec, name)
 			return
 		}
@@ -366,7 +366,7 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(&%s[0]))", cgoSpec.AtLevel(0), name)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("(%s)(%s)", cgoSpec.AtLevel(0), name)
 			return
 		}
@@ -546,7 +546,7 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, memName, ptrName string,
 		// skip because slice data can be edited either way
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("*%s = *(%s)(%s)", memName, goSpec, ptrName)
 			return
 		}
@@ -593,7 +593,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, memName, ptrName string,
 		proxy = buf.String()
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s = (%s)(%s)", memName, goSpec, ptrName)
 			return
 		}
@@ -639,7 +639,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, memName, ptrName string,
 			memName, ptrs(goSpec.Pointers), goSpec.Base, ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 {
+		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s := (%s)(%s)", memName, goSpec, ptrName)
 			return
 		}

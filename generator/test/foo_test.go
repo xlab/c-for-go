@@ -28,13 +28,13 @@ func TestPassBytes(t *testing.T) {
 
 func TestFindChar(t *testing.T) {
 	tbl := []struct {
-		Input  string
+		Input  []byte
 		Search byte
 		Index  int64
 	}{
-		{"golang", 'c', -1},
-		{"gopher", 'g', 0},
-		{"fun", 'n', 2},
+		{[]byte("golang"), 'c', -1},
+		{[]byte("gopher"), 'g', 0},
+		{[]byte("fun"), 'n', 2},
 	}
 	for _, test := range tbl {
 		result := FindChar(test.Input, test.Search)
@@ -48,10 +48,11 @@ func TestSendMessage(t *testing.T) {
 		[]byte("pic1.jpg"),
 		[]byte("pic16.jpg"),
 	}
+	const msgText = "Hey there! Check out these cool pictures attached. -xoxo"
 	msg := &Message{
 		FromID:         [4]byte{0x1},
 		ToID:           [4]byte{0x2},
-		Message:        "Hey there! Check out these cool pictures attached. -xoxo",
+		Message:        []byte(msgText),
 		AttachmentsLen: 2,
 		Attachments: []Attachment{
 			{Data: (*byte)(unsafe.Pointer(&attaches[0][0])), Size: uint64(len(attaches[0]))},
@@ -69,7 +70,7 @@ func TestSendMessage(t *testing.T) {
 	packed := []byte("msg:")
 	packed = append(packed, 0x01, 0x00, 0x00, 0x00)
 	packed = append(packed, 0x02, 0x00, 0x00, 0x00)
-	packed = append(packed, "Hey there! Check out these cool pictures attached. -xoxo"...)
+	packed = append(packed, msgText...)
 	packed = append(packed, attaches[0]...)
 	packed = append(packed, attaches[1]...)
 	assert.Equal(t, packed, buf[:size])

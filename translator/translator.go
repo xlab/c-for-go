@@ -261,12 +261,16 @@ func (t *Translator) resolveTypedefs(typedefs []CDecl) {
 	}
 }
 
-func (t *Translator) TransformName(target RuleTarget, str string) []byte {
+func (t *Translator) TransformName(target RuleTarget, str string, publicOpt ...bool) []byte {
 	if len(str) == 0 {
 		return emptyStr
 	}
 	if name, ok := t.transformCache.Get(target, str); ok {
 		return name
+	}
+	var public bool
+	if len(publicOpt) > 0 {
+		public = publicOpt[0]
 	}
 
 	var name []byte
@@ -312,6 +316,14 @@ func (t *Translator) TransformName(target RuleTarget, str string) []byte {
 		}
 	}
 	if target != TargetGlobal && target != TargetPostGlobal {
+		if target != TargetPrivate && target != TargetPublic {
+			// apply visibility rules
+			var targetVisibility = TargetPrivate
+			if public {
+				targetVisibility = TargetPublic
+			}
+			name = t.TransformName(targetVisibility, string(name))
+		}
 		// apply post-global rules in the end
 		name = t.TransformName(TargetPostGlobal, string(name))
 		t.transformCache.Set(target, str, name)
