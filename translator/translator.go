@@ -270,20 +270,25 @@ func (t *Translator) TransformName(target RuleTarget, str string, publicOpt ...b
 	if len(str) == 0 {
 		return emptyStr
 	}
-	if name, ok := t.transformCache.Get(target, str); ok {
-		return name
-	}
-	var public bool
+	targetVisibility := NoTarget
 	if len(publicOpt) > 0 {
-		public = publicOpt[0]
+		if publicOpt[0] {
+			targetVisibility = TargetPublic
+		} else {
+			targetVisibility = TargetPrivate
+		}
+	}
+	if name, ok := t.transformCache.Get(target, targetVisibility, str); ok {
+		return name
 	}
 
 	var name []byte
-	if target != TargetGlobal && target != TargetPostGlobal {
-		// apply global rules first
-		name = t.TransformName(TargetGlobal, str)
-	} else {
+	switch target {
+	case TargetGlobal, TargetPostGlobal, TargetPrivate, TargetPublic:
 		name = []byte(str)
+	default:
+		// apply the global rules first
+		name = t.TransformName(TargetGlobal, str)
 	}
 
 	for _, rx := range t.compiledRxs[ActionReplace][target] {
@@ -320,18 +325,19 @@ func (t *Translator) TransformName(target RuleTarget, str string, publicOpt ...b
 			name = replaceBytes(name, idx, buf)
 		}
 	}
-	if target != TargetGlobal && target != TargetPostGlobal {
-		if target != TargetPrivate && target != TargetPublic {
-			// apply visibility rules
-			var targetVisibility = TargetPrivate
-			if public {
-				targetVisibility = TargetPublic
-			}
+	switch target {
+	case TargetGlobal, TargetPostGlobal, TargetPrivate, TargetPublic:
+	default:
+		// apply post-global & visibility rules in the end
+		name = t.TransformName(TargetPostGlobal, string(name))
+		switch targetVisibility {
+		case TargetPrivate, TargetPublic:
 			name = t.TransformName(targetVisibility, string(name))
 		}
-		// apply post-global rules in the end
-		name = t.TransformName(TargetPostGlobal, string(name))
-		t.transformCache.Set(target, str, name)
+		if isBuiltinName(name) {
+			name = rewriteName(name)
+		}
+		t.transformCache.Set(target, targetVisibility, str, name)
 		return name
 	}
 	return name

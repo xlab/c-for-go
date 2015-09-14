@@ -46,6 +46,7 @@ func (gen *Generator) WriteIncludes(wr io.Writer) {
 	if !hasStdLib(gen.cfg.SysIncludes) {
 		writeCStdIncludes(wr)
 	}
+	fmt.Fprintln(wr, `#include "cgo_helpers.h"`)
 	writeEndComment(wr)
 	fmt.Fprintln(wr, `import "C"`)
 	writeSpace(wr, 1)
@@ -86,6 +87,7 @@ func (gen *Generator) writeCHHelpersHeader(wr io.Writer) {
 	if !hasStdLib(gen.cfg.SysIncludes) {
 		writeCStdIncludes(wr)
 	}
+	writeCHPragma(wr)
 	writeSpace(wr, 1)
 }
 
@@ -103,6 +105,10 @@ func (gen *Generator) writeCCHelpersHeader(wr io.Writer) {
 func writeCGOIncludes(wr io.Writer) {
 	fmt.Fprintln(wr, `#include "_cgo_export.h"`)
 	fmt.Fprintln(wr, `#include "cgo_helpers.h"`)
+}
+
+func writeCHPragma(wr io.Writer) {
+	fmt.Fprintln(wr, "#pragma once")
 }
 
 func writeCStdIncludes(wr io.Writer) {

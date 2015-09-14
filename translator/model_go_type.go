@@ -60,6 +60,10 @@ func (gts *GoTypeSpec) IsReference() bool {
 }
 
 func (gts GoTypeSpec) String() string {
+	return string(gts.Bytes())
+}
+
+func (gts GoTypeSpec) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	if len(gts.Arrays) > 0 {
 		buf.WriteString(gts.Arrays)
@@ -77,7 +81,7 @@ func (gts GoTypeSpec) String() string {
 	if gts.Bits > 0 {
 		fmt.Fprintf(buf, "%d", int(gts.Bits))
 	}
-	return buf.String()
+	return buf.Bytes()
 }
 
 func (a ArraySizeSpec) String() string {

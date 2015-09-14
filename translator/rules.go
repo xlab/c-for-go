@@ -38,14 +38,16 @@ const (
 type RuleTarget string
 
 const (
+	NoTarget         RuleTarget = ""
 	TargetGlobal     RuleTarget = "global"
 	TargetPostGlobal RuleTarget = "post-global"
 	//
 	TargetConst    RuleTarget = "const"
 	TargetType     RuleTarget = "type"
 	TargetFunction RuleTarget = "function"
-	TargetPublic   RuleTarget = "public"
-	TargetPrivate  RuleTarget = "private"
+	//
+	TargetPublic  RuleTarget = "public"
+	TargetPrivate RuleTarget = "private"
 )
 
 type ConstRule string

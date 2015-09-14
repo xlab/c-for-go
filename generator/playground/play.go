@@ -11,11 +11,6 @@ func plus(a int) int {
 func main() {
 	Lol(plus, 5)
 	Lol(plus, 5)
-
-	a := new(C.A)
-	C.FA(a)
-	b := new(C.B)
-	C.FB(b)
 }
 
 // ------ generated below
@@ -23,10 +18,15 @@ func main() {
 func Lol(cb Fcb, a int) {
 	log.Println("old cb:", fcbcStorage, "new cb:", cb)
 	setFcbx(cb)
-	C.lol((*C.fcb)(C.fcbx), C.int(a))
+	ccb := cb.PassRef()
+	C.lol(ccb, C.int(a))
 }
 
 type Fcb func(_ int) int
+
+func (cb Fcb) PassRef() *C.fcb {
+	return (*C.fcb)(C.fcbx)
+}
 
 //export fcbc
 func fcbc(a int) int {

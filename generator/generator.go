@@ -64,6 +64,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 	tagsSeen := make(map[string]bool)
 	namesSeen := make(map[string]bool)
 
+	gen.submitHelper(cgoGenTag)
 	expandEnum := func(decl tl.CDecl) bool {
 		if tag := decl.Spec.GetBase(); len(tag) == 0 {
 			gen.expandEnumAnonymous(wr, decl, namesSeen)
@@ -264,10 +265,10 @@ func (gen *Generator) MonitorAndWriteHelpers(goWr, chWr io.Writer, ccWr io.Write
 				close(gen.doneC)
 				return
 			}
-			if seenHelperNames[helper.Name] {
+			if seenHelperNames[string(helper.Side)+helper.Name] {
 				continue
 			}
-			seenHelperNames[helper.Name] = true
+			seenHelperNames[string(helper.Side)+helper.Name] = true
 
 			var wr io.Writer
 			switch helper.Side {

@@ -8,11 +8,3 @@ int fcbx(int a) {
 void lol(fcb *cb, int a) {
 	printf("num: %d\n", cb(a));
 }
-
-void FA(A* a) {
-
-}
-
-void FB(B* b) {
-
-}

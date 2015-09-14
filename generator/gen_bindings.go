@@ -682,7 +682,8 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 			goSpec = gen.tr.TranslateSpec(param.Spec)
 		}
 		cgoSpec := gen.tr.CGoSpec(param.Spec)
-		refName := string(gen.tr.TransformName(tl.TargetPrivate, param.Name))
+		const public = false
+		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))
 		fromBuf := new(bytes.Buffer)
 		toBuf := new(bytes.Buffer)
 		name := "c" + refName
@@ -778,6 +779,11 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl tl.CDecl) {
 }
 
 var (
+	cgoGenTag = &Helper{
+		Name:   "cgoGenTag",
+		Source: "#define __CGOGEN 1",
+		Side:   CHSide,
+	}
 	sliceHeader = &Helper{
 		Name: "sliceHeader",
 		Source: `type sliceHeader struct {

@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -19,7 +20,7 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 		if !ptrTip.IsValid() {
 			ptrTip = tl.TipPtrArr
 		}
-		declName := gen.transformDeclName(member.Name, public)
+		declName := checkName(gen.tr.TransformName(tl.TargetType, member.Name, public))
 		switch member.Spec.Kind() {
 		case tl.TypeKind:
 			goSpec := gen.tr.TranslateSpec(member.Spec, ptrTip)
@@ -34,8 +35,8 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 			cgoSpec := gen.tr.CGoSpec(member.Spec)
 			fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
 		case tl.EnumKind:
-			typeRef := gen.tr.TranslateSpec(member.Spec, ptrTip).String()
-			if declName != typeRef {
+			typeRef := gen.tr.TranslateSpec(member.Spec, ptrTip).Bytes()
+			if !bytes.Equal(declName, typeRef) {
 				fmt.Fprintf(wr, "%s %s", declName, typeRef)
 			}
 		case tl.FunctionKind:
@@ -67,7 +68,7 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 		if !ptrTip.IsValid() {
 			ptrTip = tl.TipPtrArr
 		}
-		declName := gen.transformDeclName(param.Name, public)
+		declName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, public))
 		switch param.Spec.Kind() {
 		case tl.TypeKind:
 			goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip)
@@ -89,8 +90,8 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 			cgoSpec := gen.tr.CGoSpec(param.Spec)
 			fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
 		case tl.EnumKind:
-			typeRef := gen.tr.TranslateSpec(param.Spec, ptrTip).String()
-			if declName != typeRef {
+			typeRef := gen.tr.TranslateSpec(param.Spec, ptrTip).Bytes()
+			if !bytes.Equal(declName, typeRef) {
 				fmt.Fprintf(wr, "%s %s", declName, typeRef)
 			}
 		case tl.FunctionKind:

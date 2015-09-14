@@ -126,20 +126,25 @@ func incVal(v Value) Value {
 	}
 }
 
-type NameTransformCache struct {
-	mux   sync.RWMutex
-	cache map[struct {
-		RuleTarget
-		string
-	}][]byte
+type CachedNameTransform struct {
+	Target     RuleTarget
+	Visibility RuleTarget
+	Name       string
 }
 
-func (n *NameTransformCache) Get(target RuleTarget, name string) ([]byte, bool) {
+type NameTransformCache struct {
+	mux   sync.RWMutex
+	cache map[CachedNameTransform][]byte
+}
+
+func (n *NameTransformCache) Get(target, visibility RuleTarget, name string) ([]byte, bool) {
 	n.mux.RLock()
-	if cached, ok := n.cache[struct {
-		RuleTarget
-		string
-	}{target, name}]; ok {
+	entry := CachedNameTransform{
+		Target:     target,
+		Visibility: visibility,
+		Name:       name,
+	}
+	if cached, ok := n.cache[entry]; ok {
 		n.mux.RUnlock()
 		return cached, true
 	}
@@ -147,44 +152,19 @@ func (n *NameTransformCache) Get(target RuleTarget, name string) ([]byte, bool) 
 	return nil, false
 }
 
-func (n *NameTransformCache) Set(target RuleTarget, name string, result []byte) {
+func (n *NameTransformCache) Set(target, visibility RuleTarget, name string, result []byte) {
 	n.mux.Lock()
 	if n.cache == nil {
-		n.cache = make(map[struct {
-			RuleTarget
-			string
-		}][]byte)
+		n.cache = make(map[CachedNameTransform][]byte)
 	}
-	n.cache[struct {
-		RuleTarget
-		string
-	}{target, name}] = result
+	entry := CachedNameTransform{
+		Target:     target,
+		Visibility: visibility,
+		Name:       name,
+	}
+	n.cache[entry] = result
 	n.mux.Unlock()
 }
-
-// type SpecTranslateCache struct {
-// 	mux   sync.RWMutex
-// 	cache map[string]GoTypeSpec
-// }
-
-// func (s *SpecTranslateCache) Get(spec CType) (GoTypeSpec, bool) {
-// 	s.mux.RLock()
-// 	if cached, ok := s.cache[spec.String()]; ok {
-// 		s.mux.RUnlock()
-// 		return cached, true
-// 	}
-// 	s.mux.RUnlock()
-// 	return nil, false
-// }
-
-// func (n *SpecTranslateCache) Set(spec CType, goSpec GoTypeSpec) {
-// 	n.mux.Lock()
-// 	if n.cache == nil {
-// 		n.cache = make(map[string]GoTypeSpec)
-// 	}
-// 	n.cache[spec.String()] = goSpec
-// 	n.mux.Unlock()
-// }
 
 type TipCache struct {
 	mux   sync.RWMutex
@@ -262,4 +242,23 @@ func blessName(name []byte) string {
 		return "_" + string(name)
 	}
 	return string(name)
+}
+
+func isBuiltinName(name []byte) bool {
+	if _, ok := builtinNames[string(name)]; ok {
+		return true
+	}
+	return false
+}
+
+var nameRewrites = map[string][]byte{
+	"type": []byte("kind"),
+}
+
+func rewriteName(name []byte) []byte {
+	if n, ok := nameRewrites[string(name)]; ok {
+		return n
+	}
+	// e.g. type -> _type
+	return append(skipStr, name...)
 }
