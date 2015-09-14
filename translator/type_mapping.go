@@ -22,6 +22,7 @@ var (
 	Float32Spec       = GoTypeSpec{Base: "float", Bits: 32}
 	Float64Spec       = GoTypeSpec{Base: "float", Bits: 64}
 	UnsafePointerSpec = GoTypeSpec{Base: "unsafe.Pointer"}
+	VoidSpec          = GoTypeSpec{Base: "byte", Arrays: "[0]"}
 	UintptrSpec       = GoTypeSpec{Base: "uintptr"}
 	//
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
@@ -85,6 +86,8 @@ var builtinCTypeMap = CTypeMap{
 	// ----------
 	// void* -> unsafe.Pointer
 	CTypeSpec{Base: "void", Pointers: 1}: UnsafePointerSpec,
+	// void -> [0]byte
+	CTypeSpec{Base: "void"}: VoidSpec,
 
 	// DEFINED TYPES
 	// ----------

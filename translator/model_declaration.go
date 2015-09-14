@@ -11,6 +11,7 @@ type CTypeKind int
 const (
 	TypeKind CTypeKind = iota
 	PlainTypeKind
+	VoidTypeKind
 	DefineKind
 	StructKind
 	OpaqueStructKind

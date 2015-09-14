@@ -14,7 +14,8 @@ type HelperSide string
 const (
 	NoSide HelperSide = ""
 	GoSide HelperSide = "go"
-	CSide  HelperSide = "c"
+	CHSide HelperSide = "h"
+	CCSide HelperSide = "c"
 )
 
 type Helpers []*Helper
@@ -327,7 +328,8 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(&%s[0]))", cgoSpec, name)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
+		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
+			len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("(%s)(%s)", cgoSpec, name)
 			return
 		}
@@ -366,11 +368,16 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("(%s)(unsafe.Pointer(&%s[0]))", cgoSpec.AtLevel(0), name)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
+		var ref, ptr string
+		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
+			len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("(%s)(%s)", cgoSpec.AtLevel(0), name)
 			return
+		} else if goSpec.Pointers == 0 {
+			ref = "&"
+			ptr = "*"
 		}
-		proxy = fmt.Sprintf("*(*%s)(unsafe.Pointer(&%s))", cgoSpec.AtLevel(0), name)
+		proxy = fmt.Sprintf("%s(%s%s)(unsafe.Pointer(%s%s))", ptr, ptr, cgoSpec.AtLevel(0), ref, name)
 		return
 	default: // ex: *SomeType
 		var deref string
@@ -403,13 +410,12 @@ func (gen *Generator) packObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CG
 			genIndices("i", level), helper.Name, ptrs(goSpec.Pointers), level)
 		return helper
 	}
-	var deref string
-	var ref string
+	var ref, ptr string
 	if cgoSpec.PointersAtLevel(level) == 0 {
-		deref = "*"
+		ptr = "*"
 		ref = "&"
 	}
-	fmt.Fprintf(buf, "mem%s = %sNew%sRef(%sptr%d)\n", genIndices("i", level), deref, goSpec.Base, ref, level)
+	fmt.Fprintf(buf, "mem%s = %sNew%sRef(%sptr%d)\n", genIndices("i", level), ptr, goSpec.Base, ref, level)
 	return nil
 }
 
@@ -546,7 +552,8 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, memName, ptrName string,
 		// skip because slice data can be edited either way
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
+		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
+			len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("*%s = *(%s)(%s)", memName, goSpec, ptrName)
 			return
 		}
@@ -593,15 +600,19 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, memName, ptrName string,
 		proxy = buf.String()
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
+		var ref, ptr string
+		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
+			len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s = (%s)(%s)", memName, goSpec, ptrName)
 			return
+		} else if goSpec.Pointers == 0 {
+			ref = "&"
+			ptr = "*"
 		}
-		proxy = fmt.Sprintf("%s = *(*%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
+		proxy = fmt.Sprintf("%s = %s(%s%s)(unsafe.Pointer(%s%s))", memName, ptr, ptr, goSpec, ref, ptrName)
 		return
 	default: // ex: *SomeType
-		var deref string
-		var ref string
+		var ref, deref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"
 			ref = "&"
@@ -639,15 +650,15 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, memName, ptrName string,
 			memName, ptrs(goSpec.Pointers), goSpec.Base, ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
-		if goSpec.Kind == tl.PlainTypeKind && len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
+		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
+			len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s := (%s)(%s)", memName, goSpec, ptrName)
 			return
 		}
 		proxy = fmt.Sprintf("%s := *(*%s)(unsafe.Pointer(&%s))", memName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
-		var deref string
-		var ref string
+		var deref, ref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"
 			ref = "&"

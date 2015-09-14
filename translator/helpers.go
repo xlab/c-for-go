@@ -245,3 +245,21 @@ func tagAnonymousMembers(decl CDecl) {
 		}
 	}
 }
+
+var v = struct{}{}
+
+var builtinNames = map[string]struct{}{
+	"break": v, "default": v, "func": v, "interface": v, "select": v,
+	"case": v, "defer": v, "go": v, "map": v, "struct": v,
+	"chan": v, "else": v, "goto": v, "package": v, "switch": v,
+	"const": v, "fallthrough": v, "if": v, "range": v, "type": v,
+	"continue": v, "for": v, "import": v, "return": v, "var": v,
+}
+
+// blessName transforms the name to be a valid name in Go and not a keyword.
+func blessName(name []byte) string {
+	if _, ok := builtinNames[string(name)]; ok {
+		return "_" + string(name)
+	}
+	return string(name)
+}

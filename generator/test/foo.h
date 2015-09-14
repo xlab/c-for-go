@@ -68,3 +68,5 @@ struct foo_has_anon {
 		int n;
 	};
 };
+
+typedef int foo_fcb(int);

@@ -30,6 +30,7 @@ type Translator struct {
 
 	typedefsSet  map[string]struct{}
 	typedefKinds map[string]CTypeKind
+	typedefVoids map[string]struct{}
 	//	translateCache *SpecTranslateCache
 	transformCache *NameTransformCache
 	ptrTipCache    *TipCache
@@ -94,6 +95,7 @@ func New(cfg *Config) (*Translator, error) {
 		tagMap:            make(map[string]CDecl),
 		typedefsSet:       make(map[string]struct{}),
 		typedefKinds:      make(map[string]CTypeKind),
+		typedefVoids:      make(map[string]struct{}),
 		transformCache:    &NameTransformCache{},
 		ptrTipCache:       &TipCache{},
 		memTipCache:       &TipCache{},
@@ -255,6 +257,9 @@ func (t *Translator) resolveTypedefs(typedefs []CDecl) {
 		}
 		if goSpec := t.TranslateSpec(decl.Spec); goSpec.IsPlain() {
 			t.typedefKinds[decl.Name] = PlainTypeKind
+			if decl.Spec.GetBase() == "void" {
+				t.typedefVoids[decl.Name] = struct{}{}
+			}
 		} else if goSpec.Kind != TypeKind {
 			t.typedefKinds[decl.Name] = goSpec.Kind
 		}
@@ -420,7 +425,7 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Pointers: typeSpec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
-			gospec.Arrays = spec.GetArrays()
+			gospec.Arrays = spec.GetArrays() + gospec.Arrays
 			if ptrTip == TipPtrRef {
 				if gospec.Pointers == 0 && gospec.Slices > 0 {
 					gospec.Slices--
@@ -562,6 +567,13 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 			}
 			return cgo
 		default:
+			if _, ok := t.typedefVoids[spec.Base]; ok {
+				if cgo.Pointers > 0 {
+					cgo.Pointers--
+					cgo.Base = "unsafe.Pointer"
+				}
+				return cgo
+			}
 			cgo.Base = "C." + spec.Base
 			return cgo
 		}

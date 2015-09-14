@@ -33,24 +33,20 @@ const (
 
 var goBufferNames = map[Buf]string{
 	BufDoc:     "doc",
-	BufInludes: "includes",
 	BufConst:   "const",
 	BufTypes:   "types",
 	BufUnions:  "unions",
-	BufHelpers: "helpers",
-}
-
-var cBufferNames = map[Buf]string{
-	BufHelpers: "helpers",
+	BufHelpers: "cgo_helpers",
 }
 
 type CGOGen struct {
-	cfg         CGOGenConfig
-	gen         *generator.Generator
-	genSync     sync.WaitGroup
-	goBuffers   map[Buf]*bytes.Buffer
-	cHelpersBuf *bytes.Buffer
-	outputPath  string
+	cfg          CGOGenConfig
+	gen          *generator.Generator
+	genSync      sync.WaitGroup
+	goBuffers    map[Buf]*bytes.Buffer
+	chHelpersBuf *bytes.Buffer
+	ccHelpersBuf *bytes.Buffer
+	outputPath   string
 }
 
 type CGOGenConfig struct {
@@ -99,11 +95,12 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 		return nil, err
 	}
 	c := &CGOGen{
-		cfg:         cfg,
-		gen:         gen,
-		goBuffers:   make(map[Buf]*bytes.Buffer),
-		cHelpersBuf: new(bytes.Buffer),
-		outputPath:  outputPath,
+		cfg:          cfg,
+		gen:          gen,
+		goBuffers:    make(map[Buf]*bytes.Buffer),
+		chHelpersBuf: new(bytes.Buffer),
+		ccHelpersBuf: new(bytes.Buffer),
+		outputPath:   outputPath,
 	}
 	c.goBuffers[BufMain] = new(bytes.Buffer)
 	for opt := range goBufferNames {
@@ -111,7 +108,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	}
 	go func() {
 		c.genSync.Add(1)
-		c.gen.MonitorAndWriteHelpers(c.goBuffers[BufHelpers], c.cHelpersBuf)
+		c.gen.MonitorAndWriteHelpers(c.goBuffers[BufHelpers], c.chHelpersBuf, c.ccHelpersBuf)
 		c.genSync.Done()
 	}()
 	return c, nil
@@ -165,7 +162,10 @@ func (c *CGOGen) Flush() error {
 	if err := os.MkdirAll(filePrefix, 0755); err != nil {
 		return err
 	}
-	createCFile := func(name string) (*os.File, error) {
+	createCHFile := func(name string) (*os.File, error) {
+		return os.Create(filepath.Join(filePrefix, fmt.Sprintf("%s.h", name)))
+	}
+	createCCFile := func(name string) (*os.File, error) {
 		return os.Create(filepath.Join(filePrefix, fmt.Sprintf("%s.c", name)))
 	}
 	createGoFile := func(name string) (*os.File, error) {
@@ -185,6 +185,26 @@ func (c *CGOGen) Flush() error {
 		}
 		return nil
 	}
+	writeCHFile := func(buf *bytes.Buffer, name string) error {
+		if f, err := createCHFile(name); err != nil {
+			return err
+		} else if err := flushBufferToFile(buf.Bytes(), f, false); err != nil {
+			f.Close()
+			return err
+		} else {
+			return f.Close()
+		}
+	}
+	writeCCFile := func(buf *bytes.Buffer, name string) error {
+		if f, err := createCCFile(name); err != nil {
+			return err
+		} else if err := flushBufferToFile(buf.Bytes(), f, false); err != nil {
+			f.Close()
+			return err
+		} else {
+			return f.Close()
+		}
+	}
 
 	pkg := filepath.Base(c.cfg.Generator.PackageName)
 	if err := writeGoFile(BufMain, pkg); err != nil {
@@ -195,14 +215,13 @@ func (c *CGOGen) Flush() error {
 			return err
 		}
 	}
-	if c.cHelpersBuf != nil && c.cHelpersBuf.Len() > 0 {
-		if f, err := createCFile(cBufferNames[BufHelpers]); err == nil {
-			if err := flushBufferToFile(c.cHelpersBuf.Bytes(), f, false); err != nil {
-				f.Close()
-				return err
-			}
-			f.Close()
-		} else {
+	if c.chHelpersBuf.Len() > 0 {
+		if err := writeCHFile(c.chHelpersBuf, "cgo_helpers"); err != nil {
+			return err
+		}
+	}
+	if c.ccHelpersBuf.Len() > 0 {
+		if err := writeCCFile(c.ccHelpersBuf, "cgo_helpers"); err != nil {
 			return err
 		}
 	}

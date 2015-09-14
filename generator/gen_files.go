@@ -70,15 +70,39 @@ func (gen *Generator) writeGoHelpersHeader(wr io.Writer) {
 	gen.WriteIncludes(wr)
 }
 
-func (gen *Generator) writeCHelpersHeader(wr io.Writer) {
+func (gen *Generator) writeCHHelpersHeader(wr io.Writer) {
 	if len(gen.cfg.PackageLicense) > 0 {
 		writeTextBlock(wr, gen.cfg.PackageLicense)
 		writeSpace(wr, 1)
 	}
 	writeTextBlock(wr, genLabel())
 	writeSpace(wr, 1)
-	writeCStdIncludes(wr)
+	for _, path := range gen.cfg.SysIncludes {
+		writeSysInclude(wr, path)
+	}
+	for _, path := range gen.cfg.Includes {
+		writeInclude(wr, path)
+	}
+	if !hasStdLib(gen.cfg.SysIncludes) {
+		writeCStdIncludes(wr)
+	}
 	writeSpace(wr, 1)
+}
+
+func (gen *Generator) writeCCHelpersHeader(wr io.Writer) {
+	if len(gen.cfg.PackageLicense) > 0 {
+		writeTextBlock(wr, gen.cfg.PackageLicense)
+		writeSpace(wr, 1)
+	}
+	writeTextBlock(wr, genLabel())
+	writeSpace(wr, 1)
+	writeCGOIncludes(wr)
+	writeSpace(wr, 1)
+}
+
+func writeCGOIncludes(wr io.Writer) {
+	fmt.Fprintln(wr, `#include "_cgo_export.h"`)
+	fmt.Fprintln(wr, `#include "cgo_helpers.h"`)
 }
 
 func writeCStdIncludes(wr io.Writer) {

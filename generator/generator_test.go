@@ -39,7 +39,7 @@ func TestProxies(t *testing.T) {
 
 	go func() {
 		wg.Add(1)
-		gen.MonitorAndWriteHelpers(goHelpersBuf, cHelpersBuf)
+		gen.MonitorAndWriteHelpers(goHelpersBuf, chHelpersBuf, ccHelpersBuf)
 
 		if goHelpersBuf.Len() > 0 {
 			buf := goHelpersBuf.Bytes()
@@ -50,8 +50,11 @@ func TestProxies(t *testing.T) {
 				assert.NoError(ioutil.WriteFile(goHelpersFile, buf, 0644))
 			}
 		}
-		if cHelpersBuf.Len() > 0 {
-			assert.NoError(ioutil.WriteFile(cHelpersFile, cHelpersBuf.Bytes(), 0644))
+		if chHelpersBuf.Len() > 0 {
+			assert.NoError(ioutil.WriteFile(chHelpersFile, chHelpersBuf.Bytes(), 0644))
+		}
+		if ccHelpersBuf.Len() > 0 {
+			assert.NoError(ioutil.WriteFile(ccHelpersFile, ccHelpersBuf.Bytes(), 0644))
 		}
 
 		wg.Done()

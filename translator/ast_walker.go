@@ -163,7 +163,7 @@ func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDec
 	decl.Pos = declr.Token.Pos()
 	switch declr.Case {
 	case 0: // IDENTIFIER
-		decl.Name = string(declr.Token.S())
+		decl.Name = blessName(declr.Token.S())
 	case 1: // '(' Declarator ')'
 		walkPointers(declr.Declarator.PointerOpt, decl)
 		next = declr.Declarator.DirectDeclarator
@@ -380,7 +380,7 @@ func walkSUSpecifier0(suSpec *cc.StructOrUnionSpecifier0, decl *CDecl) {
 		}
 	}
 	if suSpec.IdentifierOpt != nil {
-		decl.Spec.(*CStructSpec).Tag = string(suSpec.IdentifierOpt.Token.S())
+		decl.Spec.(*CStructSpec).Tag = blessName(suSpec.IdentifierOpt.Token.S())
 	}
 }
 
@@ -392,7 +392,7 @@ func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
 		decl.Spec = &CEnumSpec{}
 		enumSpec := decl.Spec.(*CEnumSpec)
 		if enSpec.EnumSpecifier0.IdentifierOpt != nil {
-			enumSpec.Tag = string(enSpec.EnumSpecifier0.IdentifierOpt.Token.S())
+			enumSpec.Tag = blessName(enSpec.EnumSpecifier0.IdentifierOpt.Token.S())
 		}
 
 		enumIdx := len(enumSpec.Enumerators)
@@ -427,7 +427,7 @@ func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
 		}
 	case 2: // "enum" IDENTIFIER
 		decl.Spec = &CEnumSpec{
-			Tag: string(enSpec.Token.S()),
+			Tag: blessName(enSpec.Token.S()),
 		}
 	}
 }
@@ -435,9 +435,9 @@ func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
 func (t *Translator) walkEnumerator(enSpec *cc.Enumerator) (decl CDecl) {
 	switch enSpec.Case {
 	case 0: // EnumerationConstant
-		decl.Name = string(enSpec.EnumerationConstant.Token.S())
+		decl.Name = blessName(enSpec.EnumerationConstant.Token.S())
 	case 1: // EnumerationConstant '=' ConstantExpression
-		decl.Name = string(enSpec.EnumerationConstant.Token.S())
+		decl.Name = blessName(enSpec.EnumerationConstant.Token.S())
 		decl.Value = t.EvalConditionalExpression(enSpec.ConstantExpression.ConditionalExpression)
 		decl.Expression = t.ExpandConditionalExpression(enSpec.ConstantExpression.ConditionalExpression)
 	}

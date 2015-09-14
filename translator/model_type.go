@@ -42,7 +42,7 @@ func GetArraySizes(arr string) (sizes []ArraySizeSpec) {
 		p2 := strings.LastIndexByte(arr, ']')
 		part := arr[p1+1 : p2]
 		// and try to convert uint64
-		if u, err := strconv.ParseUint(part, 10, 64); err != nil {
+		if u, err := strconv.ParseUint(part, 10, 64); err != nil || u == 0 {
 			// use size spec as-is (i.e. unsafe.Sizeof(x))
 			sizes = append(sizes, ArraySizeSpec{Str: part})
 		} else {

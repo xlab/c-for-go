@@ -47,7 +47,7 @@ func (gts GoTypeSpec) IsPlainKind() bool {
 
 func (gts GoTypeSpec) IsPlain() bool {
 	switch gts.Base {
-	case "int", "byte", "rune", "float32", "float64", "void", "unsafe.Pointer", "bool":
+	case "int", "byte", "rune", "float", "void", "unsafe.Pointer", "bool":
 		return true
 	case "string":
 		return false

@@ -250,10 +250,11 @@ func (gen *Generator) Close() {
 	<-gen.doneC
 }
 
-func (gen *Generator) MonitorAndWriteHelpers(goWr, cWr io.Writer, initWrFunc ...func() (io.Writer, error)) {
+func (gen *Generator) MonitorAndWriteHelpers(goWr, chWr io.Writer, ccWr io.Writer, initWrFunc ...func() (io.Writer, error)) {
 	seenHelperNames := make(map[string]bool)
 	var seenGoHelper bool
-	var seenCHelper bool
+	var seenCHHelper bool
+	var seenCCHelper bool
 	for {
 		select {
 		case <-gen.closeC:
@@ -284,9 +285,9 @@ func (gen *Generator) MonitorAndWriteHelpers(goWr, cWr io.Writer, initWrFunc ...
 					gen.writeGoHelpersHeader(wr)
 					seenGoHelper = true
 				}
-			case CSide:
-				if cWr != nil {
-					wr = cWr
+			case CHSide:
+				if chWr != nil {
+					wr = chWr
 				} else if len(initWrFunc) < 2 {
 					continue
 				} else if w, err := initWrFunc[1](); err != nil {
@@ -294,9 +295,23 @@ func (gen *Generator) MonitorAndWriteHelpers(goWr, cWr io.Writer, initWrFunc ...
 				} else {
 					wr = w
 				}
-				if !seenCHelper {
-					gen.writeCHelpersHeader(wr)
-					seenCHelper = true
+				if !seenCHHelper {
+					gen.writeCHHelpersHeader(wr)
+					seenCHHelper = true
+				}
+			case CCSide:
+				if ccWr != nil {
+					wr = ccWr
+				} else if len(initWrFunc) < 3 {
+					continue
+				} else if w, err := initWrFunc[2](); err != nil {
+					continue
+				} else {
+					wr = w
+				}
+				if !seenCCHelper {
+					gen.writeCCHelpersHeader(wr)
+					seenCCHelper = true
 				}
 			default:
 				continue

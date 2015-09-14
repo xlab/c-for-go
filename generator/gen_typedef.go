@@ -46,9 +46,11 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
 		returnRef = gen.tr.TranslateSpec(spec.Return.Spec, ptrTip).String()
 	}
 
+	ptrTipRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name)
 	goFuncName := gen.tr.TransformName(tl.TargetType, decl.Name)
+	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTipRx.Self())
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goFuncName, tl.SrcLocation(decl.Pos))
-	fmt.Fprintf(wr, "type %s %s", goFuncName, decl.Spec)
+	fmt.Fprintf(wr, "type %s %s", goFuncName, goSpec)
 	gen.writeFunctionParams(wr, decl.Name, decl.Spec)
 	if len(returnRef) > 0 {
 		fmt.Fprintf(wr, " %s", returnRef)
@@ -136,9 +138,10 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 			return obj
 		} 
 		obj.ref%2x = ref
-		runtime.SetFinalizer(obj, func(x *%s) {
-			x.Free()
-		})
+		// enable if the reference is unmanaged
+		// runtime.SetFinalizer(obj, func(x *%s) {
+		// 	x.Free()
+		// })
 		return obj
 	}`, goStructName, crc, cgoSpec, crc, goStructName)
 	name := fmt.Sprintf("New%sRef", goStructName)
