@@ -55,9 +55,6 @@ func GetArraySizes(arr string) (sizes []ArraySizeSpec) {
 
 func (cts CTypeSpec) String() string {
 	buf := new(bytes.Buffer)
-	if cts.Const {
-		buf.WriteString("const ")
-	}
 	if cts.Unsigned {
 		buf.WriteString("unsigned ")
 	} else if cts.Signed {

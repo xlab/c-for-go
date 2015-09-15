@@ -84,23 +84,41 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		Name: cbGoName,
 		Spec: spec,
 	}
-	gen.writeCallbackProxy(buf, cbGoDecl)
-	fmt.Fprintf(buf, `{
-		if %sFunc != nil {
-			return %sFunc(%s)
-		}
-		panic("callback func has not been set (race?)")
-	}`, cbGoName, cbGoName, paramNamesGoList)
+
+	proxyLines := gen.createCallbackProxies(cFuncName, funcSpec)
+	proxySrc := new(bytes.Buffer)
+	for i := range proxyLines {
+		proxySrc.WriteString(proxyLines[i].Decl)
+	}
+
+	gen.writeCallbackProxyFunc(buf, cbGoDecl)
+	fmt.Fprintln(buf, "{")
+	fmt.Fprintf(buf, "if %sFunc != nil {\n", cbGoName)
+	buf.WriteString(proxySrc.String())
+	if funcSpec.Return != nil {
+		ret := fmt.Sprintf("ret%2x", crc)
+		fmt.Fprintf(buf, "%s := %sFunc(%s)\n", ret, cbGoName, paramNamesGoList)
+		memTipRx, ptrTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, cFuncName, funcSpec)
+		retGoSpec := gen.tr.TranslateSpec(funcSpec.Return.Spec, ptrTipRx.Self())
+		retCGoSpec := gen.tr.CGoSpec(funcSpec.Return.Spec)
+		retProxy, _ := gen.proxyArgFromGo(memTipRx.Self(), ret, retGoSpec, retCGoSpec)
+		fmt.Fprintf(buf, "return %s\n", retProxy)
+	} else {
+		fmt.Fprintf(buf, "%sFunc(%s)\n", cbGoName, paramNamesGoList)
+	}
+	fmt.Fprintln(buf, "}")
+	fmt.Fprintln(buf, `panic("callback func has not been set (race?)")`)
+	fmt.Fprintln(buf, "}")
+
 	fmt.Fprintf(buf, "\n\nvar %sFunc %s", cbGoName, goFuncName)
 	helpers = append(helpers, &Helper{
 		Name:   cbGoName,
 		Source: buf.String(),
 	})
-
 	return
 }
 
-func (gen *Generator) writeCallbackProxy(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeCallbackProxyFunc(wr io.Writer, decl tl.CDecl) {
 	var returnRef string
 	funcSpec := decl.Spec.(*tl.CFunctionSpec)
 	if funcSpec.Return != nil {
@@ -109,13 +127,13 @@ func (gen *Generator) writeCallbackProxy(wr io.Writer, decl tl.CDecl) {
 	}
 	declName := gen.tr.TransformName(tl.TargetFunction, decl.Name, false)
 	fmt.Fprintf(wr, "func %s", declName)
-	gen.writeCallbackProxyParams(wr, decl.Spec)
+	gen.writeCallbackProxyFuncParams(wr, decl.Spec)
 	if len(returnRef) > 0 {
 		fmt.Fprintf(wr, " %s", returnRef)
 	}
 }
 
-func (gen *Generator) writeCallbackProxyParams(wr io.Writer, spec tl.CType) {
+func (gen *Generator) writeCallbackProxyFuncParams(wr io.Writer, spec tl.CType) {
 	funcSpec := spec.(*tl.CFunctionSpec)
 	const public = false
 
@@ -123,11 +141,95 @@ func (gen *Generator) writeCallbackProxyParams(wr io.Writer, spec tl.CType) {
 	for i, param := range funcSpec.ParamList {
 		declName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, public))
 		cgoSpec := gen.tr.CGoSpec(param.Spec)
-		fmt.Fprintf(wr, "%s %s", declName, cgoSpec)
+		fmt.Fprintf(wr, "c%s %s", declName, cgoSpec)
 
 		if i < len(funcSpec.ParamList)-1 {
 			fmt.Fprintf(wr, ", ")
 		}
 	}
 	writeEndParams(wr)
+}
+
+func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) (to []proxyDecl) {
+	spec := funcSpec.(*tl.CFunctionSpec)
+	to = make([]proxyDecl, 0, len(spec.ParamList))
+
+	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, funcName, funcSpec)
+	for i, param := range spec.ParamList {
+		var goSpec tl.GoTypeSpec
+		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
+			goSpec = gen.tr.TranslateSpec(param.Spec, ptrTip)
+		} else {
+			goSpec = gen.tr.TranslateSpec(param.Spec)
+		}
+		cgoSpec := gen.tr.CGoSpec(param.Spec)
+		const public = false
+		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))
+		toBuf := new(bytes.Buffer)
+		name := "c" + refName
+		toProxy, _ := gen.proxyCallbackArgToGo(memTipRx.TipAt(i), refName, name, goSpec, cgoSpec)
+		if len(toProxy) > 0 {
+			fmt.Fprintln(toBuf, toProxy)
+			to = append(to, proxyDecl{Name: name, Decl: toBuf.String()})
+		}
+	}
+	return
+}
+
+func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, memName, ptrName string,
+	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
+	nillable = true
+
+	if getHelper, ok := toGoHelperMap[goSpec]; ok {
+		helper := getHelper(gen, cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s := %s(%s)", memName, helper.Name, ptrName)
+		return proxy, helper.Nillable
+	}
+
+	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
+	switch {
+	case !isPlain && (goSpec.Slices > 0 || len(goSpec.Arrays) > 0), // ex: []string
+		isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte
+		isPlain && goSpec.Slices > 1:                           // ex: [][]byte
+		helper := gen.getPackHelper(memTip, goSpec, cgoSpec)
+		gen.submitHelper(helper)
+		if len(goSpec.Arrays) > 0 {
+			ptrName = fmt.Sprintf("%s := (*%s)(unsafe.Pointer(&%s))", memName, cgoSpec, ptrName)
+		}
+		gen.submitHelper(sliceHeader)
+		proxy = fmt.Sprintf("var %s %s\n%s(%s, %s)", memName, goSpec, helper.Name, memName, ptrName)
+		return proxy, helper.Nillable
+	case isPlain && goSpec.Slices > 0: // ex: []byte
+		gen.submitHelper(sliceHeader)
+		buf := new(bytes.Buffer)
+		postfix := gen.randPostfix()
+		fmt.Fprintf(buf, "var %s %s", memName, goSpec)
+		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, memName)
+		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
+		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
+		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
+		proxy = buf.String()
+		return
+	case isPlain: // ex: byte, [4]byte
+		var ref, ptr string
+		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
+			len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
+			proxy = fmt.Sprintf("%s := (%s)(%s)", memName, goSpec, ptrName)
+			return
+		} else if goSpec.Pointers == 0 {
+			ref = "&"
+			ptr = "*"
+		}
+		proxy = fmt.Sprintf("%s := %s(%s%s)(unsafe.Pointer(%s%s))", memName, ptr, ptr, goSpec, ref, ptrName)
+		return
+	default: // ex: *SomeType
+		var ref, deref string
+		if cgoSpec.Pointers == 0 {
+			deref = "*"
+			ref = "&"
+		}
+		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", memName, deref, goSpec.Base, ref, ptrName)
+		return
+	}
 }
