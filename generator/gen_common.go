@@ -24,7 +24,6 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 		switch member.Spec.Kind() {
 		case tl.TypeKind:
 			goSpec := gen.tr.TranslateSpec(member.Spec, ptrTip)
-			fmt.Fprintf(wr, "// %s member as declared in %s\n", declName, tl.SrcLocation(member.Pos))
 			fmt.Fprintf(wr, "%s %s", declName, goSpec)
 		case tl.StructKind, tl.OpaqueStructKind:
 			if tag := member.Spec.GetBase(); len(tag) > 0 {

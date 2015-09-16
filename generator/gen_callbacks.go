@@ -69,9 +69,11 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x %s) PassRef() %s", goFuncName, cgoSpec)
 	fmt.Fprintf(buf, `{
- 		%sFunc = x
+		if %sFunc == nil {
+ 			%sFunc = x
+ 		}
 		return (%s)(C.%s)
-	}`, cbGoName, cgoSpec, cbCName)
+	}`, cbGoName, cbGoName, cgoSpec, cbCName)
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.PassRef", goFuncName),
 		Description: "PassRef returns a reference.",

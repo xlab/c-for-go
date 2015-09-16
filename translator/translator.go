@@ -432,10 +432,14 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
 			gospec.Arrays = spec.GetArrays() + gospec.Arrays
-			if ptrTip == TipPtrRef {
-				if gospec.Pointers == 0 && gospec.Slices > 0 {
+			if gospec.Pointers == 0 && gospec.Slices > 0 {
+				switch ptrTip {
+				case TipPtrRef:
 					gospec.Slices--
 					gospec.Pointers++
+				case TipPtrSRef:
+					gospec.Pointers = gospec.Slices
+					gospec.Slices = 0
 				}
 			}
 			if gospec.Kind == TypeKind {
@@ -455,16 +459,18 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		}
 		if lookupSpec.Pointers > 0 {
 			for lookupSpec.Pointers > 0 {
-				if ptrTip == TipPtrRef {
+				switch ptrTip {
+				case TipPtrSRef:
 					if lookupSpec.Pointers > 1 {
 						wrapper.Slices++
 					} else {
 						wrapper.Pointers++
 					}
-				} else {
+				case TipPtrRef:
+					wrapper.Pointers++
+				default:
 					wrapper.Slices++
 				}
-
 				lookupSpec.Pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {
 					gospec.Slices += wrapper.Slices
@@ -494,11 +500,17 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		}
 		wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Base = string(t.TransformName(TargetType, lookupSpec.Base))
-		if wrapper.Kind == TypeKind {
+		switch wrapper.Kind {
+		case TypeKind:
 			if wrapper.IsPlain() {
 				wrapper.Kind = PlainTypeKind
 			}
-		} else if wrapper.Kind == UnionKind {
+		case FunctionKind:
+			// pointers won't work with Go functions
+			wrapper.Pointers = 0
+			wrapper.Slices = 0
+			wrapper.Arrays = ""
+		case UnionKind:
 			return GoTypeSpec{
 				Kind:   UnionKind,
 				Arrays: fmt.Sprintf("%s[%sSize]", wrapper.Arrays, spec.GetBase()),
@@ -511,8 +523,9 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Kind:   spec.Kind(),
 			Arrays: spec.GetArrays(),
 		}
-		wrapper.splitPointers(ptrTip, spec.GetPointers())
-		wrapper.Pointers += spec.GetVarArrays()
+		// won't work with Go functions anyways.
+		// wrapper.splitPointers(ptrTip, spec.GetPointers())
+		// wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Base = "func"
 		return wrapper
 	case UnionKind:

@@ -32,7 +32,7 @@ func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
 
 func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
 	// read type spec into a reference type declaration
-	refDecl := CDecl{Spec: &CTypeSpec{}}
+	refDecl := CDecl{Spec: &CTypeSpec{}, Pos: declr.Token.Pos()}
 	nextSpec := declr.DeclarationSpecifiers
 	for nextSpec != nil {
 		nextSpec = t.walkDeclarationSpecifiers(nextSpec, &refDecl)

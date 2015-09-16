@@ -77,6 +77,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl, raw bool) 
 			writeSpace(wr, 1)
 			return
 		}
+		return
 	}
 
 	fmt.Fprintf(wr, "// %s as declared in %s\n", goStructName, tl.SrcLocation(decl.Pos))

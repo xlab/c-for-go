@@ -70,15 +70,16 @@ const (
 type Tip string
 
 const (
-	TipPtrRef Tip = "ref"
-	TipPtrArr Tip = "arr"
-	TipMemRaw Tip = "raw"
-	NoTip     Tip = ""
+	TipPtrSRef Tip = "sref"
+	TipPtrRef  Tip = "ref"
+	TipPtrArr  Tip = "arr"
+	TipMemRaw  Tip = "raw"
+	NoTip      Tip = ""
 )
 
 func (t Tip) IsValid() bool {
 	switch t {
-	case TipPtrArr, TipPtrRef, TipMemRaw:
+	case TipPtrArr, TipPtrRef, TipPtrSRef, TipMemRaw:
 		return true
 	default:
 		return false

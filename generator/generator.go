@@ -73,7 +73,9 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 			return false
 		} else {
 			gen.expandEnum(wr, decl)
-			tagsSeen[tag] = true
+			if decl.IsTemplate() {
+				tagsSeen[tag] = true
+			}
 			return true
 		}
 	}
@@ -138,7 +140,9 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		case tl.StructKind, tl.OpaqueStructKind:
 			var memTip tl.Tip
 			if tag := decl.Spec.GetBase(); len(tag) > 0 {
-				seenStructTags[tag] = true
+				if decl.IsTemplate() {
+					seenStructTags[tag] = true
+				}
 				if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
 					memTip = memTipRx.Self()
 				}
