@@ -409,6 +409,8 @@ func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
 						enumDecl.Expression = append(prevEnum.Expression, '+', '1')
 					case ConstExpand:
 						enumDecl.Expression = []byte(prevEnum.Name + "+1")
+					case ConstCGOAlias:
+						enumDecl.Expression = []byte(fmt.Sprintf("C.%s", blessName([]byte(enumDecl.Name))))
 					default:
 						enumDecl.Expression = []byte(fmt.Sprintf("%d", enumDecl.Value))
 					}
@@ -417,6 +419,8 @@ func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
 					enumDecl.Value = int32(0)
 					enumDecl.Expression = []byte("0")
 				}
+			} else if t.constRules[ConstEnum] == ConstCGOAlias {
+				enumDecl.Expression = []byte(fmt.Sprintf("C.%s", blessName([]byte(enumDecl.Name))))
 			}
 			enumIdx++
 			enumDecl.Spec = enumSpec.PromoteType(enumDecl.Value)

@@ -292,6 +292,8 @@ func (t *Translator) ExpandPrimaryExpression(ex *cc.PrimaryExpression) Expressio
 			if expr, ok := t.exprMap[string(name)]; ok {
 				return bytesWrap(expr, "(", ")")
 			}
+		case ConstCGOAlias:
+			return []byte(fmt.Sprintf("C.%s", blessName(name)))
 		case ConstEval:
 			if v, ok := t.valueMap[string(name)]; ok {
 				switch v := v.(type) {
