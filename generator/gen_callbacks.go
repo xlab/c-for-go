@@ -25,10 +25,13 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	var params []string
 	var paramNames []string
 	var paramNamesGo []string
-	for _, param := range funcSpec.ParamList {
+	for i, param := range funcSpec.ParamList {
 		params = append(params, param.String())
 		paramNames = append(paramNames, param.Name)
 		goName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, false))
+		if len(param.Name) == 0 {
+			goName = []byte(fmt.Sprintf("arg%d", i))
+		}
 		paramNamesGo = append(paramNamesGo, string(goName))
 	}
 	paramList := strings.Join(params, ", ")
@@ -142,6 +145,9 @@ func (gen *Generator) writeCallbackProxyFuncParams(wr io.Writer, spec tl.CType) 
 	writeStartParams(wr)
 	for i, param := range funcSpec.ParamList {
 		declName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, public))
+		if len(param.Name) == 0 {
+			declName = []byte(fmt.Sprintf("arg%d", i))
+		}
 		cgoSpec := gen.tr.CGoSpec(param.Spec)
 		fmt.Fprintf(wr, "c%s %s", declName, cgoSpec)
 
@@ -167,6 +173,9 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 		cgoSpec := gen.tr.CGoSpec(param.Spec)
 		const public = false
 		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))
+		if len(param.Name) == 0 {
+			refName = fmt.Sprintf("arg%d", i)
+		}
 		toBuf := new(bytes.Buffer)
 		name := "c" + refName
 		toProxy, _ := gen.proxyCallbackArgToGo(memTipRx.TipAt(i), refName, name, goSpec, cgoSpec)

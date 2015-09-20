@@ -17,12 +17,14 @@ func TestProxies(t *testing.T) {
 	assert := assert.New(t)
 	var (
 		originFile    = "test/foo.h"
-		goHelpersFile = "test/foo_helpers.go"
-		cHelpersFile  = "test/foo_helpers.c"
+		goHelpersFile = "test/cgo_helpers.go"
+		chHelpersFile = "test/cgo_helpers.h"
+		ccHelpersFile = "test/cgo_helpers.c"
 		resultFile    = "test/foo.go"
 		//
 		goHelpersBuf = new(bytes.Buffer)
-		cHelpersBuf  = new(bytes.Buffer)
+		chHelpersBuf = new(bytes.Buffer)
+		ccHelpersBuf = new(bytes.Buffer)
 		buf          = new(bytes.Buffer)
 	)
 	// prepare to generate

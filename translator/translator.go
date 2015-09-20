@@ -510,12 +510,6 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			wrapper.Pointers = 0
 			wrapper.Slices = 0
 			wrapper.Arrays = ""
-		case UnionKind:
-			return GoTypeSpec{
-				Kind:   UnionKind,
-				Arrays: fmt.Sprintf("%s[%sSize]", wrapper.Arrays, spec.GetBase()),
-				Base:   "byte",
-			}
 		}
 		return wrapper
 	case FunctionKind:
@@ -528,12 +522,6 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		// wrapper.Pointers += spec.GetVarArrays()
 		wrapper.Base = "func"
 		return wrapper
-	case UnionKind:
-		return GoTypeSpec{
-			Kind:   UnionKind,
-			Arrays: fmt.Sprintf("%s[%sSize]", spec.GetArrays(), spec.GetBase()),
-			Base:   "byte",
-		}
 	default:
 		wrapper := GoTypeSpec{
 			Kind:   spec.Kind(),

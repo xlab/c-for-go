@@ -76,7 +76,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Deref() {\n", goStructName)
-	buf.Write(gen.getDerefSource(cStructName, spec))
+	buf.Write(gen.getDerefSource(goStructName, cStructName, spec))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.Deref", goStructName),
@@ -163,6 +163,7 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 	for i, mem := range structSpec.Members {
 		if len(mem.Name) == 0 {
 			continue
+			// TODO: generate setters
 		}
 		memTip := memTipRx.TipAt(i)
 		if tag := mem.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
@@ -196,7 +197,7 @@ func getRefCRC(spec tl.CType) uint32 {
 	return crc32.ChecksumIEEE([]byte(spec.String()))
 }
 
-func (gen *Generator) getDerefSource(cStructName string, spec tl.CType) []byte {
+func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, spec tl.CType) []byte {
 	structSpec := spec.(*tl.CStructSpec)
 	buf := new(bytes.Buffer)
 	crc := getRefCRC(spec)
@@ -209,6 +210,7 @@ func (gen *Generator) getDerefSource(cStructName string, spec tl.CType) []byte {
 	for i, mem := range structSpec.Members {
 		if len(mem.Name) == 0 {
 			continue
+			// TODO: generate getters
 		}
 		memTip := memTipRx.TipAt(i)
 		if tag := mem.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
@@ -231,3 +233,8 @@ func (gen *Generator) getDerefSource(cStructName string, spec tl.CType) []byte {
 	}
 	return buf.Bytes()
 }
+
+// func getSetterHelpers(goStructName []byte, crc uint32, spec tl.CType) []*Helper {
+// 	//	structSpec := spec.(*tl.CStructSpec)
+// 	return nil
+// }

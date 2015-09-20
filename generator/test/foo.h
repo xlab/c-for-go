@@ -57,15 +57,16 @@ struct foo_anon_tag {
 int foo_pass_anon_tag(struct foo_anon_tag a, struct foo_anon_tag b);
 
 struct foo_has_anon_tag {
+	int a;
 	struct foo_inner_anon_tag {
 		int n;
-	} a;
+	} b;
 };
 
 struct foo_has_anon {
 	int a;
 	struct {
-		int n;
+		int anon_n;
 	};
 };
 
