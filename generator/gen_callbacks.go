@@ -26,12 +26,12 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	var paramNames []string
 	var paramNamesGo []string
 	for i, param := range funcSpec.ParamList {
+		if len(param.Name) == 0 {
+			param.Name = fmt.Sprintf("arg%d", i)
+		}
 		params = append(params, param.String())
 		paramNames = append(paramNames, param.Name)
 		goName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, false))
-		if len(param.Name) == 0 {
-			goName = []byte(fmt.Sprintf("arg%d", i))
-		}
 		paramNamesGo = append(paramNamesGo, string(goName))
 	}
 	paramList := strings.Join(params, ", ")
@@ -130,8 +130,7 @@ func (gen *Generator) writeCallbackProxyFunc(wr io.Writer, decl tl.CDecl) {
 		cgoSpec := gen.tr.CGoSpec(funcSpec.Return.Spec)
 		returnRef = cgoSpec.String()
 	}
-	declName := gen.tr.TransformName(tl.TargetFunction, decl.Name, false)
-	fmt.Fprintf(wr, "func %s", declName)
+	fmt.Fprintf(wr, "func %s", decl.Name)
 	gen.writeCallbackProxyFuncParams(wr, decl.Spec)
 	if len(returnRef) > 0 {
 		fmt.Fprintf(wr, " %s", returnRef)
