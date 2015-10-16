@@ -18,8 +18,10 @@ var packageName string
 func init() {
 	log.SetFlags(0)
 	flag.Usage = func() {
-		log.Printf("Usage: %s <cfg> [cfg] [cfg] ...\n", os.Args[0])
-		log.Println("  ->cfg either .yml or .yaml files, defining standalone packages.")
+		log.Printf("Usage: %s <config1> [config2] ...\n", os.Args[0])
+		log.Println("Config is either .yml or .yaml file, defining a standalone package.")
+		log.Println("See http://xxx for examples an documentation.")
+		log.Println("\nOptions:")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
