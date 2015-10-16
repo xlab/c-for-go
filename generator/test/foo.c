@@ -45,7 +45,7 @@ size_t foo_send_message(foo_message_t *m, uint8_t *buf) {
 		memcpy(buf + size, att.data, att.size);
 		size += att.size;
 	}
-	m->sent = true;
+	m->sent = 1;
 	return size;
 }
 

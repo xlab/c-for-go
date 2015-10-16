@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <stdint.h>
 
 #pragma once
@@ -41,7 +40,7 @@ typedef struct foo_message {
 	char *message;
 	size_t attachments_len;
 	foo_attachment_t* attachments;
-	bool sent;
+	_Bool sent;
 } foo_message_t;
 
 foo_message_t* foo_new_message();

@@ -32,7 +32,6 @@ func TestProxies(t *testing.T) {
 	if !assert.NoError(err) {
 		return
 	}
-
 	var wg sync.WaitGroup
 	defer func() {
 		gen.Close()
