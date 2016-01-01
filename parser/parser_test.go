@@ -5,15 +5,11 @@ import (
 	"log"
 	"testing"
 
-	"github.com/cznic/c/cc"
+	"github.com/xlab/c/cc"
 )
 
 func TestParse(t *testing.T) {
-	p, err := New(NewConfig("test/parser_test.h"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	unit, err := p.Parse()
+	unit, err := ParseWith(NewConfig("test/parser_test.h"))
 	if err != nil {
 		t.Fatal(err)
 	}

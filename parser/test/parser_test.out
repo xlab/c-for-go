@@ -1,14 +1,10 @@
 &cc.TranslationUnit{
 · Declarations: &cc.Bindings{
-· · Type: 1,
 · },
 · ExternalDeclaration: &cc.ExternalDeclaration{
 · · Case: 1,
 · · Declaration: &cc.Declaration{
-· · · IsFileScope: true,
-· · · IsTypedef: true,
 · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
-· · · · IsTypedef: true,
 · · · · DeclarationSpecifiersOpt: &cc.DeclarationSpecifiersOpt{
 · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
 · · · · · · Case: 1,
@@ -35,10 +31,8 @@
 · · · · InitDeclaratorList: &cc.InitDeclaratorList{
 · · · · · InitDeclarator: &cc.InitDeclarator{
 · · · · · · Declarator: &cc.Declarator{
-· · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{ /* recursive/repetitive pointee not shown */ },
-· · · · · · · IsTypedef: true,
-· · · · · · · Serial: 1,
-· · · · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
+· · · · · · · Linkage: None,
+· · · · · · · Type: typedef signed char,
 · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · Token: test/parser_test.h:1:21: IDENTIFIER "int8_t",
 · · · · · · · },
@@ -54,7 +48,6 @@
 · · ExternalDeclaration: &cc.ExternalDeclaration{
 · · · Case: 1,
 · · · Declaration: &cc.Declaration{
-· · · · IsFileScope: true,
 · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
 · · · · · Case: 1,
 · · · · · TypeSpecifier: &cc.TypeSpecifier{
@@ -66,62 +59,55 @@
 · · · · · InitDeclaratorList: &cc.InitDeclaratorList{
 · · · · · · InitDeclarator: &cc.InitDeclarator{
 · · · · · · · Declarator: &cc.Declarator{
-· · · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{ /* recursive/repetitive pointee not shown */ },
-· · · · · · · · Serial: 4,
-· · · · · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
+· · · · · · · · Linkage: External,
+· · · · · · · · Type: signed char(signed char,signed char),
 · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · Case: 6,
 · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
 · · · · · · · · · · Token: test/parser_test.h:2:8: IDENTIFIER "plus",
 · · · · · · · · · },
-· · · · · · · · · DirectDeclarator2: &cc.DirectDeclarator2{
-· · · · · · · · · · ParameterTypeList: &cc.ParameterTypeList{
+· · · · · · · · · ParameterTypeList: &cc.ParameterTypeList{
+· · · · · · · · · · ParameterList: &cc.ParameterList{
+· · · · · · · · · · · ParameterDeclaration: &cc.ParameterDeclaration{
+· · · · · · · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
+· · · · · · · · · · · · · Case: 1,
+· · · · · · · · · · · · · TypeSpecifier: &cc.TypeSpecifier{
+· · · · · · · · · · · · · · Case: 13,
+· · · · · · · · · · · · · · Token: test/parser_test.h:2:14: TYPEDEFNAME "int8_t",
+· · · · · · · · · · · · · },
+· · · · · · · · · · · · },
+· · · · · · · · · · · · Declarator: &cc.Declarator{
+· · · · · · · · · · · · · Linkage: None,
+· · · · · · · · · · · · · Type: signed char,
+· · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
+· · · · · · · · · · · · · · Token: test/parser_test.h:2:21: IDENTIFIER "a",
+· · · · · · · · · · · · · },
+· · · · · · · · · · · · },
+· · · · · · · · · · · },
 · · · · · · · · · · · ParameterList: &cc.ParameterList{
+· · · · · · · · · · · · Case: 1,
 · · · · · · · · · · · · ParameterDeclaration: &cc.ParameterDeclaration{
 · · · · · · · · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
 · · · · · · · · · · · · · · Case: 1,
 · · · · · · · · · · · · · · TypeSpecifier: &cc.TypeSpecifier{
 · · · · · · · · · · · · · · · Case: 13,
-· · · · · · · · · · · · · · · Token: test/parser_test.h:2:14: TYPEDEFNAME "int8_t",
+· · · · · · · · · · · · · · · Token: test/parser_test.h:2:24: TYPEDEFNAME "int8_t",
 · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · },
 · · · · · · · · · · · · · Declarator: &cc.Declarator{
-· · · · · · · · · · · · · · IsDefinition: true,
-· · · · · · · · · · · · · · Serial: 2,
-· · · · · · · · · · · · · · Scope: &cc.Bindings{
-· · · · · · · · · · · · · · · Type: 5,
-· · · · · · · · · · · · · · },
+· · · · · · · · · · · · · · Linkage: None,
+· · · · · · · · · · · · · · Type: signed char,
 · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
-· · · · · · · · · · · · · · · Token: test/parser_test.h:2:21: IDENTIFIER "a",
+· · · · · · · · · · · · · · · Token: test/parser_test.h:2:31: IDENTIFIER "b",
 · · · · · · · · · · · · · · },
 · · · · · · · · · · · · · },
 · · · · · · · · · · · · },
-· · · · · · · · · · · · ParameterList: &cc.ParameterList{
-· · · · · · · · · · · · · Case: 1,
-· · · · · · · · · · · · · ParameterDeclaration: &cc.ParameterDeclaration{
-· · · · · · · · · · · · · · DeclarationSpecifiers: &cc.DeclarationSpecifiers{
-· · · · · · · · · · · · · · · Case: 1,
-· · · · · · · · · · · · · · · TypeSpecifier: &cc.TypeSpecifier{
-· · · · · · · · · · · · · · · · Case: 13,
-· · · · · · · · · · · · · · · · Token: test/parser_test.h:2:24: TYPEDEFNAME "int8_t",
-· · · · · · · · · · · · · · · },
-· · · · · · · · · · · · · · },
-· · · · · · · · · · · · · · Declarator: &cc.Declarator{
-· · · · · · · · · · · · · · · IsDefinition: true,
-· · · · · · · · · · · · · · · Serial: 3,
-· · · · · · · · · · · · · · · Scope: &cc.Bindings{ /* recursive/repetitive pointee not shown */ },
-· · · · · · · · · · · · · · · DirectDeclarator: &cc.DirectDeclarator{
-· · · · · · · · · · · · · · · · Token: test/parser_test.h:2:31: IDENTIFIER "b",
-· · · · · · · · · · · · · · · },
-· · · · · · · · · · · · · · },
-· · · · · · · · · · · · · },
-· · · · · · · · · · · · · Token: test/parser_test.h:2:22: ',',
-· · · · · · · · · · · · },
+· · · · · · · · · · · · Token: test/parser_test.h:2:22: ',',
 · · · · · · · · · · · },
 · · · · · · · · · · },
-· · · · · · · · · · Token: test/parser_test.h:2:32: ')',
 · · · · · · · · · },
 · · · · · · · · · Token: test/parser_test.h:2:13: '(',
+· · · · · · · · · Token2: test/parser_test.h:2:32: ')',
 · · · · · · · · },
 · · · · · · · },
 · · · · · · },

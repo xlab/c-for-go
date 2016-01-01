@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/cznic/c/xc"
+	"github.com/xlab/c/xc"
 )
 
 var (

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cznic/c/cc"
-	"github.com/cznic/c/xc"
+	"github.com/xlab/c/cc"
+	"github.com/xlab/c/xc"
 )
 
 func (t *Translator) EvalAssignmentExpression(ex *cc.AssignmentExpression) Value {

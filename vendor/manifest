@@ -2,23 +2,9 @@
 	"version": 0,
 	"dependencies": [
 		{
-			"importpath": "github.com/cznic/c/cc",
-			"repository": "https://github.com/cznic/c",
-			"revision": "ca1153faf2e15dfab994094fa3d5d79642ce027f",
-			"branch": "master",
-			"path": "/cc"
-		},
-		{
-			"importpath": "github.com/cznic/c/xc",
-			"repository": "https://github.com/cznic/c",
-			"revision": "ca1153faf2e15dfab994094fa3d5d79642ce027f",
-			"branch": "master",
-			"path": "/xc"
-		},
-		{
 			"importpath": "github.com/cznic/golex/lex",
 			"repository": "https://github.com/cznic/golex",
-			"revision": "a799639cffe3567786ea9d7de534659ec57a1cff",
+			"revision": "0f61a5abc4fb10befbe363d5795b71d599faaf6e",
 			"branch": "master",
 			"path": "/lex"
 		},
@@ -46,6 +32,12 @@
 			"revision": "f5520455607c0233cb6d7b056f71b22c1d265ef1",
 			"branch": "master",
 			"path": "/assert"
+		},
+		{
+			"importpath": "github.com/xlab/c",
+			"repository": "https://github.com/xlab/c",
+			"revision": "74ce7d6d31187aa032fd454f26be695c5fc22663",
+			"branch": "cgogen"
 		},
 		{
 			"importpath": "github.com/xlab/pkgconfig/pkg",

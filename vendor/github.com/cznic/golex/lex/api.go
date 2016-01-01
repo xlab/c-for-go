@@ -57,6 +57,12 @@ func (c Char) IsValid() bool { return c.Pos().IsValid() }
 // Pos returns the token.Pos associated with c.
 func (c Char) Pos() token.Pos { return token.Pos(c.pos) }
 
+// CharReader is a RuneReader providing additionally explicit position
+// information by returning a Char instead of a rune as its first result.
+type CharReader interface {
+	ReadChar() (c Char, size int, err error)
+}
+
 // Lexer suports golex[0] generated lexical analyzers.
 type Lexer struct {
 	File      *token.File             // The *token.File passed to New.
@@ -65,6 +71,7 @@ type Lexer struct {
 	Prev      Char                    // Prev remembers the Char previous to Last.
 	bomMode   int                     // See the BOM* constants.
 	bytesBuf  bytes.Buffer            // Used by TokenBytes.
+	charSrc   CharReader              // Lexer alternative input.
 	classf    func(rune) int          //
 	errorf    func(token.Pos, string) //
 	lookahead Char                    // Lookahead if non zero.
@@ -85,12 +92,18 @@ type Lexer struct {
 // encode it) of the original character, not the size of its UTF-8
 // representation after converted to an Unicode rune.  Size is the second
 // returned value of io.RuneReader.ReadRune method[4].
+//
+// When src optionally implements CharReader its ReadChar method is used
+// instead of io.ReadRune.
 func New(file *token.File, src io.RuneReader, opts ...Option) (*Lexer, error) {
 	r := &Lexer{
 		File:    file,
 		bomMode: BOMIgnoreFirst,
 		classf:  DefaultRuneClass,
 		src:     src,
+	}
+	if x, ok := src.(CharReader); ok {
+		r.charSrc = x
 	}
 	r.errorf = r.defaultErrorf
 	for _, o := range opts {
@@ -208,7 +221,12 @@ func (l *Lexer) Error(msg string) {
 }
 
 // Lookahead returns the current lookahead.
-func (l *Lexer) Lookahead() Char { return l.lookahead }
+func (l *Lexer) Lookahead() Char {
+	if !l.lookahead.IsValid() {
+		l.Next()
+	}
+	return l.lookahead
+}
 
 // Mark records the current state of scanner as accepting. It implements the
 // golex macro %yym. Typical usage in an .l file:
@@ -236,10 +254,18 @@ func (l *Lexer) next() int {
 	var sz int
 	var err error
 	var pos token.Pos
+	var c Char
 again:
-	r, sz, err = l.src.ReadRune()
 	off0 := l.off
-	pos = l.File.Pos(l.off)
+	switch cs := l.charSrc; {
+	case cs != nil:
+		c, sz, err = cs.ReadChar()
+		r = c.Rune
+		pos = c.Pos()
+	default:
+		r, sz, err = l.src.ReadRune()
+		pos = l.File.Pos(l.off)
+	}
 	l.off += sz
 	if err != nil {
 		l.src = nil
