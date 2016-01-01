@@ -665,6 +665,10 @@ func (p *pp) groupList(n *GroupList) {
 			toks := decodeTokens(gp, nil)
 			p.in <- toks
 			<-p.ack
+		case xc.Token:
+			if p.tweaks.enableWarnings {
+				fmt.Printf("[INFO] %s at %s\n", string(gp.S()), xc.FileSet.Position(gp.Pos()).String())
+			}
 		default:
 			panic("internal error")
 		}

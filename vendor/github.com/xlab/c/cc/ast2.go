@@ -845,6 +845,8 @@ func (n *Expression) eval(m *Model) (interface{}, Type) {
 						n.Value = x << uint(y)
 					case y < 0:
 						n.Value = x >> uint(-y)
+					default:
+						n.Value = x
 					}
 				default:
 					panic(fmt.Errorf("internal error: %T", y))
@@ -857,6 +859,8 @@ func (n *Expression) eval(m *Model) (interface{}, Type) {
 						n.Value = x << uint(y)
 					case y < 0:
 						n.Value = x >> uint(-y)
+					default:
+						n.Value = x
 					}
 				default:
 					panic(fmt.Errorf("internal error: %T", y))
@@ -869,6 +873,8 @@ func (n *Expression) eval(m *Model) (interface{}, Type) {
 						n.Value = x << uint(y)
 					case y < 0:
 						n.Value = x >> uint(-y)
+					default:
+						n.Value = x
 					}
 				default:
 					panic(fmt.Errorf("internal error: %T", y))
@@ -881,6 +887,8 @@ func (n *Expression) eval(m *Model) (interface{}, Type) {
 						n.Value = x << uint(y)
 					case y < 0:
 						n.Value = x >> uint(-y)
+					default:
+						n.Value = x
 					}
 				default:
 					panic(fmt.Errorf("internal error: %T", y))
@@ -905,6 +913,8 @@ func (n *Expression) eval(m *Model) (interface{}, Type) {
 						n.Value = x >> uint(y)
 					case y < 0:
 						n.Value = x << uint(-y)
+					default:
+						n.Value = x
 					}
 				default:
 					panic(fmt.Errorf("internal error: %T", y))
@@ -917,6 +927,8 @@ func (n *Expression) eval(m *Model) (interface{}, Type) {
 						n.Value = x >> uint(y)
 					case y < 0:
 						n.Value = x << uint(-y)
+					default:
+						n.Value = x
 					}
 				default:
 					panic(fmt.Errorf("internal error: %T", y))
@@ -929,6 +941,8 @@ func (n *Expression) eval(m *Model) (interface{}, Type) {
 						n.Value = x >> uint(y)
 					case y < 0:
 						n.Value = x << uint(-y)
+					default:
+						n.Value = x
 					}
 				default:
 					panic(fmt.Errorf("internal error: %T", y))

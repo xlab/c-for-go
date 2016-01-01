@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/xlab/c/cc"
-	"github.com/xlab/c/xc"
 )
 
 type Translator struct {
@@ -216,25 +215,22 @@ func (s declList) Less(i, j int) bool {
 	}
 }
 
-func (t *Translator) Learn(unit *cc.TranslationUnit) error {
-	for id := range cc.Macros {
-		name := string(xc.Dict.S(id))
+func (t *Translator) Learn(unit *cc.TranslationUnit, defines cc.DefinesMap) {
+	for name, toks := range defines {
 		if !t.IsAcceptableName(TargetConst, name) {
 			continue
-		}
-		pos, tokList, uTokList, ok := cc.ExpandDefine(id)
-		if !ok || len(tokList) == 0 {
+		} else if len(toks) == 0 {
 			continue
 		}
-		srcParts := make([]string, len(uTokList))
-		for i, v := range uTokList {
+		srcParts := make([]string, len(toks))
+		for i, v := range toks {
 			srcParts[i] = cc.TokSrc(v)
 		}
 		t.defines = append(t.defines, CDecl{
-			Pos:        pos,
+			Pos:        toks[0].Pos(),
 			IsDefine:   true,
 			Name:       name,
-			Expression: tokList[0].S(),
+			Expression: Expression(toks[0].String()),
 			Src:        strings.Join(srcParts, " "),
 		})
 	}
@@ -246,7 +242,31 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) error {
 	t.resolveTypedefs(t.typedefs)
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
-	return xc.Compilation.Errors(true)
+}
+
+func (t *Translator) Report() {
+	fmt.Printf("[!] TAGS:\n")
+	for tag, decl := range t.tagMap {
+		fmt.Printf("%s refers to %v\n", tag, decl)
+	}
+
+	fmt.Printf("\n\n\n[!] TYPEDEFs:\n")
+	for _, decl := range t.typedefs {
+		fmt.Printf("%v\n", decl)
+	}
+
+	fmt.Printf("\n\n\n[!] DECLARATIONS:\n")
+	for _, decl := range t.declares {
+		fmt.Printf("%v\n", decl)
+	}
+
+	fmt.Printf("\n\n\n[!] const (")
+	for _, line := range t.defines {
+		fmt.Printf("\n// %s\n//   > define %s %v\n%s = %s",
+			SrcLocation(line.Pos), line.Name, line.Src,
+			t.TransformName(TargetConst, string(line.Name)), line.Value)
+	}
+	fmt.Printf("\n)\n\n")
 }
 
 func (t *Translator) resolveTypedefs(typedefs []CDecl) {

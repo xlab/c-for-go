@@ -40,6 +40,7 @@ type tweaks struct {
 	enableEmptyDefine              bool // #define
 	enableTrigraphs                bool // ??=define foo(bar)
 	enableUndefExtraTokens         bool // #undef foo(bar)
+	enableWarnings                 bool // #warning
 }
 
 func exampleAST(rule int, src string) interface{} {
@@ -208,22 +209,24 @@ func Trigraphs() Opt { return func(lx *lexer) { lx.tweaks.enableTrigraphs = true
 func crashOnError() Opt { return func(lx *lexer) { lx.report.PanicOnError = true } }
 func nopOpt() Opt       { return func(*lexer) {} }
 
+type DefinesMap map[string][]xc.Token
+
 // Parse defines any macros in predefine. Then Parse preprocesses and parses
 // the translation unit consisting of files in paths. The m communicates the
 // scalar types model and opts allow to amend parser behavior.
-func Parse(predefine string, paths []string, m *Model, opts ...Opt) (*TranslationUnit, error) {
+func Parse(predefine string, paths []string, m *Model, opts ...Opt) (*TranslationUnit, DefinesMap, error) {
 	if m == nil {
-		return nil, fmt.Errorf("invalid nil model passed")
+		return nil, nil, fmt.Errorf("invalid nil model passed")
 	}
 
 	fromSlashes(paths)
 	report := xc.NewReport()
-	lx0 := &lexer{tweaks: &tweaks{}, report: report}
+	lx0 := &lexer{tweaks: &tweaks{enableWarnings: true}, report: report}
 	for _, opt := range opts {
 		opt(lx0)
 	}
 	if err := report.Errors(true); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	m.lx = lx0
@@ -231,13 +234,13 @@ func Parse(predefine string, paths []string, m *Model, opts ...Opt) (*Translatio
 	m.report = report
 	if err := m.sanityCheck(); err != nil {
 		report.Err(0, "%s", err.Error())
-		return nil, report.Errors(true)
+		return nil, nil, report.Errors(true)
 	}
 
 	tweaks := lx0.tweaks
 	predefined, err := ppParseString("", predefine, report, tweaks)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ch := make(chan []xc.Token, 1000)
@@ -269,7 +272,7 @@ func Parse(predefine string, paths []string, m *Model, opts ...Opt) (*Translatio
 			}
 		}()
 		stop <- 1
-		return nil, err
+		return nil, nil, err
 	}
 
 	lx := newSimpleLexer(lx0.cpp, report, tweaks)
@@ -278,5 +281,14 @@ func Parse(predefine string, paths []string, m *Model, opts ...Opt) (*Translatio
 	lx.model = m
 	m.lx = lx
 	yyParse(lx)
-	return lx.translationUnit, report.Errors(true)
+
+	defines := make(DefinesMap, len(macros.m))
+	for id, macro := range macros.m {
+		if !macro.isFnLike {
+			name := xc.Dict.S(id)
+			toks := decodeTokens(macro.repl, nil)
+			defines[string(name)] = toks
+		}
+	}
+	return lx.translationUnit, defines, report.Errors(true)
 }

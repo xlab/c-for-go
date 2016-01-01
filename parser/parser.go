@@ -23,13 +23,13 @@ func NewConfig(paths ...string) *Config {
 	}
 }
 
-func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
+func ParseWith(cfg *Config) (*cc.TranslationUnit, cc.DefinesMap, error) {
 	if len(cfg.SourcesPaths) == 0 {
-		return nil, errors.New("parser: no target paths specified")
+		return nil, nil, errors.New("parser: no target paths specified")
 	}
 	cfg, err := checkConfig(cfg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	predefined, ok := predefines[cfg.archBits]
 	if !ok {

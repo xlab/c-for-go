@@ -501,6 +501,8 @@ func (n *ctype) AlignOf() int {
 	}
 
 	switch k := n.Kind(); k {
+	case Enum:
+		return 1
 	case
 		Void,
 		Ptr,
@@ -925,6 +927,8 @@ func (n *ctype) SizeOf() int {
 	}
 
 	switch k := n.Kind(); k {
+	case Enum:
+		return 1
 	case
 		Void,
 		Ptr,

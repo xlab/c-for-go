@@ -37,7 +37,7 @@ type CType interface {
 
 type (
 	Value      interface{}
-	Expression []byte
+	Expression string
 )
 
 type CDecl struct {
