@@ -5,9 +5,18 @@ import (
 	"strings"
 )
 
+type CFunctionParam struct {
+	Name string
+	Type CType
+}
+
+func (c CFunctionParam) String() string {
+	return c.Name + " " + c.Type.String()
+}
+
 type CFunctionSpec struct {
-	Return    *CDecl
-	ParamList []CDecl
+	Return    CType
+	Params    []CFunctionParam
 	Arrays    string
 	VarArrays uint8
 	Pointers  uint8
@@ -23,8 +32,8 @@ func (c *CFunctionSpec) AddArray(size uint64) {
 
 func (c CFunctionSpec) String() string {
 	var params []string
-	for _, param := range c.ParamList {
-		params = append(params, param.String())
+	for _, param := range c.Params {
+		params = append(params, param.Name)
 	}
 	paramList := strings.Join(params, ", ")
 	if c.Return != nil {
@@ -41,8 +50,12 @@ func (c *CFunctionSpec) Kind() CTypeKind {
 	return FunctionKind
 }
 
+func (c *CFunctionSpec) IsComplete() bool {
+	return true
+}
+
 func (c *CFunctionSpec) IsOpaque() bool {
-	return len(c.ParamList) == 0
+	return len(c.Params) == 0
 }
 
 func (c CFunctionSpec) Copy() CType {

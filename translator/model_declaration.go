@@ -30,37 +30,26 @@ type CType interface {
 	//
 	IsConst() bool
 	IsOpaque() bool
+	IsComplete() bool
 	Kind() CTypeKind
 	String() string
 	Copy() CType
 }
 
 type (
-	Value      interface{}
-	Expression string
+	Value interface{}
 )
 
 type CDecl struct {
 	Spec       CType
 	Name       string
 	Value      Value
-	Expression Expression
+	Expression string
 	IsStatic   bool
 	IsTypedef  bool
 	IsDefine   bool
 	Pos        token.Pos
 	Src        string
-}
-
-func (c *CDecl) IsTemplate() bool {
-	switch spec := c.Spec.(type) {
-	case *CStructSpec:
-		return len(spec.Members) > 0
-	case *CEnumSpec:
-		return len(spec.Enumerators) > 0
-	default:
-		return true
-	}
 }
 
 func (c *CDecl) Kind() CTypeKind {

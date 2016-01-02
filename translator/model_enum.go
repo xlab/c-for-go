@@ -6,13 +6,22 @@ import (
 	"strings"
 )
 
+type CEnumMember struct {
+	Name string
+	Type CType
+}
+
+func (c CEnumMember) String() string {
+	return c.Name + " " + c.Type.String()
+}
+
 type CEnumSpec struct {
-	Tag         string
-	Enumerators []CDecl
-	Type        CTypeSpec
-	Arrays      string
-	VarArrays   uint8
-	Pointers    uint8
+	Tag       string
+	Members   []CEnumMember
+	Type      CTypeSpec
+	Arrays    string
+	VarArrays uint8
+	Pointers  uint8
 }
 
 func (c *CEnumSpec) AddArray(size uint64) {
@@ -87,23 +96,23 @@ func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
 	return &c.Type
 }
 
-func (ces CEnumSpec) String() string {
+func (spec CEnumSpec) String() string {
 	var members []string
-	for _, m := range ces.Enumerators {
-		members = append(members, m.String())
+	for _, m := range spec.Members {
+		members = append(members, m.Name)
 	}
 	membersColumn := strings.Join(members, ", ")
 
 	buf := new(bytes.Buffer)
 	fmt.Fprint(buf, "enum")
-	if len(ces.Tag) > 0 {
-		buf.WriteString(" " + ces.Tag)
+	if len(spec.Tag) > 0 {
+		buf.WriteString(" " + spec.Tag)
 	}
 	if len(members) > 0 {
 		fmt.Fprintf(buf, " {%s}", membersColumn)
 	}
-	buf.WriteString(strings.Repeat("*", int(ces.Pointers)))
-	buf.WriteString(ces.Arrays)
+	buf.WriteString(strings.Repeat("*", int(spec.Pointers)))
+	buf.WriteString(spec.Arrays)
 	return buf.String()
 }
 
@@ -115,8 +124,12 @@ func (c *CEnumSpec) Kind() CTypeKind {
 	return EnumKind
 }
 
+func (c *CEnumSpec) IsComplete() bool {
+	return len(c.Members) > 0
+}
+
 func (c *CEnumSpec) IsOpaque() bool {
-	return len(c.Enumerators) == 0
+	return len(c.Members) == 0
 }
 
 func (c CEnumSpec) Copy() CType {

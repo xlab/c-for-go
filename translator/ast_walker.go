@@ -2,17 +2,20 @@ package translator
 
 import "github.com/xlab/c/cc"
 
-func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) (next *cc.TranslationUnit) {
-	t.walkExternalDeclaration(unit.ExternalDeclaration)
-	return unit.TranslationUnit
+func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
+	t.fileScope = unit.Declarations
+	for unit != nil {
+		t.walkExternalDeclaration(unit.ExternalDeclaration)
+		unit = unit.TranslationUnit
+	}
 }
 
-func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
-	switch declr.Case {
+func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
+	switch d.Case {
 	case 0: // FunctionDefinition
 		// (not an API definition)
 	case 1: // Declaration
-		declares := t.walkDeclaration(declr.Declaration)
+		declares := t.walkDeclaration(d.Declaration)
 		for _, decl := range declares {
 			if decl.IsStatic {
 				continue
@@ -26,369 +29,277 @@ func (t *Translator) walkExternalDeclaration(declr *cc.ExternalDeclaration) {
 	}
 }
 
-func (t *Translator) walkDeclaration(declr *cc.Declaration) []CDecl {
-	// read type spec into a reference type declaration
-	refDecl := CDecl{Spec: &CTypeSpec{}, Pos: declr.Token.Pos()}
-	nextSpec := declr.DeclarationSpecifiers
-	for nextSpec != nil {
-		nextSpec = t.walkDeclarationSpecifiers(nextSpec, &refDecl)
-	}
-
-	switch refDecl.Spec.Kind() {
-	case EnumKind, StructKind, UnionKind:
-		if tag := refDecl.Spec.GetBase(); len(tag) > 0 {
-			if prev, ok := t.tagMap[tag]; !ok {
-				// first time seen -> store the tag
-				t.tagMap[tag] = refDecl
-			} else if !prev.IsTemplate() {
-				// overwrite with a template declaration
-				t.tagMap[tag] = refDecl
+func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
+	if d.InitDeclaratorListOpt != nil {
+		list := d.InitDeclaratorListOpt.InitDeclaratorList
+		for list != nil {
+			decl := t.declarator(list.InitDeclarator.Declarator)
+			init := list.InitDeclarator.Initializer
+			if init != nil {
+				decl.Value = init.Expression.Value
+				decl.Expression = blessName(init.Expression.Token.S())
 			}
-		}
-	}
-	switch spec := refDecl.Spec.(type) {
-	case *CStructSpec:
-		for _, m := range spec.Members {
-			if tag := m.Spec.GetBase(); m.Kind() == StructKind && len(tag) > 0 {
-				if prev, ok := t.tagMap[tag]; !ok {
-					// first time seen -> store the tag
-					t.tagMap[tag] = m
-				} else if !prev.IsTemplate() {
-					// overwrite with a template declaration
-					t.tagMap[tag] = m
-				}
+			t.registerTagsOf(decl.Spec)
+			declared = append(declared, decl)
+			if init != nil {
+				t.valueMap[decl.Name] = decl.Value
+				t.exprMap[decl.Name] = decl.Expression
 			}
+			list = list.InitDeclaratorList
 		}
-	}
-
-	// prepare to collect declares
-	var declares []CDecl
-
-	if declr.InitDeclaratorListOpt != nil {
-		nextList := declr.InitDeclaratorListOpt.InitDeclaratorList
-		for nextList != nil {
-			decl := CDecl{
-				Spec:      refDecl.Spec.Copy(),
-				IsTypedef: refDecl.IsTypedef,
-				IsStatic:  refDecl.IsStatic,
-			}
-			nextList = t.walkInitDeclaratorList(nextList, &decl)
-			declares = append(declares, decl)
-			t.valueMap[decl.Name] = decl.Value
-			t.exprMap[decl.Name] = decl.Expression
-		}
-	}
-	return declares
-}
-
-func (t *Translator) walkInitializer(init *cc.Initializer, decl *CDecl) {
-	switch init.Case {
-	case 0:
-		// TODO: check this
-		decl.Value = init.Expression.Value
-		decl.Expression = Expression(init.Expression.String())
-		//	decl.Value = t.EvalAssignmentExpression(init.AssignmentExpression)
-		//	decl.Expression = t.ExpandAssignmentExpression(init.AssignmentExpression)
-	case 1, // '{' InitializerList '}'
-		2: // '{' InitializerList ',' '}'
-		unmanagedCaseWarn(init.Case, init.Token.Pos())
-	}
-}
-
-func (t *Translator) walkInitDeclaratorList(declr *cc.InitDeclaratorList, decl *CDecl) (next *cc.InitDeclaratorList) {
-	next = declr.InitDeclaratorList
-	walkPointers(declr.InitDeclarator.Declarator.PointerOpt, decl)
-
-	switch declr.InitDeclarator.Case {
-	case 1: // Declarator '=' Initializer
-		t.walkInitializer(declr.InitDeclarator.Initializer, decl)
-	}
-
-	nextDeclarator := declr.InitDeclarator.Declarator.DirectDeclarator
-	for nextDeclarator != nil {
-		nextDeclarator = t.walkDirectDeclarator(nextDeclarator, decl)
+	} else if declr := d.Declarator(); declr != nil {
+		decl := t.declarator(declr)
+		t.registerTagsOf(decl.Spec)
+		declared = append(declared, decl)
 	}
 	return
 }
 
-func (t *Translator) walkParameterList(list *cc.ParameterList) (next *cc.ParameterList, decl *CDecl) {
-	next = list.ParameterList
-	declr := list.ParameterDeclaration
-	switch declr.Case {
-	case 0: // DeclarationSpecifiers Declarator
-		decl = &CDecl{Spec: &CTypeSpec{}}
-		nextDeclr := declr.DeclarationSpecifiers
-		for nextDeclr != nil {
-			nextDeclr = t.walkDeclarationSpecifiers(nextDeclr, decl)
-		}
-
-		walkPointers(declr.Declarator.PointerOpt, decl)
-		nextDeclarator := declr.Declarator.DirectDeclarator
-		for nextDeclarator != nil {
-			nextDeclarator = t.walkDirectDeclarator(nextDeclarator, decl)
-		}
-	case 1: // DeclarationSpecifiers AbstractDeclaratorOpt
-		decl = &CDecl{Spec: &CTypeSpec{}}
-		nextDeclr := declr.DeclarationSpecifiers
-		for nextDeclr != nil {
-			nextDeclr = t.walkDeclarationSpecifiers(nextDeclr, decl)
-		}
-		if declr.AbstractDeclaratorOpt != nil {
-			walkPointers(declr.AbstractDeclaratorOpt.AbstractDeclarator.PointerOpt, decl)
-		}
+func (t *Translator) declarator(d *cc.Declarator) *CDecl {
+	s := d.RawSpecifier()
+	dd := d.DirectDeclarator
+	if dd.DirectDeclarator != nil {
+		dd = dd.DirectDeclarator
 	}
-	return
+	decl := &CDecl{
+		Spec:      t.typeSpec(d.Type),
+		Name:      blessName(dd.Token.S()),
+		IsTypedef: s.IsTypedef(),
+		IsStatic:  s.IsStatic(),
+		Pos:       d.Pos(),
+	}
+	return decl
 }
 
-// func (t *Translator) walkDirectDeclarator2(declr *cc.DirectDeclarator2, decl *CDecl) {
-// 	switch declr.Case {
-// 	case 0: // ParameterTypeList ')'
-// 		spec := decl.Spec.(*CFunctionSpec)
-// 		nextList := declr.ParameterTypeList.ParameterList
-// 		var paramDecl *CDecl
-// 		for nextList != nil {
-// 			if nextList, paramDecl = t.walkParameterList(nextList); paramDecl != nil && !IsVoid(paramDecl.Spec) {
-// 				spec.ParamList = append(spec.ParamList, *paramDecl)
-// 			}
-// 		}
-// 	case 1: // IdentifierListOpt ')'
-// 		if declr.IdentifierListOpt != nil {
-// 			unmanagedCaseWarn(declr.Case, declr.Token.Pos())
-// 		}
-// 	}
-// }
-
-func (t *Translator) walkDirectDeclarator(declr *cc.DirectDeclarator, decl *CDecl) (next *cc.DirectDeclarator) {
-	decl.Pos = declr.Token.Pos()
-	switch declr.Case {
-	case 0: // IDENTIFIER
-		decl.Name = blessName(declr.Token.S())
-	case 1: // '(' Declarator ')'
-		walkPointers(declr.Declarator.PointerOpt, decl)
-		next = declr.Declarator.DirectDeclarator
-	case 5: // DirectDeclarator '[' TypeQualifierListOpt '*' ']'
-		next = declr.DirectDeclarator
-		unmanagedCaseWarn(declr.Case, declr.Token.Pos())
-	case 2, // DirectDeclarator '[' TypeQualifierListOpt AssignmentExpressionOpt ']'
-		3, // DirectDeclarator '[' "static" TypeQualifierListOpt AssignmentExpression ']'
-		4: // DirectDeclarator '[' TypeQualifierList "static" AssignmentExpression ']'
-		next = declr.DirectDeclarator
-		// TODO: check this
-		expr := declr.Expression
-		if declr.ExpressionOpt != nil && declr.ExpressionOpt.Expression != nil {
-			expr = declr.ExpressionOpt.Expression
-		}
-		val := expr.Value
-
-		// assignmentExpr := declr.AssignmentExpression
-		// if declr.AssignmentExpressionOpt != nil &&
-		// 	declr.AssignmentExpressionOpt.AssignmentExpression != nil {
-		// 	assignmentExpr = declr.AssignmentExpressionOpt.AssignmentExpression
-		// }
-		// if assignmentExpr == nil {
-		// 	return
-		// }
-
-		// val := t.EvalAssignmentExpression(assignmentExpr)
-		switch x := val.(type) {
-		case int32:
-			if x > 0 {
-				decl.AddArray(uint64(x))
-			} else {
-				decl.AddArray(0)
-			}
-		case int64:
-			if x > 0 {
-				decl.AddArray(uint64(x))
-			} else {
-				decl.AddArray(0)
-			}
-		case uint32:
-			if x > 0 {
-				decl.AddArray(uint64(x))
-			} else {
-				decl.AddArray(0)
-			}
-		case uint64:
-			if x > 0 {
-				decl.AddArray(uint64(x))
-			} else {
-				decl.AddArray(0)
-			}
-		default:
-			decl.AddArray(0)
-		}
-	case 6: // DirectDeclarator '(' DirectDeclarator2
-		next = declr.DirectDeclarator
-		if IsVoid(decl.Spec) {
-			decl.Spec = &CFunctionSpec{}
-		} else {
-			decl.Spec = &CFunctionSpec{
-				Return: &CDecl{
-					Spec: decl.Spec,
-					Pos:  decl.Pos,
-				},
-			}
-		}
-		// TODO: fix this
-		//		t.walkDirectDeclarator2(declr.DirectDeclarator2, decl)
-	}
-	return
-}
-
-func IsVoid(spec CType) bool {
-	if spec.GetBase() == "void" && spec.GetPointers() == 0 {
-		return true
-	}
-	return false
-}
-
-func walkPointers(popt *cc.PointerOpt, decl *CDecl) {
-	if popt == nil {
+func (t *Translator) getStructTag(typ cc.Type) (tag string) {
+	b := t.fileScope.Lookup(cc.NSTags, typ.Tag())
+	sus, ok := b.Node.(*cc.StructOrUnionSpecifier)
+	if !ok {
 		return
 	}
-	nextPointer := popt.Pointer.Pointer
-	pointers := uint8(1)
-	for nextPointer != nil {
-		nextPointer = nextPointer.Pointer
-		pointers++
-	}
-	decl.SetPointers(pointers)
-}
-
-func (t *Translator) walkDeclarationSpecifiers(declr *cc.DeclarationSpecifiers, decl *CDecl) (next *cc.DeclarationSpecifiers) {
-	switch declr.Case {
-	case 0: // StorageClassSpecifier DeclarationSpecifiersOpt
-		switch declr.StorageClassSpecifier.Case {
-		case 0: // "typedef"
-			decl.IsTypedef = true
-		case 2: // "static"
-			decl.IsStatic = true
-		}
-		next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
-	case 1: // TypeSpecifier DeclarationSpecifiersOpt
-		t.walkTypeSpec(declr.TypeSpecifier, decl)
-		if declr.DeclarationSpecifiersOpt != nil {
-			next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
-		}
-	case 2: // TypeQualifier DeclarationSpecifiersOpt
-		if spec, ok := decl.Spec.(*CTypeSpec); ok {
-			spec.Const = (declr.TypeQualifier.Case == 0)
-		}
-		if declr.DeclarationSpecifiersOpt != nil {
-			next = declr.DeclarationSpecifiersOpt.DeclarationSpecifiers
-		}
-	case 3: // FunctionSpecifier DeclarationSpecifiersOpt
-		unmanagedCaseWarn(declr.Case, declr.FunctionSpecifier.Token.Pos())
+	if sus.IdentifierOpt != nil {
+		return blessName(sus.IdentifierOpt.Token.S())
 	}
 	return
 }
 
-func (t *Translator) walkSpecifierQualifierList(declr *cc.SpecifierQualifierList, decl *CDecl) (next *cc.SpecifierQualifierList) {
-	if declr.SpecifierQualifierListOpt != nil {
-		next = declr.SpecifierQualifierListOpt.SpecifierQualifierList
+func (t *Translator) getEnumTag(typ cc.Type) (tag string) {
+	b := t.fileScope.Lookup(cc.NSTags, typ.Tag())
+	es, ok := b.Node.(*cc.EnumSpecifier)
+	if !ok {
+		return
 	}
-
-	switch declr.Case {
-	case 0: // TypeSpecifier SpecifierQualifierListOpt
-		t.walkTypeSpec(declr.TypeSpecifier, decl)
-	case 1: // TypeQualifier SpecifierQualifierListOpt
-		if spec, ok := decl.Spec.(*CTypeSpec); ok {
-			spec.Const = (declr.TypeQualifier.Case == 0)
-		}
+	if es.IdentifierOpt != nil {
+		return blessName(es.IdentifierOpt.Token.S())
 	}
 	return
 }
 
-func (t *Translator) walkStructDeclarator(declr *cc.StructDeclarator, decl *CDecl) {
-	switch declr.Case {
-	case 0: // Declarator
-		walkPointers(declr.Declarator.PointerOpt, decl)
-		nextDeclr := declr.Declarator.DirectDeclarator
-		for nextDeclr != nil {
-			nextDeclr = t.walkDirectDeclarator(nextDeclr, decl)
-		}
-	case 1: // DeclaratorOpt ':' ConstantExpression
-		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		// C should not have bitfields. Don't use them. They are poorly
-		// specified, non-portable, inefficient, unsafe, and have poor semantics.
-		// They have no good properties to compensate.
-		//
-		// -Rob Pike
-		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		if declr.DeclaratorOpt != nil {
-			walkPointers(declr.DeclaratorOpt.Declarator.PointerOpt, decl)
-			nextDeclr := declr.DeclaratorOpt.Declarator.DirectDeclarator
-			for nextDeclr != nil {
-				nextDeclr = t.walkDirectDeclarator(nextDeclr, decl)
-			}
-		}
+func memberName(m cc.Member) string {
+	dd := m.Declarator.DirectDeclarator
+	if dd.DirectDeclarator != nil {
+		dd = dd.DirectDeclarator
 	}
+	return blessName(dd.Token.S())
 }
 
-func (t *Translator) walkStructDeclaration(declr *cc.StructDeclaration) []CDecl {
-	refDecl := &CDecl{Spec: &CTypeSpec{}}
-	nextList := declr.SpecifierQualifierList
-	for nextList != nil {
-		nextList = t.walkSpecifierQualifierList(nextList, refDecl)
+func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
+	tag := t.getEnumTag(typ)
+	spec := &CEnumSpec{
+		// TODO: Type, // (check out the augmented enums)
+		Tag:       tag,
+		Arrays:    base.Arrays,
+		VarArrays: base.VarArrays,
+		Pointers:  base.Pointers,
+	}
+	// TODO: fix enums lol
+	members, _ := typ.Members()
+	for _, m := range members {
+		spec.Members = append(spec.Members, CEnumMember{
+			Name: memberName(m),
+			Type: t.typeSpec(m.Type),
+		})
+	}
+	return spec
+}
+
+func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type) *CStructSpec {
+	tag := t.getStructTag(typ)
+	spec := &CStructSpec{
+		Tag:       tag,
+		Arrays:    base.Arrays,
+		VarArrays: base.VarArrays,
+		Pointers:  base.Pointers,
+	}
+	members, _ := typ.Members()
+	for _, m := range members {
+		spec.Members = append(spec.Members, CStructMember{
+			Name: memberName(m),
+			Type: t.typeSpec(m.Type),
+		})
+	}
+	return spec
+}
+
+func (t *Translator) unionSpec(base *CTypeSpec, typ cc.Type) *CStructSpec {
+	tag := t.getStructTag(typ)
+	spec := &CStructSpec{
+		Tag:       tag,
+		IsUnion:   true,
+		Arrays:    base.Arrays,
+		VarArrays: base.VarArrays,
+		Pointers:  base.Pointers,
+	}
+	members, _ := typ.Members()
+	for _, m := range members {
+		spec.Members = append(spec.Members, CStructMember{
+			Name: memberName(m),
+			Type: t.typeSpec(m.Type),
+		})
+	}
+	return spec
+}
+
+func paramName(p cc.Parameter) string {
+	dd := p.Declarator.DirectDeclarator
+	if dd.DirectDeclarator != nil {
+		dd = dd.DirectDeclarator
+	}
+	return blessName(dd.Token.S())
+}
+
+func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type) *CFunctionSpec {
+	spec := &CFunctionSpec{
+		Arrays:    base.Arrays,
+		VarArrays: base.VarArrays,
+		Pointers:  base.Pointers,
+	}
+	if ret := typ.Result(); ret != nil && ret.Kind() != cc.Void {
+		spec.Return = t.typeSpec(ret)
+	}
+	params, _ := typ.Parameters()
+	for _, p := range params {
+		spec.Params = append(spec.Params, CFunctionParam{
+			Name: paramName(p),
+			Type: t.typeSpec(p.Type),
+		})
+	}
+	return spec
+}
+
+func (t *Translator) typeSpec(typ cc.Type) CType {
+	id, _ := typ.Declarator().Identifier()
+	cached, ok := t.typeCache.Get(id)
+	if ok {
+		return cached
 	}
 
-	// prepare to collect declares
-	var declares []CDecl
-
-	if declr.StructDeclaratorList != nil {
-		nextDeclaratorList := declr.StructDeclaratorList.StructDeclaratorList
-		for nextDeclaratorList != nil {
-			decl := CDecl{Spec: refDecl.Spec.Copy()}
-			t.walkStructDeclarator(nextDeclaratorList.StructDeclarator, &decl)
-			nextDeclaratorList = nextDeclaratorList.StructDeclaratorList
-			declares = append(declares, decl)
+	spec := &CTypeSpec{}
+	for typ.Kind() == cc.Ptr {
+		typ = typ.Element()
+		spec.Pointers++
+	}
+	for typ.Kind() == cc.Array {
+		size := typ.Elements()
+		typ = typ.Element()
+		if size >= 0 {
+			spec.AddArray(uint64(size))
+			size = typ.Elements()
 		}
 	}
 
-	return declares
+	switch typ.Kind() {
+	case cc.Void:
+		spec.Base = "void"
+	case cc.Ptr:
+		spec.Base = "void"
+		spec.Pointers = 1
+	case cc.Char:
+		spec.Base = "char"
+	case cc.SChar:
+		spec.Base = "char"
+		spec.Signed = true
+	case cc.UChar:
+		spec.Base = "char"
+		spec.Unsigned = true
+	case cc.Short:
+		spec.Base = "int"
+		spec.Short = true
+	case cc.UShort:
+		spec.Base = "int"
+		spec.Short = true
+		spec.Unsigned = true
+	case cc.Int:
+		spec.Base = "int"
+	case cc.UInt:
+		spec.Base = "int"
+		spec.Unsigned = true
+	case cc.Long:
+		spec.Base = "int"
+		spec.Long = true
+	case cc.ULong:
+		spec.Base = "int"
+		spec.Long = true
+		spec.Unsigned = true
+	case cc.LongLong:
+		spec.Base = "long"
+		spec.Long = true
+	case cc.ULongLong:
+		spec.Base = "long"
+		spec.Long = true
+		spec.Unsigned = true
+	case cc.Float:
+		spec.Base = "float"
+	case cc.Double:
+		spec.Base = "double"
+	case cc.LongDouble:
+		spec.Base = "double"
+		spec.Long = true
+	case cc.Bool:
+		spec.Base = "bool"
+	case cc.FloatComplex:
+		spec.Base = "float"
+		spec.Complex = true
+	case cc.DoubleComplex:
+		spec.Base = "double"
+		spec.Complex = true
+	case cc.LongDoubleComplex:
+		spec.Base = "double"
+		spec.Long = true
+		spec.Complex = true
+	case cc.Enum:
+		s := t.enumSpec(spec, typ)
+		t.typeCache.Set(id, s)
+		return s
+	case cc.Struct:
+		// avoid recursive structs
+		t.typeCache.Set(id, &CStructSpec{})
+		s := t.structSpec(spec, typ)
+		t.typeCache.Set(id, s)
+		return s
+	case cc.Union:
+		// avoid recursive unions
+		t.typeCache.Set(id, &CStructSpec{IsUnion: true})
+		s := t.unionSpec(spec, typ)
+		t.typeCache.Set(id, s)
+		return s
+	case cc.Function:
+		s := t.functionSpec(spec, typ)
+		t.typeCache.Set(id, s)
+		return s
+	case cc.TypedefName:
+		// id := typ.Specifier().TypedefName()
+		// spec.Base = blessName(xc.Dict.S(id))
+		panic("typedef name? wtf?")
+	default:
+		panic("unknown type " + typ.String())
+	}
+
+	t.typeCache.Set(id, spec)
+	return spec
 }
 
-// func (t *Translator) walkSUSpecifier(suSpec *cc.StructOrUnionSpecifier, decl *CDecl) {
-// 	switch suSpec.Case {
-// 	case 0: // StructOrUnionSpecifier0 '{' StructDeclarationList '}'
-// 		walkSUSpecifier0(suSpec.StructOrUnionSpecifier0, decl)
-// 		structSpec := decl.Spec.(*CStructSpec)
-// 		nextList := suSpec.StructDeclarationList
-// 		for nextList != nil {
-// 			declares := t.walkStructDeclaration(nextList.StructDeclaration)
-// 			structSpec.Members = append(structSpec.Members, declares...)
-// 			nextList = nextList.StructDeclarationList
-// 		}
-// 	case 1: // StructOrUnion IDENTIFIER
-// 		switch suSpec.StructOrUnion.Case {
-// 		case 0: // struct
-// 			decl.Spec = &CStructSpec{
-// 				Tag: string(suSpec.Token.S()),
-// 			}
-
-// 		case 1: // union
-// 			decl.Spec = &CStructSpec{
-// 				IsUnion: true,
-// 				Tag:     string(suSpec.Token.S()),
-// 			}
-// 		}
-// 	}
-// }
-
-// func walkSUSpecifier0(suSpec *cc.StructOrUnionSpecifier0, decl *CDecl) {
-// 	switch suSpec.StructOrUnion.Case {
-// 	case 0: // struct
-// 		decl.Spec = &CStructSpec{}
-// 	case 1: // union
-// 		decl.Spec = &CStructSpec{
-// 			IsUnion: true,
-// 		}
-// 	}
-// 	if suSpec.IdentifierOpt != nil {
-// 		decl.Spec.(*CStructSpec).Tag = blessName(suSpec.IdentifierOpt.Token.S())
-// 	}
-// }
+// AUGMENTED ENUM SUPPORT BELOW
 
 // func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
 // 	decl.Pos = enSpec.Token.Pos()
@@ -400,7 +311,6 @@ func (t *Translator) walkStructDeclaration(declr *cc.StructDeclaration) []CDecl 
 // 		if enSpec.EnumeratorList.IdentifierOpt != nil {
 // 			enumSpec.Tag = blessName(enSpec.EnumSpecifier0.IdentifierOpt.Token.S())
 // 		}
-
 // 		enumIdx := len(enumSpec.Enumerators)
 // 		nextList := enSpec.EnumeratorList
 // 		for nextList != nil {
@@ -441,69 +351,3 @@ func (t *Translator) walkStructDeclaration(declr *cc.StructDeclaration) []CDecl 
 // 		}
 // 	}
 // }
-
-// func (t *Translator) walkEnumerator(enSpec *cc.Enumerator) (decl CDecl) {
-// 	switch enSpec.Case {
-// 	case 0: // EnumerationConstant
-// 		decl.Name = blessName(enSpec.EnumerationConstant.Token.S())
-// 	case 1: // EnumerationConstant '=' ConstantExpression
-// 		decl.Name = blessName(enSpec.EnumerationConstant.Token.S())
-// 		decl.Value = t.EvalConditionalExpression(enSpec.ConstantExpression.ConditionalExpression)
-// 		decl.Expression = t.ExpandConditionalExpression(enSpec.ConstantExpression.ConditionalExpression)
-// 	}
-// 	return
-// }
-
-func (t *Translator) walkTypeSpec(typeSpec *cc.TypeSpecifier, decl *CDecl) {
-	spec := decl.Spec.(*CTypeSpec)
-
-	switch typeSpec.Case {
-	case 0:
-		spec.Base = "void"
-	case 1:
-		spec.Base = "char"
-	case 2:
-		switch spec.Base {
-		case "int":
-			spec.Short = true
-		default:
-			spec.Short = false
-			spec.Base = "short"
-		}
-	case 3:
-		spec.Base = "int"
-	case 4:
-		switch spec.Base {
-		case "int":
-			if spec.Long {
-				spec.Base = "long"
-			} else {
-				spec.Long = true
-			}
-		case "":
-			spec.Base = "long"
-		default:
-			spec.Long = true
-		}
-	case 5:
-		spec.Base = "float"
-	case 6:
-		spec.Base = "double"
-	case 7:
-		spec.Signed = true
-	case 8:
-		spec.Unsigned = true
-	case 9:
-		spec.Base = "_Bool"
-	case 10:
-		spec.Base = "_Complex"
-	case 11:
-		panic("unmanaged case: " + typeSpec.StructOrUnionSpecifier.String())
-		// t.walkSUSpecifier(typeSpec.StructOrUnionSpecifier, decl)
-	case 12:
-		panic("unmanaged case: " + typeSpec.EnumSpecifier.String())
-		// t.walkEnumSpecifier(typeSpec.EnumSpecifier, decl)
-	case 13:
-		spec.Base = string(typeSpec.Token.S())
-	}
-}

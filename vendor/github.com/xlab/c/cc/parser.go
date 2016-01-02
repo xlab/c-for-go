@@ -3534,7 +3534,7 @@ yynewstate:
 			case int64:
 				val = int(x)
 			default:
-				panic("internal error")
+				val = 0
 			}
 			lx.scope.defineEnumConst(lx, lhs.EnumerationConstant.Token, val)
 		}

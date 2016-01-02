@@ -18,22 +18,25 @@ type Translator struct {
 	compiledMemTipRxs MemTipRxList
 	constRules        ConstRules
 	typemap           CTypeMap
+	fileScope         *cc.Bindings
 
 	valueMap map[string]Value
-	exprMap  map[string]Expression
-	tagMap   map[string]CDecl
+	exprMap  map[string]string
+	tagMap   map[string]CType
 
-	defines  []CDecl
-	typedefs []CDecl
-	declares []CDecl
+	defines  []*CDecl
+	typedefs []*CDecl
+	declares []*CDecl
 
 	typedefsSet  map[string]struct{}
 	typedefKinds map[string]CTypeKind
 	typedefVoids map[string]struct{}
 	//	translateCache *SpecTranslateCache
 	transformCache *NameTransformCache
-	ptrTipCache    *TipCache
-	memTipCache    *TipCache
+	typeCache      *TypeCache
+
+	ptrTipCache *TipCache
+	memTipCache *TipCache
 }
 
 type RxMap map[RuleTarget][]Rx
@@ -90,12 +93,13 @@ func New(cfg *Config) (*Translator, error) {
 		compiledRxs:       make(map[RuleAction]RxMap),
 		compiledPtrTipRxs: make(PtrTipRxMap),
 		valueMap:          make(map[string]Value),
-		exprMap:           make(map[string]Expression),
-		tagMap:            make(map[string]CDecl),
+		exprMap:           make(map[string]string),
+		tagMap:            make(map[string]CType),
 		typedefsSet:       make(map[string]struct{}),
 		typedefKinds:      make(map[string]CTypeKind),
 		typedefVoids:      make(map[string]struct{}),
 		transformCache:    &NameTransformCache{},
+		typeCache:         &TypeCache{},
 		ptrTipCache:       &TipCache{},
 		memTipCache:       &TipCache{},
 	}
@@ -203,7 +207,7 @@ func getMemTipRxs(tips MemTips) (MemTipRxList, error) {
 	return list, nil
 }
 
-type declList []CDecl
+type declList []*CDecl
 
 func (s declList) Len() int      { return len(s) }
 func (s declList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
@@ -216,29 +220,9 @@ func (s declList) Less(i, j int) bool {
 }
 
 func (t *Translator) Learn(unit *cc.TranslationUnit, defines cc.DefinesMap) {
-	for name, toks := range defines {
-		if !t.IsAcceptableName(TargetConst, name) {
-			continue
-		} else if len(toks) == 0 {
-			continue
-		}
-		srcParts := make([]string, len(toks))
-		for i, v := range toks {
-			srcParts[i] = cc.TokSrc(v)
-		}
-		t.defines = append(t.defines, CDecl{
-			Pos:        toks[0].Pos(),
-			IsDefine:   true,
-			Name:       name,
-			Expression: Expression(toks[0].String()),
-			Src:        strings.Join(srcParts, " "),
-		})
-	}
-
+	t.collectDefines(defines)
 	sort.Sort(declList(t.defines))
-	for unit != nil {
-		unit = t.walkTranslationUnit(unit)
-	}
+	t.walkTranslationUnit(unit)
 	t.resolveTypedefs(t.typedefs)
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
@@ -264,12 +248,53 @@ func (t *Translator) Report() {
 	for _, line := range t.defines {
 		fmt.Printf("\n// %s\n//   > define %s %v\n%s = %s",
 			SrcLocation(line.Pos), line.Name, line.Src,
-			t.TransformName(TargetConst, string(line.Name)), line.Value)
+			t.TransformName(TargetConst, string(line.Name)), line.Expression)
 	}
 	fmt.Printf("\n)\n\n")
 }
 
-func (t *Translator) resolveTypedefs(typedefs []CDecl) {
+func (t *Translator) collectDefines(defines cc.DefinesMap) {
+	for name, tokens := range defines {
+		if !t.IsAcceptableName(TargetConst, name) {
+			continue
+		} else if len(tokens) == 0 {
+			continue
+		}
+		srcParts := make([]string, 0, len(tokens))
+		exprParts := make([]string, 0, len(tokens))
+		valid := true
+		for _, token := range tokens {
+			src := cc.TokSrc(token)
+			srcParts = append(srcParts, src)
+			switch token.Rune {
+			case cc.IDENTIFIER:
+				if _, ok := defines[src]; !ok {
+					// an unresolved const reference
+					valid = false
+					break
+				}
+				exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
+			default:
+				exprParts = append(exprParts, src)
+			}
+			if !valid {
+				break
+			}
+		}
+		if !valid {
+			continue
+		}
+		t.defines = append(t.defines, &CDecl{
+			Pos:        tokens[0].Pos(),
+			IsDefine:   true,
+			Name:       name,
+			Expression: strings.Join(exprParts, " "),
+			Src:        strings.Join(srcParts, " "),
+		})
+	}
+}
+
+func (t *Translator) resolveTypedefs(typedefs []*CDecl) {
 	for _, decl := range typedefs {
 		if decl.Kind() != TypeKind {
 			t.typedefKinds[decl.Name] = decl.Kind()
@@ -648,14 +673,43 @@ func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
 	default:
 		fallback = "C." + name
 	}
-	decl, ok := t.tagMap[name]
-	if ok && decl.IsTemplate() {
+	specByTag, ok := t.tagMap[name]
+	if ok && specByTag.IsComplete() {
 		return
 	}
 	if _, ok = t.typedefsSet[name]; ok {
 		return
 	}
 	return
+}
+
+func (t *Translator) registerTagsOf(spec CType) {
+	switch spec.Kind() {
+	case EnumKind, StructKind, UnionKind:
+		if tag := spec.GetBase(); len(tag) > 0 {
+			if prev, ok := t.tagMap[tag]; !ok {
+				// first time seen -> store the tag
+				t.tagMap[tag] = spec
+			} else if !prev.IsComplete() {
+				// overwrite with a template declaration
+				t.tagMap[tag] = spec
+			}
+		}
+	}
+	switch typ := spec.(type) {
+	case *CStructSpec:
+		for _, m := range typ.Members {
+			if tag := m.Type.GetBase(); m.Type.Kind() == StructKind && len(tag) > 0 {
+				if prev, ok := t.tagMap[tag]; !ok {
+					// first time seen -> store the tag
+					t.tagMap[tag] = m.Type
+				} else if !prev.IsComplete() {
+					// overwrite with a template declaration
+					t.tagMap[tag] = m.Type
+				}
+			}
+		}
+	}
 }
 
 func (t *Translator) IsAcceptableName(target RuleTarget, name string) bool {
@@ -684,11 +738,11 @@ func (t *Translator) IsAcceptableName(target RuleTarget, name string) bool {
 	return false
 }
 
-func (t *Translator) TagMap() map[string]CDecl {
+func (t *Translator) TagMap() map[string]CType {
 	return t.tagMap
 }
 
-func (t *Translator) ExpressionMap() map[string]Expression {
+func (t *Translator) ExpressionMap() map[string]string {
 	return t.exprMap
 }
 
@@ -696,14 +750,14 @@ func (t *Translator) ValueMap() map[string]Value {
 	return t.valueMap
 }
 
-func (t *Translator) Defines() []CDecl {
+func (t *Translator) Defines() []*CDecl {
 	return t.defines
 }
 
-func (t *Translator) Declares() []CDecl {
+func (t *Translator) Declares() []*CDecl {
 	return t.declares
 }
 
-func (t *Translator) Typedefs() []CDecl {
+func (t *Translator) Typedefs() []*CDecl {
 	return t.typedefs
 }

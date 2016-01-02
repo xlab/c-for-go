@@ -202,6 +202,13 @@ func (m *Model) value(v interface{}, typ Type) interface{} {
 			default:
 				panic(w)
 			}
+		case int:
+			switch w {
+			case 4:
+				return int32(x)
+			default:
+				panic(w)
+			}
 		case int32:
 			switch w {
 			case 4:

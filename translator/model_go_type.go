@@ -16,37 +16,37 @@ type GoTypeSpec struct {
 	Bits     uint16
 }
 
-func (gts *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
+func (spec *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
 	if n == 0 {
 		return
 	}
 	switch ptrTip {
 	case TipPtrArr:
 		if n > 1 {
-			gts.Slices += n
+			spec.Slices += n
 		} else {
-			gts.Slices++
+			spec.Slices++
 		}
 	case TipPtrRef:
 		if n > 1 {
-			gts.Slices += n - 1
-			gts.Pointers++
+			spec.Slices += n - 1
+			spec.Pointers++
 		} else {
-			gts.Pointers++
+			spec.Pointers++
 		}
 	}
 }
 
-func (gts GoTypeSpec) IsPlainKind() bool {
-	switch gts.Kind {
+func (spec GoTypeSpec) IsPlainKind() bool {
+	switch spec.Kind {
 	case PlainTypeKind, EnumKind, OpaqueStructKind, UnionKind:
 		return true
 	}
 	return false
 }
 
-func (gts GoTypeSpec) IsPlain() bool {
-	switch gts.Base {
+func (spec GoTypeSpec) IsPlain() bool {
+	switch spec.Base {
 	case "int", "byte", "rune", "float", "void", "unsafe.Pointer", "bool":
 		return true
 	case "string":
@@ -55,31 +55,31 @@ func (gts GoTypeSpec) IsPlain() bool {
 	return false
 }
 
-func (gts *GoTypeSpec) IsReference() bool {
-	return len(gts.Arrays) > 0
+func (spec *GoTypeSpec) IsReference() bool {
+	return len(spec.Arrays) > 0
 }
 
-func (gts GoTypeSpec) String() string {
-	return string(gts.Bytes())
+func (spec GoTypeSpec) String() string {
+	return string(spec.Bytes())
 }
 
-func (gts GoTypeSpec) Bytes() []byte {
+func (spec GoTypeSpec) Bytes() []byte {
 	buf := new(bytes.Buffer)
-	if len(gts.Arrays) > 0 {
-		buf.WriteString(gts.Arrays)
+	if len(spec.Arrays) > 0 {
+		buf.WriteString(spec.Arrays)
 	}
-	if gts.Slices > 0 {
-		buf.WriteString(strings.Repeat("[]", int(gts.Slices)))
+	if spec.Slices > 0 {
+		buf.WriteString(strings.Repeat("[]", int(spec.Slices)))
 	}
-	if gts.Pointers > 0 {
-		buf.WriteString(ptrs(gts.Pointers))
+	if spec.Pointers > 0 {
+		buf.WriteString(ptrs(spec.Pointers))
 	}
-	if gts.Unsigned && gts.Base == "int" {
+	if spec.Unsigned && spec.Base == "int" {
 		buf.WriteString("u")
 	}
-	buf.WriteString(gts.Base)
-	if gts.Bits > 0 {
-		fmt.Fprintf(buf, "%d", int(gts.Bits))
+	buf.WriteString(spec.Base)
+	if spec.Bits > 0 {
+		fmt.Fprintf(buf, "%d", int(spec.Bits))
 	}
 	return buf.Bytes()
 }

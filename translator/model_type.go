@@ -14,6 +14,7 @@ type CTypeSpec struct {
 	Unsigned  bool
 	Short     bool
 	Long      bool
+	Complex   bool
 	Arrays    string
 	VarArrays uint8
 	Pointers  uint8
@@ -53,22 +54,22 @@ func GetArraySizes(arr string) (sizes []ArraySizeSpec) {
 	return sizes
 }
 
-func (cts CTypeSpec) String() string {
+func (spec CTypeSpec) String() string {
 	buf := new(bytes.Buffer)
-	if cts.Unsigned {
+	if spec.Unsigned {
 		buf.WriteString("unsigned ")
-	} else if cts.Signed {
+	} else if spec.Signed {
 		buf.WriteString("signed ")
 	}
 	switch {
-	case cts.Long:
+	case spec.Long:
 		buf.WriteString("long ")
-	case cts.Short:
+	case spec.Short:
 		buf.WriteString("short ")
 	}
-	fmt.Fprint(buf, cts.Base)
-	buf.WriteString(strings.Repeat("*", int(cts.Pointers)))
-	buf.WriteString(cts.Arrays)
+	fmt.Fprint(buf, spec.Base)
+	buf.WriteString(strings.Repeat("*", int(spec.Pointers)))
+	buf.WriteString(spec.Arrays)
 	return buf.String()
 }
 
@@ -76,11 +77,15 @@ func (c *CTypeSpec) SetPointers(n uint8) {
 	c.Pointers = n
 }
 
+func (c *CTypeSpec) IsComplete() bool {
+	return true
+}
+
 func (c *CTypeSpec) IsOpaque() bool {
 	return true
 }
 
-func (c CTypeSpec) Kind() CTypeKind {
+func (c *CTypeSpec) Kind() CTypeKind {
 	return TypeKind
 }
 

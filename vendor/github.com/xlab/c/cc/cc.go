@@ -283,11 +283,11 @@ func Parse(predefine string, paths []string, m *Model, opts ...Opt) (*Translatio
 	yyParse(lx)
 
 	defines := make(DefinesMap, len(macros.m))
-	for id, macro := range macros.m {
+	for _, macro := range macros.m {
 		if !macro.isFnLike {
-			name := xc.Dict.S(id)
+			name := string(macro.defTok.S())
 			toks := decodeTokens(macro.repl, nil)
-			defines[string(name)] = toks
+			defines[name] = toks
 		}
 	}
 	return lx.translationUnit, defines, report.Errors(true)

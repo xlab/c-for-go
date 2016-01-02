@@ -126,6 +126,32 @@ func incVal(v Value) Value {
 	}
 }
 
+type TypeCache struct {
+	mux   sync.RWMutex
+	cache map[int]CType
+}
+
+func (t *TypeCache) Get(id int) (CType, bool) {
+	t.mux.RLock()
+	defer t.mux.RUnlock()
+	spec, ok := t.cache[id]
+	if ok {
+		return spec.Copy(), true
+	}
+	return nil, false
+}
+
+func (t *TypeCache) Set(id int, spec CType) {
+	t.mux.Lock()
+	defer t.mux.Unlock()
+	if t.cache == nil {
+		t.cache = make(map[int]CType)
+	}
+	// if _, ok := t.cache[id]; !ok {
+	t.cache[id] = spec.Copy()
+	// }
+}
+
 type CachedNameTransform struct {
 	Target     RuleTarget
 	Visibility RuleTarget
@@ -216,11 +242,11 @@ func tagAnonymousMembers(decl CDecl) {
 		return
 	}
 	structSpec := decl.Spec.(*CStructSpec)
-	for i := range structSpec.Members {
-		switch spec := structSpec.Members[i].Spec.(type) {
+	for _, m := range structSpec.Members {
+		switch spec := m.Type.(type) {
 		case *CStructSpec:
 			if len(spec.Tag) == 0 {
-				spec.Tag = fmt.Sprintf("%s_%s", decl.Name, structSpec.Members[i].Name)
+				spec.Tag = fmt.Sprintf("%s_%s", decl.Name, m.Name)
 			}
 		}
 	}
