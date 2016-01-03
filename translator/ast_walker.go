@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/xlab/c/cc"
+	"github.com/xlab/c/xc"
 )
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
@@ -43,7 +44,7 @@ func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
 				decl.Value = init.Expression.Value
 				decl.Expression = blessName(init.Expression.Token.S())
 			}
-			t.registerTagsOf(decl.Spec)
+			t.registerTagsOf(decl)
 			declared = append(declared, decl)
 			if init != nil {
 				t.valueMap[decl.Name] = decl.Value
@@ -53,7 +54,7 @@ func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
 		}
 	} else if declr := d.Declarator(); declr != nil {
 		decl := t.declarator(declr)
-		t.registerTagsOf(decl.Spec)
+		t.registerTagsOf(decl)
 		declared = append(declared, decl)
 	}
 	return
@@ -100,11 +101,10 @@ func (t *Translator) getEnumTag(typ cc.Type) (tag string) {
 }
 
 func memberName(m cc.Member) string {
-	dd := m.Declarator.DirectDeclarator
-	if dd.DirectDeclarator != nil {
-		dd = dd.DirectDeclarator
+	if m.Name == 0 {
+		return ""
 	}
-	return blessName(dd.Token.S())
+	return blessName(xc.Dict.S(m.Name))
 }
 
 func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
@@ -186,9 +186,10 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type) *CStructSpec {
 	}
 	members, _ := typ.Members()
 	for _, m := range members {
-		spec.Members = append(spec.Members, CStructMember{
+		spec.Members = append(spec.Members, &CDecl{
 			Name: memberName(m),
-			Type: t.typeSpec(m.Type),
+			Spec: t.typeSpec(m.Type),
+			Pos:  m.Declarator.Pos(),
 		})
 	}
 	return spec
@@ -205,20 +206,20 @@ func (t *Translator) unionSpec(base *CTypeSpec, typ cc.Type) *CStructSpec {
 	}
 	members, _ := typ.Members()
 	for _, m := range members {
-		spec.Members = append(spec.Members, CStructMember{
+		spec.Members = append(spec.Members, &CDecl{
 			Name: memberName(m),
-			Type: t.typeSpec(m.Type),
+			Spec: t.typeSpec(m.Type),
+			Pos:  m.Declarator.Pos(),
 		})
 	}
 	return spec
 }
 
 func paramName(p cc.Parameter) string {
-	dd := p.Declarator.DirectDeclarator
-	if dd.DirectDeclarator != nil {
-		dd = dd.DirectDeclarator
+	if p.Name == 0 {
+		return ""
 	}
-	return blessName(dd.Token.S())
+	return blessName(xc.Dict.S(p.Name))
 }
 
 func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type) *CFunctionSpec {
@@ -232,9 +233,10 @@ func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type) *CFunctionSpec {
 	}
 	params, _ := typ.Parameters()
 	for _, p := range params {
-		spec.Params = append(spec.Params, CFunctionParam{
+		spec.Params = append(spec.Params, &CDecl{
 			Name: paramName(p),
-			Type: t.typeSpec(p.Type),
+			Spec: t.typeSpec(p.Type),
+			Pos:  p.Declarator.Pos(),
 		})
 	}
 	return spec
@@ -351,56 +353,3 @@ func (t *Translator) typeSpec(typ cc.Type) CType {
 	t.typeCache.Set(id, spec)
 	return spec
 }
-
-// AUGMENTED ENUM SUPPORT BELOW
-
-// func (t *Translator) walkEnumSpecifier(enSpec *cc.EnumSpecifier, decl *CDecl) {
-// 	decl.Pos = enSpec.Token.Pos()
-// 	switch enSpec.Case {
-// 	case 0, // EnumSpecifier0 '{' EnumeratorList '}'
-// 		1: // EnumSpecifier0 '{' EnumeratorList ',' '}'
-// 		decl.Spec = &CEnumSpec{}
-// 		enumSpec := decl.Spec.(*CEnumSpec)
-// 		if enSpec.EnumeratorList.IdentifierOpt != nil {
-// 			enumSpec.Tag = blessName(enSpec.EnumSpecifier0.IdentifierOpt.Token.S())
-// 		}
-// 		enumIdx := len(enumSpec.Enumerators)
-// 		nextList := enSpec.EnumeratorList
-// 		for nextList != nil {
-// 			enumDecl := t.walkEnumerator(nextList.Enumerator)
-// 			if enumDecl.Value == nil {
-// 				if enumIdx > 0 {
-// 					// get previous enumerator from the list
-// 					prevEnum := enumSpec.Enumerators[enumIdx-1]
-// 					enumDecl.Value = incVal(prevEnum.Value)
-// 					switch t.constRules[ConstEnum] {
-// 					case ConstExpandFull:
-// 						enumDecl.Expression = append(prevEnum.Expression, '+', '1')
-// 					case ConstExpand:
-// 						enumDecl.Expression = []byte(prevEnum.Name + "+1")
-// 					case ConstCGOAlias:
-// 						enumDecl.Expression = []byte(fmt.Sprintf("C.%s", blessName([]byte(enumDecl.Name))))
-// 					default:
-// 						enumDecl.Expression = []byte(fmt.Sprintf("%d", enumDecl.Value))
-// 					}
-// 					enumDecl.Spec = prevEnum.Spec.Copy()
-// 				} else {
-// 					enumDecl.Value = int32(0)
-// 					enumDecl.Expression = []byte("0")
-// 				}
-// 			} else if t.constRules[ConstEnum] == ConstCGOAlias {
-// 				enumDecl.Expression = []byte(fmt.Sprintf("C.%s", blessName([]byte(enumDecl.Name))))
-// 			}
-// 			enumIdx++
-// 			enumDecl.Spec = enumSpec.PromoteType(enumDecl.Value)
-// 			enumSpec.Enumerators = append(enumSpec.Enumerators, enumDecl)
-// 			t.valueMap[enumDecl.Name] = enumDecl.Value
-// 			t.exprMap[enumDecl.Name] = enumDecl.Expression
-// 			nextList = nextList.EnumeratorList
-// 		}
-// 	case 2: // "enum" IDENTIFIER
-// 		decl.Spec = &CEnumSpec{
-// 			Tag: blessName(enSpec.Token.S()),
-// 		}
-// 	}
-// }

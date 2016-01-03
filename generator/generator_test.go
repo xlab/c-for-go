@@ -74,15 +74,10 @@ func TestProxies(t *testing.T) {
 }
 
 func getGenerator(originHeader string) (*Generator, error) {
-	p, err := parser.New(&parser.Config{
-		TargetPaths:  []string{originHeader},
+	unit, defines, err := parser.ParseWith(&parser.Config{
+		SourcesPaths: []string{originHeader},
 		IncludePaths: []string{"/usr/include"},
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	unit, err := p.Parse()
 	if err != nil {
 		return nil, err
 	}
@@ -130,9 +125,7 @@ func getGenerator(originHeader string) (*Generator, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := t.Learn(unit); err != nil {
-		return nil, err
-	}
+	t.Learn(unit, defines)
 
 	genCfg := &Config{
 		PackageName: "foo",

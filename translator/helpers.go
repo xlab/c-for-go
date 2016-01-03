@@ -243,7 +243,7 @@ func tagAnonymousMembers(decl CDecl) {
 	}
 	structSpec := decl.Spec.(*CStructSpec)
 	for _, m := range structSpec.Members {
-		switch spec := m.Type.(type) {
+		switch spec := m.Spec.(type) {
 		case *CStructSpec:
 			if len(spec.Tag) == 0 {
 				spec.Tag = fmt.Sprintf("%s_%s", decl.Name, m.Name)

@@ -65,7 +65,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 	namesSeen := make(map[string]bool)
 
 	gen.submitHelper(cgoGenTag)
-	expandEnum := func(decl tl.CDecl) bool {
+	expandEnum := func(decl *tl.CDecl) bool {
 		if tag := decl.Spec.GetBase(); len(tag) == 0 {
 			gen.expandEnumAnonymous(wr, decl, namesSeen)
 			return true
@@ -73,7 +73,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 			return false
 		} else {
 			gen.expandEnum(wr, decl)
-			if decl.IsTemplate() {
+			if decl.Spec.IsComplete() {
 				tagsSeen[tag] = true
 			}
 			return true
@@ -83,7 +83,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 	for tag, decl := range gen.tr.TagMap() {
 		if decl.Spec.Kind() != tl.EnumKind {
 			continue
-		} else if !decl.IsTemplate() {
+		} else if !decl.Spec.IsComplete() {
 			continue
 		}
 		if !gen.tr.IsAcceptableName(tl.TargetType, tag) {
@@ -96,7 +96,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 	for _, decl := range gen.tr.Typedefs() {
 		if decl.Spec.Kind() != tl.EnumKind {
 			continue
-		} else if !decl.IsTemplate() {
+		} else if !decl.Spec.IsComplete() {
 			continue
 		}
 		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
@@ -140,7 +140,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		case tl.StructKind, tl.OpaqueStructKind:
 			var memTip tl.Tip
 			if tag := decl.Spec.GetBase(); len(tag) > 0 {
-				if decl.IsTemplate() {
+				if decl.Spec.IsComplete() {
 					seenStructTags[tag] = true
 				}
 				if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
@@ -159,7 +159,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 			}
 			gen.writeUnionTypedef(wr, decl)
 		case tl.EnumKind:
-			if !decl.IsTemplate() {
+			if !decl.Spec.IsComplete() {
 				gen.writeEnumTypedef(wr, decl)
 			}
 		case tl.TypeKind:
@@ -171,7 +171,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		count++
 	}
 	for tag, decl := range gen.tr.TagMap() {
-		switch decl.Kind() {
+		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
 			if seenStructTags[tag] {
 				continue
@@ -179,7 +179,6 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, tag) {
 				continue
 			}
-			decl.Name = tag
 			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
 				gen.writeStructTypedef(wr, decl, memTipRx.Self() == tl.TipMemRaw)
 			}
@@ -193,7 +192,6 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, tag) {
 				continue
 			}
-			decl.Name = tag
 			gen.writeUnionTypedef(wr, decl)
 			writeSpace(wr, 1)
 			count++
@@ -221,7 +219,7 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 			}
 			gen.writeUnionDeclaration(wr, decl, tl.NoTip, public)
 		case tl.EnumKind:
-			if !decl.IsTemplate() {
+			if !decl.Spec.IsComplete() {
 				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 					continue
 				}

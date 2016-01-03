@@ -7,7 +7,7 @@ import (
 	tl "github.com/xlab/cgogen/translator"
 )
 
-func (gen *Generator) writeTypeTypedef(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeTypeTypedef(wr io.Writer, decl *tl.CDecl) {
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
 	goTypeName := gen.tr.TransformName(tl.TargetType, decl.Name)
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goTypeName, tl.SrcLocation(decl.Pos))
@@ -15,7 +15,7 @@ func (gen *Generator) writeTypeTypedef(wr io.Writer, decl tl.CDecl) {
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) writeEnumTypedef(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeEnumTypedef(wr io.Writer, decl *tl.CDecl) {
 	var goEnumName []byte
 	if len(decl.Name) > 0 {
 		goEnumName = gen.tr.TransformName(tl.TargetType, decl.Name)
@@ -30,7 +30,7 @@ func (gen *Generator) writeEnumTypedef(wr io.Writer, decl tl.CDecl) {
 	}
 }
 
-func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
@@ -41,7 +41,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
 				ptrTip = tip
 			}
 		}
-		returnRef = gen.tr.TranslateSpec(spec.Return.Spec, ptrTip).String()
+		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).String()
 	}
 
 	ptrTipRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name)
@@ -59,7 +59,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl tl.CDecl) {
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl, raw bool) {
+func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool) {
 	var goStructName []byte
 	if len(decl.Name) > 0 {
 		goStructName = gen.tr.TransformName(tl.TargetType, decl.Name)
@@ -67,7 +67,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl, raw bool) 
 		return
 	}
 
-	if !decl.IsTemplate() {
+	if !decl.Spec.IsComplete() {
 		// not a template, so a struct referenced by a tag declares a new type
 		typeRef := gen.tr.TranslateSpec(decl.Spec).String()
 
@@ -97,7 +97,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl tl.CDecl, raw bool) 
 	}
 }
 
-func (gen *Generator) writeUnionTypedef(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeUnionTypedef(wr io.Writer, decl *tl.CDecl) {
 	var goUnionName []byte
 	if len(decl.Name) > 0 {
 		goUnionName = gen.tr.TransformName(tl.TargetType, decl.Name)

@@ -224,12 +224,12 @@ func (p *pp) checkCompatibleReplacementTokenList(tok xc.Token, oldList, newList 
 	ex := decodeTokens(oldList, nil)
 	toks := decodeTokens(newList, nil)
 
-	if g, e := len(toks), len(ex); g != e {
+	if g, e := len(toks), len(ex); g != e && len(ex) > 0 {
 		p.report.ErrTok(tok, "cannot redefine macro using a replacement list of different length")
 		return
 	}
 
-	if len(toks) == 0 {
+	if len(toks) == 0 || len(ex) == 0 {
 		return
 	}
 
@@ -754,6 +754,8 @@ func (p *pp) controlLine(n *ControlLine) {
 	switch n.Case {
 	case 0: // PPDEFINE IDENTIFIER ReplacementList
 		p.defineMacro(n.Token2, n.ReplacementList)
+	case 2: // PPDEFINE IDENTIFIER_LPAREN IdentifierList ',' "..." ')' ReplacementList
+		p.defineFnMacro(n.Token2, n.IdentifierListOpt, n.ReplacementList)
 	case 3: // PPDEFINE IDENTIFIER_LPAREN IdentifierListOpt ')' ReplacementList
 		p.defineFnMacro(n.Token2, n.IdentifierListOpt, n.ReplacementList)
 	case 4: // PPERROR PPTokenListOpt
@@ -809,6 +811,9 @@ func (p *pp) controlLine(n *ControlLine) {
 		}
 
 		p.report.ErrTok(toks[0], "include file not found: %s", arg)
+	case 8: // PPPRAGMA PPTokenListOpt
+		// simply ignore pragmas (#pragma once already works)
+		return
 	case 9: // PPUNDEF IDENTIFIER '\n'
 		nm := n.Token2.Val
 		if protectedMacros[nm] && p.protectMacros {

@@ -5,18 +5,9 @@ import (
 	"strings"
 )
 
-type CFunctionParam struct {
-	Name string
-	Type CType
-}
-
-func (c CFunctionParam) String() string {
-	return c.Name + " " + c.Type.String()
-}
-
 type CFunctionSpec struct {
 	Return    CType
-	Params    []CFunctionParam
+	Params    []*CDecl
 	Arrays    string
 	VarArrays uint8
 	Pointers  uint8

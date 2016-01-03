@@ -8,7 +8,7 @@ import (
 	tl "github.com/xlab/cgogen/translator"
 )
 
-func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []tl.CDecl) {
+func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) {
 	if len(defines) == 0 {
 		return
 	}
@@ -18,7 +18,7 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []tl.CDecl) {
 			continue
 		}
 		if len(decl.Expression) == 0 {
-			decl.Expression = skipName
+			decl.Expression = skipNameStr
 		}
 		name := gen.tr.TransformName(tl.TargetConst, decl.Name)
 		fmt.Fprintf(wr, "// %s as defined in %s\n", name, tl.SrcLocation(decl.Pos))
@@ -28,17 +28,17 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []tl.CDecl) {
 	writeEndConst(wr)
 }
 
-func (gen *Generator) writeConstDeclaration(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 	declName := gen.tr.TransformName(tl.TargetConst, decl.Name)
 	fmt.Fprintf(wr, "// %s as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
 	if len(decl.Expression) == 0 {
-		decl.Expression = skipName
+		decl.Expression = skipNameStr
 	}
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
 	fmt.Fprintf(wr, "const %s %s = %s", declName, goSpec, decl.Expression)
 }
 
-func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl tl.CDecl, namesSeen map[string]bool) {
+func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool) {
 	var typeName []byte
 	var hasType bool
 	if decl.IsTypedef {
@@ -56,32 +56,32 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl tl.CDecl, namesSeen
 		fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName, tl.SrcLocation(decl.Pos))
 	}
 	writeStartConst(wr)
-	for _, en := range spec.Enumerators {
-		enName := gen.tr.TransformName(tl.TargetConst, en.Name)
-		if len(enName) == 0 {
+	for _, m := range spec.Members {
+		mName := gen.tr.TransformName(tl.TargetConst, m.Name)
+		if len(mName) == 0 {
 			continue
-		} else if namesSeen[string(enName)] {
+		} else if namesSeen[string(mName)] {
 			continue
 		} else {
-			namesSeen[string(enName)] = true
+			namesSeen[string(mName)] = true
 		}
 		if !hasType {
-			fmt.Fprintf(wr, "// %s as declared in %s\n", enName, tl.SrcLocation(en.Pos))
+			fmt.Fprintf(wr, "// %s as declared in %s\n", mName, tl.SrcLocation(m.Pos))
 		}
-		if len(en.Expression) == 0 {
-			en.Expression = skipName
+		if len(m.Expression) == 0 {
+			m.Expression = skipNameStr
 		}
 		if hasType {
-			fmt.Fprintf(wr, "%s %s = %s\n", enName, typeName, en.Expression)
+			fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, m.Expression)
 			continue
 		}
-		fmt.Fprintf(wr, "%s = %s\n", enName, en.Expression)
+		fmt.Fprintf(wr, "%s = %s\n", mName, m.Expression)
 	}
 	writeEndConst(wr)
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 	var declName []byte
 	var isTypedef bool
 	if decl.IsTypedef {
@@ -107,15 +107,15 @@ func (gen *Generator) expandEnum(wr io.Writer, decl tl.CDecl) {
 
 	fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName, tl.SrcLocation(decl.Pos))
 	writeStartConst(wr)
-	for _, en := range spec.Enumerators {
-		enName := gen.tr.TransformName(tl.TargetConst, en.Name)
-		if len(enName) == 0 {
+	for _, m := range spec.Members {
+		mName := gen.tr.TransformName(tl.TargetConst, m.Name)
+		if len(mName) == 0 {
 			continue
 		}
-		if len(en.Expression) == 0 {
-			en.Expression = skipName
+		if len(m.Expression) == 0 {
+			m.Expression = skipNameStr
 		}
-		fmt.Fprintf(wr, "%s %s = %s\n", enName, declName, en.Expression)
+		fmt.Fprintf(wr, "%s %s = %s\n", mName, declName, m.Expression)
 	}
 	writeEndConst(wr)
 	writeSpace(wr, 1)

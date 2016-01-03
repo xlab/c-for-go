@@ -6,19 +6,10 @@ import (
 	"strings"
 )
 
-type CStructMember struct {
-	Name string
-	Type CType
-}
-
-func (c CStructMember) String() string {
-	return c.Name + " " + c.Type.String()
-}
-
 type CStructSpec struct {
 	Tag       string
 	IsUnion   bool
-	Members   []CStructMember
+	Members   []*CDecl
 	Arrays    string
 	VarArrays uint8
 	Pointers  uint8

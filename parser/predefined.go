@@ -13,12 +13,13 @@ var predefinedBase = `
 #define __STDC_HOSTED__ 1
 #define __STDC_VERSION__ 199901L
 #define __STDC__ 1
-#define __signed signed
-#define __GNUC__ 0
+#define __GNUC__ 4
+#define __builtin_va_list void *
 #define __asm__(x)
 #define __asm(x)
-#define __inline
+#define __inline inline
 #define __attribute__(x)
+#define __POSIX_C_DEPRECATED(ver)
 `
 
 var predefines = map[TargetArchBits]string{

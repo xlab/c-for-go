@@ -670,11 +670,11 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, memName, ptrName string,
 
 func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, to []proxyDecl) {
 	spec := funcSpec.(*tl.CFunctionSpec)
-	from = make([]proxyDecl, len(spec.ParamList))
-	to = make([]proxyDecl, 0, len(spec.ParamList))
+	from = make([]proxyDecl, len(spec.Params))
+	to = make([]proxyDecl, 0, len(spec.Params))
 
 	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, funcName, funcSpec)
-	for i, param := range spec.ParamList {
+	for i, param := range spec.Params {
 		var goSpec tl.GoTypeSpec
 		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
 			goSpec = gen.tr.TranslateSpec(param.Spec, ptrTip)
@@ -732,7 +732,7 @@ func (gen *Generator) submitHelper(h *Helper) {
 	}
 }
 
-func (gen *Generator) writeFunctionBody(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 	writeStartFuncBody(wr)
 	wr2 := new(reverseBuffer)
 	from, to := gen.createProxies(decl.Name, decl.Spec)
@@ -749,9 +749,9 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl tl.CDecl) {
 	}
 	fmt.Fprintf(wr, "C.%s", decl.Name)
 	writeStartParams(wr)
-	for i := range spec.ParamList {
+	for i := range spec.Params {
 		fmt.Fprint(wr, from[i].Name)
-		if i < len(spec.ParamList)-1 {
+		if i < len(spec.Params)-1 {
 			fmt.Fprint(wr, ", ")
 		}
 	}
@@ -766,8 +766,8 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl tl.CDecl) {
 			// defaults to ref for the returns
 			ptrTip = tl.TipPtrRef
 		}
-		goSpec := gen.tr.TranslateSpec((*spec).Return.Spec, ptrTip)
-		cgoSpec := gen.tr.CGoSpec((*spec).Return.Spec)
+		goSpec := gen.tr.TranslateSpec((*spec).Return, ptrTip)
+		cgoSpec := gen.tr.CGoSpec((*spec).Return)
 		retProxy, nillable := gen.proxyRetToGo(memTipRx.Self(), "mem", "ret", goSpec, cgoSpec)
 		if nillable {
 			fmt.Fprintln(wr, "if ret == nil {\nreturn nil\n}")

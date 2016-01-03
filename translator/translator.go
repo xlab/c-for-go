@@ -22,7 +22,7 @@ type Translator struct {
 
 	valueMap map[string]Value
 	exprMap  map[string]string
-	tagMap   map[string]CType
+	tagMap   map[string]*CDecl
 
 	defines  []*CDecl
 	typedefs []*CDecl
@@ -94,7 +94,7 @@ func New(cfg *Config) (*Translator, error) {
 		compiledPtrTipRxs: make(PtrTipRxMap),
 		valueMap:          make(map[string]Value),
 		exprMap:           make(map[string]string),
-		tagMap:            make(map[string]CType),
+		tagMap:            make(map[string]*CDecl),
 		typedefsSet:       make(map[string]struct{}),
 		typedefKinds:      make(map[string]CTypeKind),
 		typedefVoids:      make(map[string]struct{}),
@@ -674,7 +674,7 @@ func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
 		fallback = "C." + name
 	}
 	specByTag, ok := t.tagMap[name]
-	if ok && specByTag.IsComplete() {
+	if ok && specByTag.Spec.IsComplete() {
 		return
 	}
 	if _, ok = t.typedefsSet[name]; ok {
@@ -683,29 +683,29 @@ func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
 	return
 }
 
-func (t *Translator) registerTagsOf(spec CType) {
-	switch spec.Kind() {
+func (t *Translator) registerTagsOf(decl *CDecl) {
+	switch decl.Spec.Kind() {
 	case EnumKind, StructKind, UnionKind:
-		if tag := spec.GetBase(); len(tag) > 0 {
+		if tag := decl.Spec.GetBase(); len(tag) > 0 {
 			if prev, ok := t.tagMap[tag]; !ok {
 				// first time seen -> store the tag
-				t.tagMap[tag] = spec
-			} else if !prev.IsComplete() {
+				t.tagMap[tag] = decl
+			} else if !prev.Spec.IsComplete() {
 				// overwrite with a template declaration
-				t.tagMap[tag] = spec
+				t.tagMap[tag] = decl
 			}
 		}
 	}
-	switch typ := spec.(type) {
+	switch typ := decl.Spec.(type) {
 	case *CStructSpec:
 		for _, m := range typ.Members {
-			if tag := m.Type.GetBase(); m.Type.Kind() == StructKind && len(tag) > 0 {
+			if tag := m.Spec.GetBase(); m.Spec.Kind() == StructKind && len(tag) > 0 {
 				if prev, ok := t.tagMap[tag]; !ok {
 					// first time seen -> store the tag
-					t.tagMap[tag] = m.Type
-				} else if !prev.IsComplete() {
+					t.tagMap[tag] = m
+				} else if !prev.Spec.IsComplete() {
 					// overwrite with a template declaration
-					t.tagMap[tag] = m.Type
+					t.tagMap[tag] = m
 				}
 			}
 		}
@@ -738,7 +738,7 @@ func (t *Translator) IsAcceptableName(target RuleTarget, name string) bool {
 	return false
 }
 
-func (t *Translator) TagMap() map[string]CType {
+func (t *Translator) TagMap() map[string]*CDecl {
 	return t.tagMap
 }
 

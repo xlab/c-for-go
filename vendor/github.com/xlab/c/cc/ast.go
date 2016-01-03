@@ -551,6 +551,9 @@ func (n *Declarator) String() string {
 
 // Pos reports the position of the first component of n or zero if it's empty.
 func (n *Declarator) Pos() token.Pos {
+	if n == nil {
+		return 0
+	}
 	if p := n.PointerOpt.Pos(); p != 0 {
 		return p
 	}

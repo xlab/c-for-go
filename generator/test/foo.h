@@ -66,7 +66,7 @@ struct foo_has_anon {
 	int a;
 	struct {
 		int anon_n;
-	};
+	} lol;
 };
 
 typedef int foo_fcb(int);

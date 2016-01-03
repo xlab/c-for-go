@@ -1664,7 +1664,7 @@ func (n *StructDeclarator) post(lx *lexer) {
 			sc.prevStructDeclarator = o.Declarator
 			t = o.Declarator.Type
 			switch t.Kind() {
-			case Int, UInt, Long, ULong:
+			case Int, UInt, Long, ULong, Short, UShort:
 				// ok
 			default:
 				lx.report.Err(n.ConstantExpression.Pos(), "bit field has invalid type")

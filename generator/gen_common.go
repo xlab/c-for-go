@@ -9,7 +9,10 @@ import (
 	tl "github.com/xlab/cgogen/translator"
 )
 
-var skipName = []byte("_")
+var (
+	skipName    = []byte("_")
+	skipNameStr = "_"
+)
 
 func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec tl.CType) {
 	structSpec := spec.(*tl.CStructSpec)
@@ -62,7 +65,7 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 	const public = false
 
 	writeStartParams(wr)
-	for i, param := range spec.ParamList {
+	for i, param := range spec.Params {
 		ptrTip := ptrTipSpecRx.TipAt(i)
 		if !ptrTip.IsValid() {
 			ptrTip = tl.TipPtrArr
@@ -96,7 +99,7 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 		case tl.FunctionKind:
 			gen.writeFunctionAsArg(wr, param, ptrTip, public)
 		}
-		if i < len(spec.ParamList)-1 {
+		if i < len(spec.Params)-1 {
 			fmt.Fprintf(wr, ", ")
 		}
 	}
