@@ -126,6 +126,7 @@ func getGenerator(originHeader string) (*Generator, error) {
 		return nil, err
 	}
 	t.Learn(unit, defines)
+	// t.Report()
 
 	genCfg := &Config{
 		PackageName: "foo",

@@ -228,30 +228,30 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, defines cc.DefinesMap) {
 	sort.Sort(declList(t.typedefs))
 }
 
-func (t *Translator) Report() {
-	fmt.Printf("[!] TAGS:\n")
-	for tag, decl := range t.tagMap {
-		fmt.Printf("%s refers to %v\n", tag, decl)
-	}
+// func (t *Translator) Report() {
+// 	fmt.Printf("[!] TAGS:\n")
+// 	for tag, decl := range t.tagMap {
+// 		fmt.Printf("%s refers to %v\n", tag, decl)
+// 	}
 
-	fmt.Printf("\n\n\n[!] TYPEDEFs:\n")
-	for _, decl := range t.typedefs {
-		fmt.Printf("%v\n", decl)
-	}
+// 	fmt.Printf("\n\n\n[!] TYPEDEFs:\n")
+// 	for _, decl := range t.typedefs {
+// 		fmt.Printf("%v\n", decl)
+// 	}
 
-	fmt.Printf("\n\n\n[!] DECLARATIONS:\n")
-	for _, decl := range t.declares {
-		fmt.Printf("%v\n", decl)
-	}
+// 	fmt.Printf("\n\n\n[!] DECLARATIONS:\n")
+// 	for _, decl := range t.declares {
+// 		fmt.Printf("%v\n", decl)
+// 	}
 
-	fmt.Printf("\n\n\n[!] const (")
-	for _, line := range t.defines {
-		fmt.Printf("\n// %s\n//   > define %s %v\n%s = %s",
-			SrcLocation(line.Pos), line.Name, line.Src,
-			t.TransformName(TargetConst, string(line.Name)), line.Expression)
-	}
-	fmt.Printf("\n)\n\n")
-}
+// 	fmt.Printf("\n\n\n[!] const (")
+// 	for _, line := range t.defines {
+// 		fmt.Printf("\n// %s\n//   > define %s %v\n%s = %s",
+// 			SrcLocation(line.Pos), line.Name, line.Src,
+// 			t.TransformName(TargetConst, string(line.Name)), line.Expression)
+// 	}
+// 	fmt.Printf("\n)\n\n")
+// }
 
 func (t *Translator) collectDefines(defines cc.DefinesMap) {
 	for name, tokens := range defines {

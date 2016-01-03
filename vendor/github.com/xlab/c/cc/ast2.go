@@ -65,7 +65,7 @@ func (n *DeclarationSpecifiers) isRegister() bool {
 }
 
 // isConst implements specifier.
-func (n *DeclarationSpecifiers) isConst() bool {
+func (n *DeclarationSpecifiers) IsConst() bool {
 	return n.attr&saConst != 0
 }
 
@@ -1572,7 +1572,7 @@ func (n *SpecifierQualifierList) isRegister() bool {
 }
 
 // isConst implements specifier.
-func (n *SpecifierQualifierList) isConst() bool {
+func (n *SpecifierQualifierList) IsConst() bool {
 	return n.attr&saConst != 0
 }
 

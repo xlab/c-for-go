@@ -21,100 +21,72 @@ var (
 	UStringSpec       = GoTypeSpec{Base: "string", Unsigned: true}
 	Float32Spec       = GoTypeSpec{Base: "float", Bits: 32}
 	Float64Spec       = GoTypeSpec{Base: "float", Bits: 64}
+	Complex64Spec     = GoTypeSpec{Base: "complex", Bits: 64}
+	Complex128Spec    = GoTypeSpec{Base: "complex", Bits: 128}
 	UnsafePointerSpec = GoTypeSpec{Base: "unsafe.Pointer"}
 	VoidSpec          = GoTypeSpec{Base: "byte", Arrays: "[0]"}
-	UintptrSpec       = GoTypeSpec{Base: "uintptr"}
 	//
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
 
+// https://en.wikipedia.org/wiki/C_data_types
 var builtinCTypeMap = CTypeMap{
-	// CHAR TYPES
-	// ----------
 	// char -> byte
 	CTypeSpec{Base: "char"}: ByteSpec,
-
-	// Sould work but it won't since C developers
-	// sometimes may use char* buffers to read uint8_t from it. Well played.
-	// char* -> string
-	// CTypeSpec{Base: "char", Pointers: 1}: StringSpec,
-
 	// const char* -> string
 	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
 	// unsigned char -> byte
 	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
 	// const unsigned char* -> string
 	CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}: UStringSpec,
-
-	// SHORT TYPES
-	// -----------
 	// short -> int16
 	CTypeSpec{Base: "short"}: Int16Spec,
 	// unsigned short -> uint16
 	CTypeSpec{Base: "short", Unsigned: true}: Uint16Spec,
-
-	// LONG TYPES
-	// ----------
-	// long -> int32
-	CTypeSpec{Base: "long"}: Int32Spec,
-	// unsigned long -> uint32
-	CTypeSpec{Base: "long", Unsigned: true}: Uint32Spec,
+	// long -> int
+	CTypeSpec{Base: "long"}: IntSpec,
+	// unsigned long -> uint
+	CTypeSpec{Base: "long", Unsigned: true}: UintSpec,
+	// signed long -> int
+	CTypeSpec{Base: "long", Signed: true}: IntSpec,
 	// long long -> int64
 	CTypeSpec{Base: "long", Long: true}: Int64Spec,
 	// unsigned long long -> uint64
 	CTypeSpec{Base: "long", Long: true, Unsigned: true}: Uint64Spec,
-
-	// INT TYPES
-	// ----------
+	// signed long long -> int64
+	CTypeSpec{Base: "long", Long: true, Signed: true}: Int64Spec,
 	// int -> int
 	CTypeSpec{Base: "int"}: IntSpec,
 	// unsigned int -> uint
 	CTypeSpec{Base: "int", Unsigned: true}: UintSpec,
+	// signed int -> int
+	CTypeSpec{Base: "int", Signed: true}: IntSpec,
 	// short int -> int16
 	CTypeSpec{Base: "int", Short: true}: Int16Spec,
 	// unsigned short int -> uint16
 	CTypeSpec{Base: "int", Short: true, Unsigned: true}: Uint16Spec,
-
-	// FLOAT TYPES
-	// ----------
+	// signed short int -> uint16
+	CTypeSpec{Base: "int", Short: true, Signed: true}: Int16Spec,
+	// unsigned long int -> uint
+	CTypeSpec{Base: "int", Long: true, Unsigned: true}: UintSpec,
+	// signed long int -> uint
+	CTypeSpec{Base: "int", Long: true, Signed: true}: IntSpec,
 	// float -> float32
 	CTypeSpec{Base: "float"}: Float32Spec,
 	// double -> float64
 	CTypeSpec{Base: "double"}: Float64Spec,
-
-	// OTHER TYPES
-	// ----------
+	// long double -> float64
+	CTypeSpec{Base: "double", Long: true}: Float64Spec,
+	// complex float -> complex164
+	CTypeSpec{Base: "float", Complex: true}: Complex64Spec,
+	// complex double -> complex128
+	CTypeSpec{Base: "double", Complex: true}: Complex128Spec,
+	// long complex double -> complex128
+	CTypeSpec{Base: "double", Long: true, Complex: true}: Complex128Spec,
 	// void* -> unsafe.Pointer
 	CTypeSpec{Base: "void", Pointers: 1}: UnsafePointerSpec,
 	// void -> [0]byte
 	CTypeSpec{Base: "void"}: VoidSpec,
-
-	// DEFINED TYPES
-	// ----------
-	CTypeSpec{Base: "bool"}:    BoolSpec,
-	CTypeSpec{Base: "_Bool"}:   BoolSpec, // C99
-	CTypeSpec{Base: "ssize_t"}: Int64Spec,
-	CTypeSpec{Base: "size_t"}:  Uint64Spec,
-	CTypeSpec{Base: "int_t"}:   IntSpec,
-	CTypeSpec{Base: "uint_t"}:  UintSpec,
-
-	CTypeSpec{Base: "int8_t", Const: true, Pointers: 1}:  StringSpec,
-	CTypeSpec{Base: "uint8_t", Const: true, Pointers: 1}: UStringSpec,
-	CTypeSpec{Base: "uint8_t"}:                           ByteSpec,
-
-	CTypeSpec{Base: "int8_t"}:    Int8Spec,
-	CTypeSpec{Base: "int16_t"}:   Int16Spec,
-	CTypeSpec{Base: "int32_t"}:   Int32Spec,
-	CTypeSpec{Base: "int64_t"}:   Int64Spec,
-	CTypeSpec{Base: "uint16_t"}:  Uint16Spec,
-	CTypeSpec{Base: "uint32_t"}:  Uint32Spec,
-	CTypeSpec{Base: "uint64_t"}:  Uint64Spec,
-	CTypeSpec{Base: "intptr_t"}:  UintptrSpec,
-	CTypeSpec{Base: "uintptr_t"}: UintptrSpec,
-	// wchar_t -> rune
-	CTypeSpec{Base: "wchar_t"}: RuneSpec,
-	// const wchar_t* -> string
-	CTypeSpec{Base: "wchar_t", Const: true, Pointers: 1}: StringSpec,
-	// tr1/cstdarg
-	CTypeSpec{Base: "va_list"}: InterfaceSliceSpec,
+	// _Bool -> bool
+	CTypeSpec{Base: "_Bool"}: BoolSpec,
 }

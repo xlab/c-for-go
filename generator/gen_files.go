@@ -43,18 +43,16 @@ func (gen *Generator) WriteIncludes(wr io.Writer) {
 	for _, path := range gen.cfg.Includes {
 		writeInclude(wr, path)
 	}
-	if !hasStdLib(gen.cfg.SysIncludes) {
-		writeCStdIncludes(wr)
-	}
+	writeCStdIncludes(wr, gen.cfg.SysIncludes)
 	fmt.Fprintln(wr, `#include "cgo_helpers.h"`)
 	writeEndComment(wr)
 	fmt.Fprintln(wr, `import "C"`)
 	writeSpace(wr, 1)
 }
 
-func hasStdLib(paths []string) bool {
-	for _, str := range paths {
-		if str == "stdlib.h" {
+func hasLib(paths []string, lib string) bool {
+	for i := range paths {
+		if paths[i] == lib {
 			return true
 		}
 	}
@@ -84,9 +82,7 @@ func (gen *Generator) writeCHHelpersHeader(wr io.Writer) {
 	for _, path := range gen.cfg.Includes {
 		writeInclude(wr, path)
 	}
-	if !hasStdLib(gen.cfg.SysIncludes) {
-		writeCStdIncludes(wr)
-	}
+	writeCStdIncludes(wr, gen.cfg.SysIncludes)
 	writeCHPragma(wr)
 	writeSpace(wr, 1)
 }
@@ -111,8 +107,13 @@ func writeCHPragma(wr io.Writer) {
 	fmt.Fprintln(wr, "#pragma once")
 }
 
-func writeCStdIncludes(wr io.Writer) {
-	fmt.Fprintln(wr, "#include <stdlib.h>")
+func writeCStdIncludes(wr io.Writer, sysIncludes []string) {
+	if !hasLib(sysIncludes, "stdlib.h") {
+		fmt.Fprintln(wr, "#include <stdlib.h>")
+	}
+	// if !hasLib(sysIncludes, "stdbool.h") {
+	// 	fmt.Fprintln(wr, "#include <stdbool.h>")
+	// }
 }
 
 func (gen *Generator) WritePackageHeader(wr io.Writer) {

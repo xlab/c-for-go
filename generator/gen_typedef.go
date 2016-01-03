@@ -16,16 +16,15 @@ func (gen *Generator) writeTypeTypedef(wr io.Writer, decl *tl.CDecl) {
 }
 
 func (gen *Generator) writeEnumTypedef(wr io.Writer, decl *tl.CDecl) {
-	var goEnumName []byte
-	if len(decl.Name) > 0 {
-		goEnumName = gen.tr.TransformName(tl.TargetType, decl.Name)
-	} else {
+	cName, ok := getName(decl)
+	if !ok {
 		return
 	}
+	goName := gen.tr.TransformName(tl.TargetType, cName)
 	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
-	if typeName := string(goEnumName); typeName != typeRef {
-		fmt.Fprintf(wr, "// %s as declared in %s\n", goEnumName, tl.SrcLocation(decl.Pos))
-		fmt.Fprintf(wr, "type %s %s", goEnumName, typeRef)
+	if typeName := string(goName); typeName != typeRef {
+		fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
+		fmt.Fprintf(wr, "type %s %s", goName, typeRef)
 		writeSpace(wr, 1)
 	}
 }
@@ -34,7 +33,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		// defaults to ref for the returns
+		// defaults to ref for the return values
 		ptrTip := tl.TipPtrRef
 		if ptrTipRx, ok := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name); ok {
 			if tip := ptrTipRx.Self(); tip.IsValid() {
@@ -59,56 +58,64 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool) {
-	var goStructName []byte
+func getName(decl *tl.CDecl) (string, bool) {
+	if tag := decl.Spec.GetBase(); len(tag) > 0 {
+		return tag, true
+	}
 	if len(decl.Name) > 0 {
-		goStructName = gen.tr.TransformName(tl.TargetType, decl.Name)
-	} else {
+		return decl.Name, true
+	}
+	return "", false
+}
+
+func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool) {
+	cName, ok := getName(decl)
+	if !ok {
 		return
 	}
+	goName := gen.tr.TransformName(tl.TargetType, cName)
 
 	if !decl.Spec.IsComplete() {
 		// not a template, so a struct referenced by a tag declares a new type
 		typeRef := gen.tr.TranslateSpec(decl.Spec).String()
 
-		if typeName := string(goStructName); typeName != typeRef {
-			fmt.Fprintf(wr, "// %s as declared in %s\n", goStructName, tl.SrcLocation(decl.Pos))
-			fmt.Fprintf(wr, "type %s %s", goStructName, typeRef)
+		if typeName := string(goName); typeName != typeRef {
+			fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
+			fmt.Fprintf(wr, "type %s %s", goName, typeRef)
 			writeSpace(wr, 1)
 			return
 		}
 		return
 	}
 
-	fmt.Fprintf(wr, "// %s as declared in %s\n", goStructName, tl.SrcLocation(decl.Pos))
-	fmt.Fprintf(wr, "type %s struct {", goStructName)
+	fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
+	fmt.Fprintf(wr, "type %s struct {", goName)
 	writeSpace(wr, 1)
-	gen.writeStructMembers(wr, decl.Name, decl.Spec)
+	gen.writeStructMembers(wr, cName, decl.Spec)
 	writeEndStruct(wr)
 	writeSpace(wr, 1)
 	if raw {
-		for _, helper := range gen.getRawStructHelpers(goStructName, decl.Spec) {
+		for _, helper := range gen.getRawStructHelpers(goName, decl.Spec) {
 			gen.submitHelper(helper)
 		}
 		return
 	}
-	for _, helper := range gen.getStructHelpers(goStructName, decl.Name, decl.Spec) {
+	for _, helper := range gen.getStructHelpers(goName, cName, decl.Spec) {
 		gen.submitHelper(helper)
 	}
 }
 
 func (gen *Generator) writeUnionTypedef(wr io.Writer, decl *tl.CDecl) {
-	var goUnionName []byte
-	if len(decl.Name) > 0 {
-		goUnionName = gen.tr.TransformName(tl.TargetType, decl.Name)
-	} else {
+	cName, ok := getName(decl)
+	if !ok {
 		return
 	}
+	goName := gen.tr.TransformName(tl.TargetType, cName)
 	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
 
-	if typeName := string(goUnionName); typeName != typeRef {
-		fmt.Fprintf(wr, "// %s as declared in %s\n", goUnionName, tl.SrcLocation(decl.Pos))
-		fmt.Fprintf(wr, "type %s %s", goUnionName, typeRef)
+	if typeName := string(goName); typeName != typeRef {
+		fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
+		fmt.Fprintf(wr, "type %s %s", goName, typeRef)
 		writeSpace(wr, 1)
 		return
 	}

@@ -128,6 +128,21 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 	return count
 }
 
+func (gen *Generator) MemTipOf(decl *tl.CDecl) tl.Tip {
+	var memTip tl.Tip
+	if tag := decl.Spec.GetBase(); len(tag) > 0 {
+		if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
+			memTip = memTipRx.Self()
+		}
+	}
+	if !memTip.IsValid() {
+		if memTipRx, ok := gen.tr.MemTipRx(decl.Name); ok {
+			memTip = memTipRx.Self()
+		}
+	}
+	return memTip
+}
+
 func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 	var count int
 	seenStructTags := make(map[string]bool)
@@ -138,20 +153,10 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		}
 		switch decl.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
-			var memTip tl.Tip
-			if tag := decl.Spec.GetBase(); len(tag) > 0 {
-				if decl.Spec.IsComplete() {
-					seenStructTags[tag] = true
-				}
-				if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
-					memTip = memTipRx.Self()
-				}
+			if tag := decl.Spec.GetBase(); len(tag) > 0 && decl.Spec.IsComplete() {
+				seenStructTags[tag] = true
 			}
-			if !memTip.IsValid() {
-				if memTipRx, ok := gen.tr.MemTipRx(decl.Name); ok {
-					memTip = memTipRx.Self()
-				}
-			}
+			memTip := gen.MemTipOf(decl)
 			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw)
 		case tl.UnionKind:
 			if tag := decl.Spec.GetBase(); len(tag) > 0 {
@@ -209,12 +214,16 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 		const public = true
 		switch decl.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
-			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+			if len(decl.Name) == 0 {
+				continue
+			} else if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
 			gen.writeStructDeclaration(wr, decl, tl.NoTip, public)
 		case tl.UnionKind:
-			if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
+			if len(decl.Name) == 0 {
+				continue
+			} else if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
 			gen.writeUnionDeclaration(wr, decl, tl.NoTip, public)

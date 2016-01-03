@@ -11,25 +11,24 @@
 //     PAIR(VPX_LOL, void *) acb;
 // } lol_t;
 
-
 // typedef union ulol {
 // 	int a;
 // 	short b;
 // } ulol_t;
 
-#define VPX_TEST 1+2
+// #define VPX_TEST 1+2
 
-enum LOL {
-  One = 1,
-  Two,
-  Three
-};
+// enum LOL {
+//   One = 1,
+//   Two,
+//   Three
+// };
 
-const int AB = One << 4;
+// const int AB = One << 4;
 
-enum securityLevels {
-	first = AB, second
-};
+// enum securityLevels {
+// 	first = AB, second
+// };
 
 // typedef enum
 // {

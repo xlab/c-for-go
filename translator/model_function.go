@@ -23,7 +23,11 @@ func (c *CFunctionSpec) AddArray(size uint64) {
 
 func (c CFunctionSpec) String() string {
 	var params []string
-	for _, param := range c.Params {
+	for i, param := range c.Params {
+		if len(param.Name) == 0 {
+			params = append(params, fmt.Sprintf("arg%d", i))
+			continue
+		}
 		params = append(params, param.Name)
 	}
 	paramList := strings.Join(params, ", ")

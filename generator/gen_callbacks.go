@@ -85,7 +85,7 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "//export %s\n", cbGoName)
-	cbGoDecl := tl.CDecl{
+	cbGoDecl := &tl.CDecl{
 		Name: cbGoName,
 		Spec: spec,
 	}
@@ -123,7 +123,7 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	return
 }
 
-func (gen *Generator) writeCallbackProxyFunc(wr io.Writer, decl tl.CDecl) {
+func (gen *Generator) writeCallbackProxyFunc(wr io.Writer, decl *tl.CDecl) {
 	var returnRef string
 	funcSpec := decl.Spec.(*tl.CFunctionSpec)
 	if funcSpec.Return != nil {

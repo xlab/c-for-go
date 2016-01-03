@@ -128,10 +128,10 @@ func incVal(v Value) Value {
 
 type TypeCache struct {
 	mux   sync.RWMutex
-	cache map[int]CType
+	cache map[string]CType
 }
 
-func (t *TypeCache) Get(id int) (CType, bool) {
+func (t *TypeCache) Get(id string) (CType, bool) {
 	t.mux.RLock()
 	defer t.mux.RUnlock()
 	spec, ok := t.cache[id]
@@ -141,11 +141,14 @@ func (t *TypeCache) Get(id int) (CType, bool) {
 	return nil, false
 }
 
-func (t *TypeCache) Set(id int, spec CType) {
+func (t *TypeCache) Set(id string, spec CType) {
+	if len(id) == 0 {
+		return
+	}
 	t.mux.Lock()
 	defer t.mux.Unlock()
 	if t.cache == nil {
-		t.cache = make(map[int]CType)
+		t.cache = make(map[string]CType)
 	}
 	// if _, ok := t.cache[id]; !ok {
 	t.cache[id] = spec.Copy()

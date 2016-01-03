@@ -16,7 +16,7 @@ func init() {
 }
 
 func TestLearn(t *testing.T) {
-	cfg := parser.NewConfig("/usr/local/include/vpx/vp8.h")
+	cfg := parser.NewConfig("test/translator_test.h")
 	cfg.IncludePaths = []string{"/usr/local/include", "/usr/include"}
 
 	unit, macros, err := parser.ParseWith(cfg)
@@ -51,7 +51,7 @@ func TestLearn(t *testing.T) {
 		t.Fatal(err)
 	}
 	tl.Learn(unit, macros)
-	tl.Report()
+	//	tl.Report()
 }
 
 func ss(n []uint64) []ArraySizeSpec {
