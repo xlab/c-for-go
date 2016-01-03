@@ -6,18 +6,9 @@ import (
 	"strings"
 )
 
-type CEnumMember struct {
-	Name string
-	Type CType
-}
-
-func (c CEnumMember) String() string {
-	return c.Name + " " + c.Type.String()
-}
-
 type CEnumSpec struct {
 	Tag       string
-	Members   []CEnumMember
+	Members   []*CDecl
 	Type      CTypeSpec
 	Arrays    string
 	VarArrays uint8
@@ -99,7 +90,7 @@ func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
 func (spec CEnumSpec) String() string {
 	var members []string
 	for _, m := range spec.Members {
-		members = append(members, m.Name)
+		members = append(members, m.String())
 	}
 	membersColumn := strings.Join(members, ", ")
 

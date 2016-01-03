@@ -132,6 +132,9 @@ type Type interface {
 	// Specifier returns the Specifier of this type.
 	Specifier() Specifier
 
+	// TypeSpecifier returns the first type specifier of this type.
+	TypeSpecifier() *TypeSpecifier
+
 	// String returns a C-like type specifier of this type.
 	String() string
 
@@ -727,7 +730,6 @@ func (n *ctype) Members() (r []Member, isIncomplete bool) {
 	if k := n.Kind(); k != Struct && k != Union {
 		return nil, false
 	}
-
 	switch sus := n.structOrUnionSpecifier(); sus.Case {
 	case 0: // StructOrUnion IdentifierOpt '{' StructDeclarationList '}'
 		for l := sus.StructDeclarationList; l != nil; l = l.StructDeclarationList {
@@ -968,6 +970,9 @@ func (n *ctype) SizeOf() int {
 // Specifier implements Type.
 func (n *ctype) Specifier() Specifier { return &spec{n.resultAttr, n.resultSpecifier.typeSpecifiers()} }
 
+// TypeSpecifier implements Type.
+func (n *ctype) TypeSpecifier() *TypeSpecifier { return n.resultSpecifier.firstTypeSpecifier() }
+
 // String implements Type.
 func (n *ctype) String() string {
 	if n == undefined {
@@ -1138,7 +1143,11 @@ func specifierString(sp Specifier) string {
 	var buf bytes.Buffer
 	switch k := sp.kind(); k {
 	case Enum:
-		panic("TODO Enum")
+		spec := sp.firstTypeSpecifier().EnumSpecifier
+		buf.WriteString(string(spec.Token.S()))
+		if spec.IdentifierOpt != nil {
+			buf.WriteString(" " + string(spec.IdentifierOpt.Token.S()))
+		}
 	case Function:
 		panic("TODO Function")
 	case Struct, Union:

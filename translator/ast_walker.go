@@ -1,6 +1,10 @@
 package translator
 
-import "github.com/xlab/c/cc"
+import (
+	"fmt"
+
+	"github.com/xlab/c/cc"
+)
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
 	t.fileScope = unit.Declarations
@@ -106,21 +110,70 @@ func memberName(m cc.Member) string {
 func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
 	tag := t.getEnumTag(typ)
 	spec := &CEnumSpec{
-		// TODO: Type, // (check out the augmented enums)
 		Tag:       tag,
 		Arrays:    base.Arrays,
 		VarArrays: base.VarArrays,
 		Pointers:  base.Pointers,
 	}
-	// TODO: fix enums lol
-	members, _ := typ.Members()
-	for _, m := range members {
-		spec.Members = append(spec.Members, CEnumMember{
-			Name: memberName(m),
-			Type: t.typeSpec(m.Type),
-		})
+
+	// this would work with patched cznic/cc, replace when workaround is ready
+	enumSpecifier := typ.TypeSpecifier().EnumSpecifier
+
+	var idx int
+	switch enumSpecifier.Case {
+	case 0: // "enum" IdentifierOpt '{' EnumeratorList CommaOpt '}'
+		list := enumSpecifier.EnumeratorList
+		for list != nil {
+			m := t.walkEnumerator(list.Enumerator)
+			list = list.EnumeratorList
+
+			if m.Value == nil {
+				if idx > 0 {
+					// get previous enumerator
+					prevM := spec.Members[idx-1]
+					m.Value = incVal(prevM.Value)
+					switch t.constRules[ConstEnum] {
+					case ConstExpandFull:
+						m.Expression = prevM.Expression + "+1"
+					case ConstExpand:
+						m.Expression = prevM.Name + "+1"
+					case ConstCGOAlias:
+						m.Expression = fmt.Sprintf("C.%s", blessName([]byte(m.Name)))
+					}
+					m.Spec = prevM.Spec.Copy()
+				} else {
+					m.Value = int32(0)
+					m.Expression = "0"
+				}
+			} else if t.constRules[ConstEnum] == ConstCGOAlias {
+				m.Expression = fmt.Sprintf("C.%s", blessName([]byte(m.Name)))
+			}
+
+			idx++
+			m.Spec = spec.PromoteType(m.Value)
+			spec.Members = append(spec.Members, m)
+			t.valueMap[m.Name] = m.Value
+			t.exprMap[m.Name] = m.Expression
+
+		}
+	case 2: // "enum" IDENTIFIER
+		spec.PromoteType(int32(0))
+		return spec
 	}
 	return spec
+}
+
+func (t *Translator) walkEnumerator(e *cc.Enumerator) *CDecl {
+	decl := &CDecl{
+		Name: blessName(e.EnumerationConstant.Token.S()),
+	}
+	switch e.Case {
+	case 0: // EnumerationConstant
+	case 1: // EnumerationConstant '=' ConstantExpression
+		decl.Value = e.ConstantExpression.Value
+		decl.Expression = string(e.ConstantExpression.Expression.Token.S())
+	}
+	return decl
 }
 
 func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type) *CStructSpec {
