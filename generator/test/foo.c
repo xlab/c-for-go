@@ -27,34 +27,6 @@ ssize_t foo_find_char(char *s, char c) {
 	return -1;
 }
 
-size_t foo_send_message(foo_message_t *m, uint8_t *buf) {
-	if (m == 0 || buf == 0) {
-		return 0;
-	}
-	size_t size = 0;
-	memcpy(buf, FOO_MESSAGE_HEADER, FOO_MESSAGE_HEADER_LEN);
-	size += FOO_MESSAGE_HEADER_LEN;
-	memcpy(buf + size, m->from_id, FOO_ID_LEN);
-	size += FOO_ID_LEN;
-	memcpy(buf + size, m->to_id, FOO_ID_LEN);
-	size += FOO_ID_LEN;
-	memcpy(buf + size, m->message, strlen(m->message));
-	size += strlen(m->message);
-	for (int i = 0; i < m->attachments_len; i++) {
-		foo_attachment_t att = m->attachments[i];
-		memcpy(buf + size, att.data, att.size);
-		size += att.size;
-	}
-	m->sent = 1;
-	return size;
-}
-
-foo_message_t* foo_new_message() {
-	foo_message_t* m = (foo_message_t*)malloc(sizeof(foo_message_t));
-	memset(m, 0, sizeof(foo_message_t));
-	return m;
-}
-
 int foo_pass_anon_tag(struct foo_anon_tag a, struct foo_anon_tag b) {
 	return a.n + b.n;
 }

@@ -1,9 +1,7 @@
 package foo
 
 import (
-	"bytes"
 	"testing"
-	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -40,63 +38,6 @@ func TestFindChar(t *testing.T) {
 		result := FindChar(test.Input, test.Search)
 		assert.Equal(t, test.Index, result)
 	}
-}
-
-func TestSendMessage(t *testing.T) {
-	buf := make([]byte, 4096) // 4kB
-	attaches := [][]byte{
-		[]byte("pic1.jpg"),
-		[]byte("pic16.jpg"),
-	}
-	const msgText = "Hey there! Check out these cool pictures attached. -xoxo"
-	msg := &Message{
-		FromID:         [4]byte{0x1},
-		ToID:           [4]byte{0x2},
-		Message:        []byte(msgText),
-		AttachmentsLen: 2,
-		Attachments: []Attachment{
-			{Data: (*byte)(unsafe.Pointer(&attaches[0][0])), Size: uint(len(attaches[0]))},
-			{Data: (*byte)(unsafe.Pointer(&attaches[1][0])), Size: uint(len(attaches[1]))},
-		},
-	}
-	size := SendMessage(msg, buf)
-	assert.EqualValues(t, 85, size)
-	msg.Deref()
-	for i, att := range msg.Attachments {
-		assert.NotNil(t, att.Data)
-		assert.EqualValues(t, len(attaches[i]), att.Size)
-	}
-	assert.Equal(t, true, msg.Sent)
-	packed := []byte("msg:")
-	packed = append(packed, 0x01, 0x00, 0x00, 0x00)
-	packed = append(packed, 0x02, 0x00, 0x00, 0x00)
-	packed = append(packed, msgText...)
-	packed = append(packed, attaches[0]...)
-	packed = append(packed, attaches[1]...)
-	assert.Equal(t, packed, buf[:size])
-}
-
-func TestNewMessage(t *testing.T) {
-	m := NewMessage()
-	assert.NotNil(t, m.Ref())
-	assert.NotPanics(t, func() {
-		m.Deref()
-	})
-	assert.NotPanics(t, func() {
-		m.Free()
-	})
-	assert.Nil(t, m.Ref())
-}
-
-func cleanBuf(buf []byte) []byte {
-	tmp := new(bytes.Buffer)
-	for i := range buf {
-		if buf[i] != 0 {
-			tmp.WriteByte(buf[i])
-			continue
-		}
-	}
-	return tmp.Bytes()
 }
 
 func TestA4Byte(t *testing.T) {

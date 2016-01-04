@@ -25,26 +25,7 @@ void foo_a4_s_s_string(const char ***s[4], size_t n1, size_t n2);
 void foo_a2_a2_s_s_byte(uint8_t **b[2][2], size_t n1, size_t n2);
 void foo_a2_a2_s_s_string(const uint8_t ***s[2][2], size_t n1, size_t n2);
 
-#define FOO_MESSAGE_HEADER "msg:"
-#define FOO_MESSAGE_HEADER_LEN 4
-#define FOO_ID_LEN 4
-
-typedef struct {
-	uint8_t *data;
-	size_t size;
-} foo_attachment_t;
-
-typedef struct foo_message {
-	uint8_t from_id[FOO_ID_LEN];
-	uint8_t to_id[FOO_ID_LEN];
-	char *message;
-	size_t attachments_len;
-	foo_attachment_t* attachments;
-	_Bool sent;
-} foo_message_t;
-
-foo_message_t* foo_new_message();
-size_t foo_send_message(foo_message_t *m, uint8_t *buf);
+#define FOO_ID_LEN 4+1
 
 // doesn't work in CGO yet
 // int foo_anon_test(struct {int n;} a, struct {int n;} b);
