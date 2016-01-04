@@ -160,31 +160,32 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 	writeSpace(buf, 1)
 
 	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeStruct, cStructName, spec)
-	for i, mem := range structSpec.Members {
-		if len(mem.Name) == 0 {
+	for i, m := range structSpec.Members {
+		if len(m.Name) == 0 {
 			continue
 			// TODO: generate setters
 		}
+
 		memTip := memTipRx.TipAt(i)
-		if tag := mem.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
+		if tag := m.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
 			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
 				memTip = memTipRx.TipAt(i)
 			}
 		}
 		var goSpec tl.GoTypeSpec
 		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
-			goSpec = gen.tr.TranslateSpec(mem.Spec, ptrTip)
+			goSpec = gen.tr.TranslateSpec(m.Spec, ptrTip)
 		} else {
-			goSpec = gen.tr.TranslateSpec(mem.Spec)
+			goSpec = gen.tr.TranslateSpec(m.Spec)
 		}
-		cgoSpec := gen.tr.CGoSpec(mem.Spec)
+		cgoSpec := gen.tr.CGoSpec(m.Spec)
 		const public = true
-		goName := "x." + string(gen.tr.TransformName(tl.TargetType, mem.Name, public))
+		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
 		fromProxy, nillable := gen.proxyValueFromGo(memTip, goName, goSpec, cgoSpec)
 		if nillable {
-			fmt.Fprintf(buf, "if %s != nil {\nref%2x.%s = %s\n}\n", goName, crc, mem.Name, fromProxy)
+			fmt.Fprintf(buf, "if %s != nil {\nref%2x.%s = %s\n}\n", goName, crc, m.Name, fromProxy)
 		} else {
-			fmt.Fprintf(buf, "ref%2x.%s = %s\n", crc, mem.Name, fromProxy)
+			fmt.Fprintf(buf, "ref%2x.%s = %s\n", crc, m.Name, fromProxy)
 		}
 	}
 	fmt.Fprintf(buf, `x.ref%2x = ref%2x

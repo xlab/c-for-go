@@ -59,8 +59,8 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 }
 
 func getName(decl *tl.CDecl) (string, bool) {
-	if tag := decl.Spec.GetBase(); len(tag) > 0 {
-		return tag, true
+	if base := decl.Spec.GetBase(); len(base) > 0 {
+		return base, true
 	}
 	if len(decl.Name) > 0 {
 		return decl.Name, true

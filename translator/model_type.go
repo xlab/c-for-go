@@ -8,6 +8,7 @@ import (
 )
 
 type CTypeSpec struct {
+	Raw       string
 	Base      string
 	Const     bool
 	Signed    bool
@@ -95,6 +96,38 @@ func (c CTypeSpec) Copy() CType {
 
 func (c *CTypeSpec) GetBase() string {
 	return c.Base
+}
+
+func (c *CTypeSpec) GetTag() string {
+	return ""
+}
+
+func (c *CTypeSpec) CGoName() (name string) {
+	if len(c.Raw) > 0 {
+		return c.Raw
+	}
+	switch c.Base {
+	case "int", "short", "long", "char":
+		if c.Unsigned {
+			name += "u"
+		} else if c.Signed {
+			name += "s"
+		}
+		switch {
+		case c.Long:
+			name += "long"
+			if c.Base == "long" {
+				name += "long"
+			}
+		case c.Short:
+			name += "short"
+		default:
+			name += c.Base
+		}
+	default:
+		name = c.Base
+	}
+	return
 }
 
 func (c *CTypeSpec) GetArrays() string {

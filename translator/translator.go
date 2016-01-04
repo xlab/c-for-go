@@ -471,6 +471,7 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Unsigned: typeSpec.Unsigned,
 			Short:    typeSpec.Short,
 			Long:     typeSpec.Long,
+			Complex:  typeSpec.Complex,
 			// Arrays skip
 			// VarArrays skip
 			Pointers: typeSpec.Pointers,
@@ -574,10 +575,10 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		}
 		wrapper.splitPointers(ptrTip, spec.GetPointers())
 		wrapper.Pointers += spec.GetVarArrays()
-		if fallback, ok := t.IsBaseDefined(spec); ok && t.IsAcceptableName(TargetType, spec.GetBase()) {
-			wrapper.Base = string(t.TransformName(TargetType, spec.GetBase()))
-		} else {
-			wrapper.Base = fallback
+		if base := spec.GetBase(); len(base) > 0 {
+			wrapper.Base = string(t.TransformName(TargetType, base))
+		} else if cgoName := spec.CGoName(); len(cgoName) > 0 {
+			wrapper.Base = "C." + cgoName
 		}
 		return wrapper
 	}
@@ -589,104 +590,31 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 	}
 	cgo.Pointers += spec.GetVarArrays()
 	cgo.Arrays = GetArraySizes(spec.GetArrays())
+	name := spec.CGoName()
 
-	switch spec := spec.(type) {
-	case *CTypeSpec:
-		switch base := spec.Base; base {
-		case "int", "short", "long", "char":
-			cgo.Base = "C."
-			if spec.Unsigned {
-				cgo.Base += "u"
-			} else if spec.Signed {
-				cgo.Base += "s"
-			}
-			switch {
-			case spec.Long:
-				cgo.Base += "long"
-				if spec.Base == "long" {
-					cgo.Base += "long"
-				}
-			case spec.Short:
-				cgo.Base += "short"
-			default:
-				cgo.Base += spec.Base
-			}
-			return cgo
-		case "void":
-			if cgo.Pointers > 0 {
-				cgo.Pointers--
-				cgo.Base = "unsafe.Pointer"
-			}
-			return cgo
-		default:
-			if _, ok := t.typedefVoids[spec.Base]; ok {
-				if cgo.Pointers > 0 {
-					cgo.Pointers--
-					cgo.Base = "unsafe.Pointer"
-				}
-				return cgo
-			}
-			cgo.Base = "C." + spec.Base
-			return cgo
+	if name == "void" {
+		if cgo.Pointers > 0 {
+			cgo.Pointers--
+			cgo.Base = "unsafe.Pointer"
 		}
-	case *CStructSpec:
-		if spec.IsUnion {
-			arrays := fmt.Sprintf("%s[%sSize]", spec.Arrays, spec.GetBase())
-			return CGoSpec{
-				Arrays: GetArraySizes(arrays),
-				Base:   "byte",
-			}
+		return cgo
+	}
+	if _, ok := t.typedefVoids[name]; ok {
+		if cgo.Pointers > 0 {
+			cgo.Pointers--
+			cgo.Base = "unsafe.Pointer"
 		}
+		return cgo
 	}
 
-	cgo.Base = t.cgoName(spec)
+	cgo.Base = "C." + name
 	return cgo
-}
-
-func (t *Translator) cgoName(spec CType) string {
-	name := spec.GetBase()
-	if _, ok := t.tagMap[name]; ok {
-		switch spec.Kind() {
-		case StructKind, OpaqueStructKind:
-			return "C.struct_" + name
-		case UnionKind:
-			return "C.union_" + name
-		case EnumKind:
-			return "C.enum_" + name
-		}
-	}
-	if len(name) > 0 {
-		return "C." + name
-	}
-	return ""
-}
-
-func (t *Translator) IsBaseDefined(spec CType) (fallback string, ok bool) {
-	name := spec.GetBase()
-	switch spec.Kind() {
-	case StructKind, OpaqueStructKind:
-		fallback = "C.struct_" + name
-	case UnionKind:
-		fallback = "C.union_" + name
-	case EnumKind:
-		fallback = "C.enum_" + name
-	default:
-		fallback = "C." + name
-	}
-	specByTag, ok := t.tagMap[name]
-	if ok && specByTag.Spec.IsComplete() {
-		return
-	}
-	if _, ok = t.typedefsSet[name]; ok {
-		return
-	}
-	return
 }
 
 func (t *Translator) registerTagsOf(decl *CDecl) {
 	switch decl.Spec.Kind() {
 	case EnumKind, StructKind, UnionKind:
-		if tag := decl.Spec.GetBase(); len(tag) > 0 {
+		if tag := decl.Spec.GetTag(); len(tag) > 0 {
 			if prev, ok := t.tagMap[tag]; !ok {
 				// first time seen -> store the tag
 				t.tagMap[tag] = decl
@@ -699,7 +627,10 @@ func (t *Translator) registerTagsOf(decl *CDecl) {
 	switch typ := decl.Spec.(type) {
 	case *CStructSpec:
 		for _, m := range typ.Members {
-			if tag := m.Spec.GetBase(); m.Spec.Kind() == StructKind && len(tag) > 0 {
+			if m.Spec.Kind() != StructKind {
+				continue
+			}
+			if tag := m.Spec.GetTag(); len(tag) > 0 {
 				if prev, ok := t.tagMap[tag]; !ok {
 					// first time seen -> store the tag
 					t.tagMap[tag] = m

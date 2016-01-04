@@ -95,13 +95,13 @@ func getGenerator(originHeader string) (*Generator, error) {
 				{Target: "_bytes$", Self: tl.TipPtrArr},
 			},
 			tl.TipScopeStruct: {
-				{Target: "_attachment_raw$", Tips: tl.Tips{
+				{Target: "_attachment_t$", Tips: tl.Tips{
 					tl.TipPtrRef, // attachment's data raw reference
 				}},
 			},
 		},
 		MemTips: tl.MemTips{
-			{Target: "_raw$", Self: tl.TipMemRaw},
+			{Target: "_attachment_t$", Self: tl.TipMemRaw},
 		},
 		Rules: tl.Rules{
 			tl.TargetGlobal: {

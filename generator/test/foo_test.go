@@ -30,7 +30,7 @@ func TestFindChar(t *testing.T) {
 	tbl := []struct {
 		Input  []byte
 		Search byte
-		Index  int64
+		Index  int
 	}{
 		{[]byte("golang"), 'c', -1},
 		{[]byte("gopher"), 'g', 0},
@@ -55,8 +55,8 @@ func TestSendMessage(t *testing.T) {
 		Message:        []byte(msgText),
 		AttachmentsLen: 2,
 		Attachments: []Attachment{
-			{Data: (*byte)(unsafe.Pointer(&attaches[0][0])), Size: uint64(len(attaches[0]))},
-			{Data: (*byte)(unsafe.Pointer(&attaches[1][0])), Size: uint64(len(attaches[1]))},
+			{Data: (*byte)(unsafe.Pointer(&attaches[0][0])), Size: uint(len(attaches[0]))},
+			{Data: (*byte)(unsafe.Pointer(&attaches[1][0])), Size: uint(len(attaches[1]))},
 		},
 	}
 	size := SendMessage(msg, buf)

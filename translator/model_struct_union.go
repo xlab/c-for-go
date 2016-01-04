@@ -8,6 +8,7 @@ import (
 
 type CStructSpec struct {
 	Tag       string
+	Typedef   string
 	IsUnion   bool
 	Members   []*CDecl
 	Arrays    string
@@ -75,7 +76,24 @@ func (c CStructSpec) Copy() CType {
 }
 
 func (c *CStructSpec) GetBase() string {
+	if len(c.Typedef) > 0 {
+		return c.Typedef
+	}
 	return c.Tag
+}
+
+func (c *CStructSpec) GetTag() string {
+	return c.Tag
+}
+
+func (c *CStructSpec) CGoName() string {
+	if len(c.Typedef) > 0 {
+		return c.Typedef
+	}
+	if c.IsUnion {
+		return "union_" + c.Tag
+	}
+	return "struct_" + c.Tag
 }
 
 func (c *CStructSpec) GetArrays() string {

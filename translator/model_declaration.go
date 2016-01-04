@@ -22,6 +22,8 @@ const (
 
 type CType interface {
 	GetBase() string
+	GetTag() string
+	CGoName() string
 	GetArrays() string
 	GetVarArrays() uint8
 	GetPointers() uint8

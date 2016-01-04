@@ -8,6 +8,7 @@ import (
 
 type CEnumSpec struct {
 	Tag       string
+	Typedef   string
 	Members   []*CDecl
 	Type      CTypeSpec
 	Arrays    string
@@ -128,7 +129,21 @@ func (c CEnumSpec) Copy() CType {
 }
 
 func (c *CEnumSpec) GetBase() string {
+	if len(c.Typedef) > 0 {
+		return c.Typedef
+	}
 	return c.Tag
+}
+
+func (c *CEnumSpec) GetTag() string {
+	return c.Tag
+}
+
+func (c *CEnumSpec) CGoName() string {
+	if len(c.Typedef) > 0 {
+		return c.Typedef
+	}
+	return "enum_" + c.Tag
 }
 
 func (c *CEnumSpec) GetArrays() string {

@@ -1502,13 +1502,6 @@ func (n *ParameterTypeList) post() {
 		d := l.ParameterDeclaration.declarator
 		nm, _ := d.Identifier()
 		t := d.Type
-		//dbg("", position(d.Pos()), t)
-		if t.Kind() == Function {
-			t = t.Pointer()
-		}
-		if t.Kind() == Array {
-			t = t.(*ctype).arrayDecay()
-		}
 		n.params = append(n.params, Parameter{
 			Declarator: d,
 			Name:       nm,

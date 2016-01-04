@@ -6,6 +6,7 @@ import (
 )
 
 type CFunctionSpec struct {
+	Typedef   string
 	Return    CType
 	Params    []*CDecl
 	Arrays    string
@@ -58,6 +59,14 @@ func (c CFunctionSpec) Copy() CType {
 }
 
 func (c *CFunctionSpec) GetBase() string {
+	return ""
+}
+
+func (c *CFunctionSpec) GetTag() string {
+	return ""
+}
+
+func (c *CFunctionSpec) CGoName() string {
 	return ""
 }
 

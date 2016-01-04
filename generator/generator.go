@@ -66,7 +66,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 
 	gen.submitHelper(cgoGenTag)
 	expandEnum := func(decl *tl.CDecl) bool {
-		if tag := decl.Spec.GetBase(); len(tag) == 0 {
+		if tag := decl.Spec.GetTag(); len(tag) == 0 {
 			gen.expandEnumAnonymous(wr, decl, namesSeen)
 			return true
 		} else if tagsSeen[tag] {
@@ -153,13 +153,13 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		}
 		switch decl.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
-			if tag := decl.Spec.GetBase(); len(tag) > 0 && decl.Spec.IsComplete() {
+			if tag := decl.Spec.GetTag(); len(tag) > 0 && decl.Spec.IsComplete() {
 				seenStructTags[tag] = true
 			}
 			memTip := gen.MemTipOf(decl)
 			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw)
 		case tl.UnionKind:
-			if tag := decl.Spec.GetBase(); len(tag) > 0 {
+			if tag := decl.Spec.GetTag(); len(tag) > 0 {
 				seenUnionTags[tag] = true
 			}
 			gen.writeUnionTypedef(wr, decl)

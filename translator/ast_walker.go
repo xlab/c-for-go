@@ -34,27 +34,6 @@ func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
 	}
 }
 
-// func (t *Translator) walkDeclarationSpecifiers(spec *cc.DeclarationSpecifiers) (isConst bool) {
-// 	switch spec.Case {
-// 	case 0: // StorageClassSpecifier DeclarationSpecifiersOpt
-// 		if spec.DeclarationSpecifiersOpt != nil {
-// 			t.walkDeclarationSpecifiers(spec.DeclarationSpecifiersOpt.DeclarationSpecifiers)
-// 		}
-// 	case 1: // TypeSpecifier DeclarationSpecifiersOpt
-// 		if spec.DeclarationSpecifiersOpt != nil {
-// 			t.walkDeclarationSpecifiers(spec.DeclarationSpecifiersOpt.DeclarationSpecifiers)
-// 		}
-// 	case 2: // TypeQualifier DeclarationSpecifiersOpt
-// 		isConst := spec.TypeQualifier.Case == 0
-// 		return isConst
-// 	case 3: // FunctionSpecifier DeclarationSpecifiersOpt
-// 		if spec.DeclarationSpecifiersOpt != nil {
-// 			t.walkDeclarationSpecifiers(spec.DeclarationSpecifiersOpt.DeclarationSpecifiers)
-// 		}
-// 	}
-// 	return
-// }
-
 func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
 	if d.InitDeclaratorListOpt != nil {
 		list := d.InitDeclaratorListOpt.InitDeclaratorList
@@ -81,32 +60,11 @@ func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
 	return
 }
 
-func indentifierOf(dd *cc.DirectDeclarator) string {
-	switch dd.Case {
-	case 0: // IDENTIFIER
-		if dd.Token.Val == 0 {
-			return ""
-		}
-		return blessName(dd.Token.S())
-	case 1: // '(' Declarator ')'
-		return indentifierOf(dd.Declarator.DirectDeclarator)
-	default:
-		//	DirectDeclarator '[' TypeQualifierListOpt ExpressionOpt ']'
-		//	DirectDeclarator '[' "static" TypeQualifierListOpt Expression ']'
-		//	DirectDeclarator '[' TypeQualifierList "static" Expression ']'
-		//	DirectDeclarator '[' TypeQualifierListOpt '*' ']'
-		//	DirectDeclarator '(' ParameterTypeList ')'
-		//	DirectDeclarator '(' IdentifierListOpt ')'
-		return indentifierOf(dd.DirectDeclarator)
-	}
-}
-
 func (t *Translator) declarator(d *cc.Declarator) *CDecl {
 	specifier := d.RawSpecifier()
-	name := indentifierOf(d.DirectDeclarator)
 	decl := &CDecl{
-		Spec:      t.typeSpec(d.Type, name),
-		Name:      name,
+		Spec:      t.typeSpec(d.Type, false, false),
+		Name:      identifierOf(d.DirectDeclarator),
 		IsTypedef: specifier.IsTypedef(),
 		IsStatic:  specifier.IsStatic(),
 		Pos:       d.Pos(),
@@ -138,14 +96,7 @@ func (t *Translator) getEnumTag(typ cc.Type) (tag string) {
 	return
 }
 
-func memberName(m cc.Member) string {
-	if m.Name == 0 {
-		return ""
-	}
-	return blessName(xc.Dict.S(m.Name))
-}
-
-func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
+func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSpec {
 	tag := t.getEnumTag(typ)
 	spec := &CEnumSpec{
 		Tag:       tag,
@@ -214,7 +165,7 @@ func (t *Translator) walkEnumerator(e *cc.Enumerator) *CDecl {
 	return decl
 }
 
-func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type) *CStructSpec {
+func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStructSpec {
 	tag := t.getStructTag(typ)
 	spec := &CStructSpec{
 		Tag:       tag,
@@ -223,59 +174,60 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type) *CStructSpec {
 		Pointers:  base.Pointers,
 		IsUnion:   typ.Kind() == cc.Union,
 	}
+	if isRef {
+		return spec
+	}
 	members, _ := typ.Members()
 	for _, m := range members {
 		spec.Members = append(spec.Members, &CDecl{
 			Name: memberName(m),
-			Spec: t.typeSpec(m.Type, ""),
+			Spec: t.typeSpec(m.Type, isRef, false),
 			Pos:  m.Declarator.Pos(),
 		})
 	}
 	return spec
 }
 
-func paramName(p cc.Parameter) string {
-	if p.Name == 0 {
-		return ""
-	}
-	return blessName(xc.Dict.S(p.Name))
-}
-
-func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type) *CFunctionSpec {
+func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CFunctionSpec {
 	spec := &CFunctionSpec{
 		Arrays:    base.Arrays,
 		VarArrays: base.VarArrays,
 		Pointers:  base.Pointers,
 	}
+	if isRef {
+		return spec
+	}
 	if ret := typ.Result(); ret != nil && ret.Kind() != cc.Void {
-		spec.Return = t.typeSpec(ret, "")
+		spec.Return = t.typeSpec(ret, isRef, true)
 	}
 	params, _ := typ.Parameters()
 	for _, p := range params {
 		spec.Params = append(spec.Params, &CDecl{
 			Name: paramName(p),
-			Spec: t.typeSpec(p.Type, ""),
+			Spec: t.typeSpec(p.Type, isRef, false),
 			Pos:  p.Declarator.Pos(),
 		})
 	}
 	return spec
 }
 
-func (t *Translator) typeSpec(typ cc.Type, fallbackTag string) CType {
+func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 	spec := &CTypeSpec{
 		Const: typ.Specifier().IsConst(),
 	}
-	for typ.Kind() == cc.Ptr {
-		typ = typ.Element()
-		spec.Pointers++
+	if !isRet {
+		spec.Raw = typedefNameOf(typ)
 	}
 	for typ.Kind() == cc.Array {
 		size := typ.Elements()
 		typ = typ.Element()
 		if size >= 0 {
 			spec.AddArray(uint64(size))
-			size = typ.Elements()
 		}
+	}
+	for typ.Kind() == cc.Ptr {
+		typ = typ.Element()
+		spec.Pointers++
 	}
 
 	switch typ.Kind() {
@@ -338,33 +290,81 @@ func (t *Translator) typeSpec(typ cc.Type, fallbackTag string) CType {
 		spec.Long = true
 		spec.Complex = true
 	case cc.Enum:
-		s := t.enumSpec(spec, typ)
-		if len(s.Tag) == 0 {
-			s.Tag = fallbackTag
+		s := t.enumSpec(spec, typ, isRef)
+		if !isRet {
+			s.Typedef = typedefNameOf(typ)
 		}
+		return s
 	case cc.Struct, cc.Union:
+		isRef := false
 		tag := t.getStructTag(typ)
 		if len(tag) > 0 {
 			// avoid recursive structs
-			cached, ok := t.typeCache.Get(tag)
-			if ok {
-				return cached
+			if t.typeCache.Get(tag) {
+				isRef = true
+			} else {
+				t.typeCache.Set(tag)
 			}
-			t.typeCache.Set(tag, &CStructSpec{
-				IsUnion: typ.Kind() == cc.Union,
-			})
 		}
-		s := t.structSpec(spec, typ)
-		t.typeCache.Set(tag, s)
-		if len(s.Tag) == 0 {
-			s.Tag = fallbackTag
+		s := t.structSpec(spec, typ, isRef)
+		if !isRet {
+			s.Typedef = typedefNameOf(typ)
 		}
+		t.typeCache.Delete(tag)
 		return s
 	case cc.Function:
-		return t.functionSpec(spec, typ)
+		s := t.functionSpec(spec, typ, isRef)
+		if !isRet {
+			s.Typedef = typedefNameOf(typ)
+		}
+		return s
 	default:
 		panic("unknown type " + typ.String())
 	}
 
 	return spec
+}
+
+func paramName(p cc.Parameter) string {
+	if p.Name == 0 {
+		return ""
+	}
+	return blessName(xc.Dict.S(p.Name))
+}
+
+func memberName(m cc.Member) string {
+	if m.Name == 0 {
+		return ""
+	}
+	return blessName(xc.Dict.S(m.Name))
+}
+
+func typedefNameOf(typ cc.Type) string {
+	rawSpec := typ.Declarator().RawSpecifier()
+	if name := rawSpec.TypedefName(); name > 0 {
+		return blessName(xc.Dict.S(name))
+	} else if rawSpec.IsTypedef() {
+		return identifierOf(typ.Declarator().DirectDeclarator)
+	}
+	return ""
+}
+
+func identifierOf(dd *cc.DirectDeclarator) string {
+	switch dd.Case {
+	case 0: // IDENTIFIER
+		if dd.Token.Val == 0 {
+			return ""
+		}
+		return blessName(dd.Token.S())
+	case 1: // '(' Declarator ')'
+		return identifierOf(dd.Declarator.DirectDeclarator)
+	default:
+		//	DirectDeclarator '[' TypeQualifierListOpt ExpressionOpt ']'
+		//	DirectDeclarator '[' "static" TypeQualifierListOpt Expression ']'
+		//	DirectDeclarator '[' TypeQualifierList "static" Expression ']'
+		//	DirectDeclarator '[' TypeQualifierListOpt '*' ']'
+		//	DirectDeclarator '(' ParameterTypeList ')'
+		//	DirectDeclarator '(' IdentifierListOpt ')'
+		return identifierOf(dd.DirectDeclarator)
+	}
 }

@@ -21,19 +21,15 @@ func (spec *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
 		return
 	}
 	switch ptrTip {
-	case TipPtrArr:
-		if n > 1 {
-			spec.Slices += n
-		} else {
-			spec.Slices++
-		}
 	case TipPtrRef:
-		if n > 1 {
-			spec.Slices += n - 1
-			spec.Pointers++
-		} else {
-			spec.Pointers++
-		}
+		spec.Slices = spec.Slices + n - 1
+		spec.Pointers++
+	case TipPtrSRef:
+		spec.Pointers += n
+	case TipPtrArr:
+		spec.Slices += n
+	default: // TipPtrArr
+		spec.Slices += n
 	}
 }
 

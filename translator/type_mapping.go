@@ -67,6 +67,8 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "int", Short: true, Unsigned: true}: Uint16Spec,
 	// signed short int -> uint16
 	CTypeSpec{Base: "int", Short: true, Signed: true}: Int16Spec,
+	// long int -> int
+	CTypeSpec{Base: "int", Long: true}: IntSpec,
 	// unsigned long int -> uint
 	CTypeSpec{Base: "int", Long: true, Unsigned: true}: UintSpec,
 	// signed long int -> uint
