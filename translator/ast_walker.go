@@ -314,8 +314,11 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		return s
 	case cc.Function:
 		s := t.functionSpec(spec, typ, isRef)
-		if !isRet {
+		if !isRet && !typ.Specifier().IsTypedef() {
 			s.Typedef = typedefNameOf(typ)
+			if s.Return != nil {
+				s.Return.SetRaw(s.Typedef)
+			}
 		}
 		return s
 	default:

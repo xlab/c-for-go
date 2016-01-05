@@ -11,7 +11,7 @@ func (gen *Generator) writeTypeTypedef(wr io.Writer, decl *tl.CDecl) {
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
 	goTypeName := gen.tr.TransformName(tl.TargetType, decl.Name)
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goTypeName, tl.SrcLocation(decl.Pos))
-	fmt.Fprintf(wr, "type %s %s", goTypeName, goSpec)
+	fmt.Fprintf(wr, "type %s %s", goTypeName, goSpec.UnderlyingString())
 	writeSpace(wr, 1)
 }
 
@@ -21,7 +21,7 @@ func (gen *Generator) writeEnumTypedef(wr io.Writer, decl *tl.CDecl) {
 		return
 	}
 	goName := gen.tr.TransformName(tl.TargetType, cName)
-	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
+	typeRef := gen.tr.TranslateSpec(decl.Spec).UnderlyingString()
 	if typeName := string(goName); typeName != typeRef {
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
 		fmt.Fprintf(wr, "type %s %s", goName, typeRef)
@@ -40,7 +40,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 				ptrTip = tip
 			}
 		}
-		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).String()
+		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).UnderlyingString()
 	}
 
 	ptrTipRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name)
@@ -77,7 +77,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool)
 
 	if !decl.Spec.IsComplete() {
 		// not a template, so a struct referenced by a tag declares a new type
-		typeRef := gen.tr.TranslateSpec(decl.Spec).String()
+		typeRef := gen.tr.TranslateSpec(decl.Spec).UnderlyingString()
 
 		if typeName := string(goName); typeName != typeRef {
 			fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
@@ -112,7 +112,7 @@ func (gen *Generator) writeUnionTypedef(wr io.Writer, decl *tl.CDecl) {
 		return
 	}
 	goName := gen.tr.TransformName(tl.TargetType, cName)
-	typeRef := gen.tr.TranslateSpec(decl.Spec).String()
+	typeRef := gen.tr.TranslateSpec(decl.Spec).UnderlyingString()
 
 	if typeName := string(goName); typeName != typeRef {
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))

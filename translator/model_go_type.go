@@ -13,6 +13,7 @@ type GoTypeSpec struct {
 	Unsigned bool
 	Kind     CTypeKind
 	Base     string
+	Raw      string
 	Bits     uint16
 }
 
@@ -43,7 +44,7 @@ func (spec GoTypeSpec) IsPlainKind() bool {
 
 func (spec GoTypeSpec) IsPlain() bool {
 	switch spec.Base {
-	case "int", "byte", "rune", "float", "void", "unsafe.Pointer", "bool":
+	case "int", "byte", "rune", "float", "unsafe.Pointer", "bool":
 		return true
 	case "string":
 		return false
@@ -56,10 +57,6 @@ func (spec *GoTypeSpec) IsReference() bool {
 }
 
 func (spec GoTypeSpec) String() string {
-	return string(spec.Bytes())
-}
-
-func (spec GoTypeSpec) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	if len(spec.Arrays) > 0 {
 		buf.WriteString(spec.Arrays)
@@ -67,17 +64,52 @@ func (spec GoTypeSpec) Bytes() []byte {
 	if spec.Slices > 0 {
 		buf.WriteString(strings.Repeat("[]", int(spec.Slices)))
 	}
-	if spec.Pointers > 0 {
-		buf.WriteString(ptrs(spec.Pointers))
+
+	var unsafePointer uint8
+	if spec.Base == "unsafe.Pointer" && len(spec.Raw) == 0 {
+		unsafePointer = 1
 	}
-	if spec.Unsigned && spec.Base == "int" {
+	if spec.Pointers > 0 {
+		buf.WriteString(ptrs(spec.Pointers - unsafePointer))
+	}
+	if len(spec.Raw) > 0 {
+		buf.WriteString(spec.Raw)
+		return buf.String()
+	}
+	if spec.Unsigned {
 		buf.WriteString("u")
 	}
 	buf.WriteString(spec.Base)
 	if spec.Bits > 0 {
 		fmt.Fprintf(buf, "%d", int(spec.Bits))
 	}
-	return buf.Bytes()
+	return buf.String()
+}
+
+func (spec GoTypeSpec) UnderlyingString() string {
+	buf := new(bytes.Buffer)
+	if len(spec.Arrays) > 0 {
+		buf.WriteString(spec.Arrays)
+	}
+	if spec.Slices > 0 {
+		buf.WriteString(strings.Repeat("[]", int(spec.Slices)))
+	}
+
+	var unsafePointer uint8
+	if spec.Base == "unsafe.Pointer" {
+		unsafePointer = 1
+	}
+	if spec.Pointers > 0 {
+		buf.WriteString(ptrs(spec.Pointers - unsafePointer))
+	}
+	if spec.Unsigned {
+		buf.WriteString("u")
+	}
+	buf.WriteString(spec.Base)
+	if spec.Bits > 0 {
+		fmt.Fprintf(buf, "%d", int(spec.Bits))
+	}
+	return buf.String()
 }
 
 func (a ArraySizeSpec) String() string {

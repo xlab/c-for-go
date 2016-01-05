@@ -23,6 +23,7 @@ const (
 type CType interface {
 	GetBase() string
 	GetTag() string
+	SetRaw(x string)
 	CGoName() string
 	GetArrays() string
 	GetVarArrays() uint8
@@ -76,9 +77,10 @@ func (c *CDecl) AddArray(size uint64) {
 
 func (c CDecl) String() string {
 	buf := new(bytes.Buffer)
-	if len(c.Name) > 0 {
+	switch {
+	case len(c.Name) > 0:
 		fmt.Fprintf(buf, "%s %s", c.Spec, c.Name)
-	} else {
+	default:
 		buf.WriteString(c.Spec.String())
 	}
 	if len(c.Expression) > 0 {

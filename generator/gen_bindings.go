@@ -505,7 +505,7 @@ func (gen *Generator) packObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CG
 		ref = "&"
 	}
 
-	fmt.Fprintf(buf, "v%s = %sNew%sRef(%sptr%d)\n", genIndices("i", level), ptr, goSpec.Base, ref, level)
+	fmt.Fprintf(buf, "v%s = %sNew%sRef(%sptr%d)\n", genIndices("i", level), ptr, goSpec.Raw, ref, level)
 	return nil
 }
 
@@ -650,7 +650,7 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("*%s = *(*%s)(unsafe.Pointer(&%s))", varName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
-		proxy = fmt.Sprintf("*%s = *(New%sRef(%s))", varName, goSpec.Base, ptrName)
+		proxy = fmt.Sprintf("*%s = *(New%sRef(%s))", varName, goSpec.Raw, ptrName)
 		return
 	}
 }
@@ -707,7 +707,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 			deref = "*"
 			ref = "&"
 		}
-		proxy = fmt.Sprintf("%s = %sNew%sRef(%s%s)", varName, deref, goSpec.Base, ref, ptrName)
+		proxy = fmt.Sprintf("%s = %sNew%sRef(%s%s)", varName, deref, goSpec.Raw, ref, ptrName)
 		return
 	}
 }
@@ -737,7 +737,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
 		proxy = fmt.Sprintf("%s := (*(*[0x7fffffff]%s%s)(unsafe.Pointer(%s)))[:0]",
-			varName, ptrs(goSpec.Pointers), goSpec.Base, ptrName)
+			varName, ptrs(goSpec.Pointers), goSpec.Raw, ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
@@ -753,7 +753,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 			deref = "*"
 			ref = "&"
 		}
-		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", varName, deref, goSpec.Base, ref, ptrName)
+		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", varName, deref, goSpec.Raw, ref, ptrName)
 		return
 	}
 }

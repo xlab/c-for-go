@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -37,10 +36,8 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 			cgoSpec := gen.tr.CGoSpec(member.Spec)
 			fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
 		case tl.EnumKind:
-			typeRef := gen.tr.TranslateSpec(member.Spec, ptrTip).Bytes()
-			if !bytes.Equal(declName, typeRef) {
-				fmt.Fprintf(wr, "%s %s", declName, typeRef)
-			}
+			typeRef := gen.tr.TranslateSpec(member.Spec, ptrTip).String()
+			fmt.Fprintf(wr, "%s %s", declName, typeRef)
 		case tl.FunctionKind:
 			gen.writeFunctionAsArg(wr, member, ptrTip, public)
 		}
@@ -93,10 +90,8 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 			cgoSpec := gen.tr.CGoSpec(param.Spec)
 			fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
 		case tl.EnumKind:
-			typeRef := gen.tr.TranslateSpec(param.Spec, ptrTip).Bytes()
-			if !bytes.Equal(declName, typeRef) {
-				fmt.Fprintf(wr, "%s %s", declName, typeRef)
-			}
+			typeRef := gen.tr.TranslateSpec(param.Spec, ptrTip).String()
+			fmt.Fprintf(wr, "%s %s", declName, typeRef)
 		case tl.FunctionKind:
 			gen.writeFunctionAsArg(wr, param, ptrTip, public)
 		}

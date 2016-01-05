@@ -67,9 +67,15 @@ func (spec CTypeSpec) String() string {
 		buf.WriteString("long ")
 	case spec.Short:
 		buf.WriteString("short ")
+	case spec.Complex:
+		buf.WriteString("complex ")
 	}
 	fmt.Fprint(buf, spec.Base)
-	buf.WriteString(strings.Repeat("*", int(spec.Pointers)))
+	unsafePointer := 0
+	if spec.Base == "unsafe.Pointer" {
+		unsafePointer = 1
+	}
+	buf.WriteString(strings.Repeat("*", int(spec.Pointers)-unsafePointer))
 	buf.WriteString(spec.Arrays)
 	return buf.String()
 }
@@ -100,6 +106,10 @@ func (c *CTypeSpec) GetBase() string {
 
 func (c *CTypeSpec) GetTag() string {
 	return ""
+}
+
+func (c *CTypeSpec) SetRaw(x string) {
+	c.Raw = x
 }
 
 func (c *CTypeSpec) CGoName() (name string) {

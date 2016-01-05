@@ -25,24 +25,33 @@ func (c *CStructSpec) AddArray(size uint64) {
 }
 
 func (spec CStructSpec) String() string {
-	var members []string
-	for _, m := range spec.Members {
-		members = append(members, m.Name)
-	}
-	membersColumn := strings.Join(members, ", ")
-
 	buf := new(bytes.Buffer)
-	if spec.IsUnion {
-		buf.WriteString("union")
-	} else {
-		buf.WriteString("struct")
+	writePrefix := func() {
+		if spec.IsUnion {
+			buf.WriteString("union ")
+		} else {
+			buf.WriteString("struct ")
+		}
 	}
-	if len(spec.Tag) > 0 {
-		buf.WriteString(" " + spec.Tag)
-	}
-	if len(members) > 0 {
+
+	switch {
+	case len(spec.Typedef) > 0:
+		buf.WriteString(spec.Typedef)
+	case len(spec.Tag) > 0:
+		writePrefix()
+		buf.WriteString(spec.Tag)
+	case len(spec.Members) > 0:
+		var members []string
+		for _, m := range spec.Members {
+			members = append(members, m.String())
+		}
+		membersColumn := strings.Join(members, ",\n")
+		writePrefix()
 		fmt.Fprintf(buf, " {%s}", membersColumn)
+	default:
+		writePrefix()
 	}
+
 	buf.WriteString(strings.Repeat("*", int(spec.Pointers)))
 	buf.WriteString(spec.Arrays)
 	return buf.String()
@@ -84,6 +93,10 @@ func (c *CStructSpec) GetBase() string {
 
 func (c *CStructSpec) GetTag() string {
 	return c.Tag
+}
+
+func (c *CStructSpec) SetRaw(x string) {
+	c.Typedef = x
 }
 
 func (c *CStructSpec) CGoName() string {

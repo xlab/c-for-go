@@ -45,10 +45,10 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func New%sRef(ref *%s) *%s", goStructName, cgoSpec, goStructName)
 	fmt.Fprintf(buf, `{
-		obj := new(%s)
 		if ref == nil {
-			return obj
+			return nil
 		}
+		obj := new(%s)
 		obj.ref%2x = ref
 		// enable this if the reference is unmanaged:
 		// runtime.SetFinalizer(obj, func(x *%s) {
@@ -199,13 +199,15 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
 		fromProxy, nillable := gen.proxyValueFromGo(memTip, goName, goSpec, cgoSpec)
 		if nillable {
-			fmt.Fprintf(buf, "\nif %s != nil {\n", goName)
+			fmt.Fprintf(buf, "if %s != nil {\n", goName)
 		}
-		fmt.Fprintf(buf, "\nvar c%s_allocs *cgoAllocMap\n", m.Name)
+		fmt.Fprintf(buf, "var c%s_allocs *cgoAllocMap\n", m.Name)
 		fmt.Fprintf(buf, "ref%2x.%s, c%s_allocs  = %s\n", crc, m.Name, m.Name, fromProxy)
 		fmt.Fprintf(buf, "allocs%2x.Borrow(c%s_allocs)\n", crc, m.Name)
 		if nillable {
-			fmt.Fprintf(buf, "\n}\n")
+			fmt.Fprintf(buf, "}\n\n")
+		} else {
+			fmt.Fprint(buf, "\n")
 		}
 	}
 	fmt.Fprintf(buf, "x.ref%2x = ref%2x\n", crc, crc)

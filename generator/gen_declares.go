@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 
@@ -36,21 +35,24 @@ func (gen *Generator) writeArgType(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, 
 func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
-	typeRef := gen.tr.TranslateSpec(decl.Spec, ptrTip).Bytes()
-	if !bytes.Equal(goName, typeRef) {
-		fmt.Fprintf(wr, "%s %s", goName, typeRef)
-		writeSpace(wr, 1)
-	}
+	typeRef := gen.tr.TranslateSpec(decl.Spec, ptrTip).String()
+	fmt.Fprintf(wr, "%s %s", goName, typeRef)
+	writeSpace(wr, 1)
 }
 
 func (gen *Generator) writeFunctionAsArg(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
 	var returnRef string
+	cName, _ := getName(decl)
+	goName := checkName(gen.tr.TransformName(tl.TargetFunction, cName, public))
 	spec := decl.Spec.(*tl.CFunctionSpec)
+	if len(spec.Typedef) > 0 {
+		funcName := checkName(gen.tr.TransformName(tl.TargetType, spec.Typedef, true))
+		fmt.Fprintf(wr, "%s %s", goName, funcName)
+		return
+	}
 	if spec.Return != nil {
 		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).String()
 	}
-	cName, _ := getName(decl)
-	goName := checkName(gen.tr.TransformName(tl.TargetFunction, cName, public))
 	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
 	fmt.Fprintf(wr, "%s %s", goName, goSpec)
 	gen.writeFunctionParams(wr, cName, decl.Spec)
@@ -60,14 +62,14 @@ func (gen *Generator) writeFunctionAsArg(wr io.Writer, decl *tl.CDecl, ptrTip tl
 }
 
 func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
-	var returnRef []byte
+	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).Bytes()
+		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).String()
 	}
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetFunction, cName, public))
-	if bytes.Equal(returnRef, goName) {
+	if returnRef == string(goName) {
 		goName = gen.tr.TransformName(tl.TargetFunction, "new_"+cName, public)
 	}
 	fmt.Fprintf(wr, "// %s function as declared in %s\n", goName, tl.SrcLocation(decl.Pos))

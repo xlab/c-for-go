@@ -390,7 +390,6 @@ var (
 		tsEncode(tsFloat):                           Float,             // float
 		tsEncode(tsFloat, tsComplex):                FloatComplex,      // float _Complex
 		tsEncode(tsInt):                             Int,               // int
-		tsEncode(tsInt):                             Int,               // signed int
 		tsEncode(tsLong):                            Long,              // long
 		tsEncode(tsLong, tsDouble):                  LongDouble,        // long double
 		tsEncode(tsLong, tsDouble, tsComplex):       LongDoubleComplex, // long double _Complex
@@ -401,6 +400,7 @@ var (
 		tsEncode(tsShort, tsInt):                    Short,             // short int
 		tsEncode(tsSigned):                          Int,               // signed
 		tsEncode(tsSigned, tsChar):                  SChar,             // signed char
+		tsEncode(tsSigned, tsInt):                   Int,               // signed int
 		tsEncode(tsSigned, tsLong):                  Long,              // signed long
 		tsEncode(tsSigned, tsLong, tsInt):           Long,              // signed long int
 		tsEncode(tsSigned, tsLong, tsLong):          LongLong,          // signed long long

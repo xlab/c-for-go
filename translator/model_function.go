@@ -23,13 +23,16 @@ func (c *CFunctionSpec) AddArray(size uint64) {
 }
 
 func (c CFunctionSpec) String() string {
+	if len(c.Typedef) > 0 {
+		return c.Typedef
+	}
 	var params []string
 	for i, param := range c.Params {
 		if len(param.Name) == 0 {
 			params = append(params, fmt.Sprintf("arg%d", i))
 			continue
 		}
-		params = append(params, param.Name)
+		params = append(params, param.String())
 	}
 	paramList := strings.Join(params, ", ")
 	if c.Return != nil {
@@ -68,6 +71,10 @@ func (c *CFunctionSpec) GetTag() string {
 
 func (c *CFunctionSpec) CGoName() string {
 	return ""
+}
+
+func (c *CFunctionSpec) SetRaw(x string) {
+	c.Typedef = x
 }
 
 func (c *CFunctionSpec) GetArrays() string {

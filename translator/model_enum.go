@@ -89,20 +89,29 @@ func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
 }
 
 func (spec CEnumSpec) String() string {
-	var members []string
-	for _, m := range spec.Members {
-		members = append(members, m.String())
-	}
-	membersColumn := strings.Join(members, ", ")
-
 	buf := new(bytes.Buffer)
-	fmt.Fprint(buf, "enum")
-	if len(spec.Tag) > 0 {
-		buf.WriteString(" " + spec.Tag)
+	writePrefix := func() {
+		buf.WriteString("enum ")
 	}
-	if len(members) > 0 {
+
+	switch {
+	case len(spec.Typedef) > 0:
+		buf.WriteString(spec.Typedef)
+	case len(spec.Tag) > 0:
+		writePrefix()
+		buf.WriteString(spec.Tag)
+	case len(spec.Members) > 0:
+		var members []string
+		for _, m := range spec.Members {
+			members = append(members, m.String())
+		}
+		membersColumn := strings.Join(members, ",\n")
+		writePrefix()
 		fmt.Fprintf(buf, " {%s}", membersColumn)
+	default:
+		writePrefix()
 	}
+
 	buf.WriteString(strings.Repeat("*", int(spec.Pointers)))
 	buf.WriteString(spec.Arrays)
 	return buf.String()
@@ -133,6 +142,10 @@ func (c *CEnumSpec) GetBase() string {
 		return c.Typedef
 	}
 	return c.Tag
+}
+
+func (c *CEnumSpec) SetRaw(x string) {
+	c.Typedef = x
 }
 
 func (c *CEnumSpec) GetTag() string {
