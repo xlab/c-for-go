@@ -231,6 +231,7 @@ func TestA2A2SSByte(t *testing.T) {
 	}
 	A2A2SSByte(&a, 3, 2)
 	assert.Equal(t, b, a)
+
 }
 
 func TestA2A2SSString(t *testing.T) {

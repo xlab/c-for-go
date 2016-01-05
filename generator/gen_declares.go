@@ -94,6 +94,7 @@ func (gen *Generator) writeArgStruct(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip
 
 	fmt.Fprintf(wr, "%s struct {", goName)
 	writeSpace(wr, 1)
+	gen.submitHelper(cgoAllocMap)
 	gen.writeStructMembers(wr, cName, decl.Spec)
 	writeEndStruct(wr)
 }
@@ -120,6 +121,7 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl *tl.CDecl, ptrTi
 
 	fmt.Fprintf(wr, "var %s struct {", goName)
 	writeSpace(wr, 1)
+	gen.submitHelper(cgoAllocMap)
 	gen.writeStructMembers(wr, cName, decl.Spec)
 	writeEndStruct(wr)
 	writeSpace(wr, 1)

@@ -70,12 +70,12 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		Pointers: 1,
 	})
 	buf = new(bytes.Buffer)
-	fmt.Fprintf(buf, "func (x %s) PassRef() %s", goFuncName, cgoSpec)
+	fmt.Fprintf(buf, "func (x %s) PassRef() (ref %s, allocs *cgoAllocMap)", goFuncName, cgoSpec)
 	fmt.Fprintf(buf, `{
 		if %sFunc == nil {
  			%sFunc = x
  		}
-		return (%s)(C.%s)
+		return (%s)(C.%s), nil
 	}`, cbGoName, cbGoName, cgoSpec, cbCName)
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.PassRef", goFuncName),
@@ -107,7 +107,8 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		retGoSpec := gen.tr.TranslateSpec(funcSpec.Return, ptrTipRx.Self())
 		retCGoSpec := gen.tr.CGoSpec(funcSpec.Return)
 		retProxy, _ := gen.proxyArgFromGo(memTipRx.Self(), ret, retGoSpec, retCGoSpec)
-		fmt.Fprintf(buf, "return %s\n", retProxy)
+		fmt.Fprintf(buf, "ret, _ := %s\n", retProxy)
+		fmt.Fprintf(buf, "return ret\n")
 	} else {
 		fmt.Fprintf(buf, "%sFunc(%s)\n", cbGoName, paramNamesGoList)
 	}
@@ -186,14 +187,14 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 	return
 }
 
-func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, memName, ptrName string,
+func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName string,
 	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
 	nillable = true
 
 	if getHelper, ok := toGoHelperMap[goSpec]; ok {
 		helper := getHelper(gen, cgoSpec)
 		gen.submitHelper(helper)
-		proxy = fmt.Sprintf("%s := %s(%s)", memName, helper.Name, ptrName)
+		proxy = fmt.Sprintf("%s := %s(%s)", varName, helper.Name, ptrName)
 		return proxy, helper.Nillable
 	}
 
@@ -205,17 +206,17 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, memName, ptrName strin
 		helper := gen.getPackHelper(memTip, goSpec, cgoSpec)
 		gen.submitHelper(helper)
 		if len(goSpec.Arrays) > 0 {
-			ptrName = fmt.Sprintf("%s := (*%s)(unsafe.Pointer(&%s))", memName, cgoSpec, ptrName)
+			ptrName = fmt.Sprintf("%s := (*%s)(unsafe.Pointer(&%s))", varName, cgoSpec, ptrName)
 		}
 		gen.submitHelper(sliceHeader)
-		proxy = fmt.Sprintf("var %s %s\n%s(%s, %s)", memName, goSpec, helper.Name, memName, ptrName)
+		proxy = fmt.Sprintf("var %s %s\n%s(%s, %s)", varName, goSpec, helper.Name, varName, ptrName)
 		return proxy, helper.Nillable
-	case isPlain && goSpec.Slices > 0: // ex: []byte
+	case isPlain && goSpec.Slices != 0: // ex: []byte
 		gen.submitHelper(sliceHeader)
 		buf := new(bytes.Buffer)
 		postfix := gen.randPostfix()
-		fmt.Fprintf(buf, "var %s %s", memName, goSpec)
-		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, memName)
+		fmt.Fprintf(buf, "var %s %s", varName, goSpec)
+		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
 		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
 		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
@@ -225,13 +226,13 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, memName, ptrName strin
 		var ref, ptr string
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
 			len(goSpec.Arrays) == 0 && goSpec.Pointers == 0 {
-			proxy = fmt.Sprintf("%s := (%s)(%s)", memName, goSpec, ptrName)
+			proxy = fmt.Sprintf("%s := (%s)(%s)", varName, goSpec, ptrName)
 			return
 		} else if goSpec.Pointers == 0 {
 			ref = "&"
 			ptr = "*"
 		}
-		proxy = fmt.Sprintf("%s := %s(%s%s)(unsafe.Pointer(%s%s))", memName, ptr, ptr, goSpec, ref, ptrName)
+		proxy = fmt.Sprintf("%s := %s(%s%s)(unsafe.Pointer(%s%s))", varName, ptr, ptr, goSpec, ref, ptrName)
 		return
 	default: // ex: *SomeType
 		var ref, deref string
@@ -239,7 +240,7 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, memName, ptrName strin
 			deref = "*"
 			ref = "&"
 		}
-		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", memName, deref, goSpec.Base, ref, ptrName)
+		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", varName, deref, goSpec.Base, ref, ptrName)
 		return
 	}
 }

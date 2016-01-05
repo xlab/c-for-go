@@ -29,9 +29,9 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Free()", goStructName)
 	fmt.Fprintf(buf, `{
-		if x != nil && x.ref%2x != nil {
+		if x != nil && x.allocs%2x != nil {
 			runtime.SetFinalizer(x, nil)
-			C.free(unsafe.Pointer(x.ref%2x))
+			x.allocs%2x.(*cgoAllocMap).Free()
 			x.ref%2x = nil
 		}
 	}`, crc, crc, crc)
@@ -45,18 +45,17 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func New%sRef(ref *%s) *%s", goStructName, cgoSpec, goStructName)
 	fmt.Fprintf(buf, `{
-		obj := &%s{}
+		obj := new(%s)
 		if ref == nil {
-			obj.ref%2x = new(%s)
 			return obj
-		} 
+		}
 		obj.ref%2x = ref
-		// enable if the reference is unmanaged
+		// enable this if the reference is unmanaged:
 		// runtime.SetFinalizer(obj, func(x *%s) {
-		// 	x.Free()
+		// 	C.free(unsafe.Pointer(x.ref%2x))
 		// })
 		return obj
-	}`, goStructName, crc, cgoSpec, crc, goStructName)
+	}`, goStructName, crc, goStructName, crc)
 	name := fmt.Sprintf("New%sRef", goStructName)
 	helpers = append(helpers, &Helper{
 		Name:        name,
@@ -65,12 +64,22 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	})
 
 	buf = new(bytes.Buffer)
-	fmt.Fprintf(buf, "func (x *%s) PassRef() *%s {\n", goStructName, cgoSpec)
+	fmt.Fprintf(buf, "func (x *%s) PassRef() (ref *%s, allocs *cgoAllocMap) {\n", goStructName, cgoSpec)
 	buf.Write(gen.getPassRefSource(goStructName, cStructName, spec))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.PassRef", goStructName),
 		Description: "PassRef returns a reference and creates new C object if no refernce yet.",
+		Source:      buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func (x *%s) PassValue() (value %s, allocs *cgoAllocMap) {\n", goStructName, cgoSpec)
+	buf.Write(gen.getPassValueSource(goStructName, spec))
+	buf.WriteRune('}')
+	helpers = append(helpers, &Helper{
+		Name:        fmt.Sprintf("%s.PassValue", goStructName),
+		Description: "PassValue creates a new C object if no refernce yet and returns the dereferenced value.",
 		Source:      buf.String(),
 	})
 
@@ -151,12 +160,19 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 	buf := new(bytes.Buffer)
 	crc := getRefCRC(spec)
 	fmt.Fprintf(buf, `if x == nil {
-		return nil
+		return nil, nil
 	} else if x.ref%2x != nil {
-		return x.ref%2x
+		return x.ref%2x, nil
 	}`, crc, crc)
 	writeSpace(buf, 1)
-	fmt.Fprintf(buf, "ref%2x := new(%s)\n", crc, cgoSpec.Base)
+
+	h := gen.getAllocMemoryHelper(tl.CGoSpec{Base: cgoSpec.Base})
+	gen.submitHelper(h)
+
+	fmt.Fprintf(buf, "mem%2x := %s(1)\n", crc, h.Name)
+	fmt.Fprintf(buf, "ref%2x := (*%s)(mem%2x)\n", crc, cgoSpec.Base, crc)
+	fmt.Fprintf(buf, "allocs%2x := new(cgoAllocMap)", crc)
+
 	writeSpace(buf, 1)
 
 	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeStruct, cStructName, spec)
@@ -183,14 +199,33 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
 		fromProxy, nillable := gen.proxyValueFromGo(memTip, goName, goSpec, cgoSpec)
 		if nillable {
-			fmt.Fprintf(buf, "if %s != nil {\nref%2x.%s = %s\n}\n", goName, crc, m.Name, fromProxy)
-		} else {
-			fmt.Fprintf(buf, "ref%2x.%s = %s\n", crc, m.Name, fromProxy)
+			fmt.Fprintf(buf, "\nif %s != nil {\n", goName)
+		}
+		fmt.Fprintf(buf, "\nvar c%s_allocs *cgoAllocMap\n", m.Name)
+		fmt.Fprintf(buf, "ref%2x.%s, c%s_allocs  = %s\n", crc, m.Name, m.Name, fromProxy)
+		fmt.Fprintf(buf, "allocs%2x.Borrow(c%s_allocs)\n", crc, m.Name)
+		if nillable {
+			fmt.Fprintf(buf, "\n}\n")
 		}
 	}
-	fmt.Fprintf(buf, `x.ref%2x = ref%2x
-		return ref%2x`, crc, crc, crc)
+	fmt.Fprintf(buf, "x.ref%2x = ref%2x\n", crc, crc)
+	fmt.Fprintf(buf, "x.allocs%2x = allocs%2x\n", crc, crc)
+	fmt.Fprintf(buf, "return ref%2x, allocs%2x\n", crc, crc)
 	writeSpace(buf, 1)
+	return buf.Bytes()
+}
+
+func (gen *Generator) getPassValueSource(goStructName []byte, spec tl.CType) []byte {
+	buf := new(bytes.Buffer)
+	crc := getRefCRC(spec)
+	fmt.Fprintf(buf, `if x == nil {
+		x = New%sRef(nil)
+	} else if x.ref%2x != nil {
+		return *x.ref%2x, nil
+	}`, goStructName, crc, crc)
+	writeSpace(buf, 1)
+	fmt.Fprintf(buf, "ref, allocs := x.PassRef()\n")
+	fmt.Fprintf(buf, "return *ref, allocs\n")
 	return buf.Bytes()
 }
 

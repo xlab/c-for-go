@@ -94,34 +94,34 @@ type CGoSpec struct {
 	Arrays   []ArraySizeSpec
 }
 
-func (cgs CGoSpec) String() string {
+func (spec CGoSpec) String() string {
 	buf := new(bytes.Buffer)
-	for _, size := range cgs.Arrays {
+	for _, size := range spec.Arrays {
 		buf.WriteString(size.String())
 	}
-	fmt.Fprintf(buf, "%s%s", ptrs(cgs.Pointers), cgs.Base)
+	fmt.Fprintf(buf, "%s%s", ptrs(spec.Pointers), spec.Base)
 	return buf.String()
 }
 
-func (cgs *CGoSpec) PointersAtLevel(level uint8) uint8 {
+func (spec *CGoSpec) PointersAtLevel(level uint8) uint8 {
 	// var pointers uint8
-	// if len(cgs.Arrays) > 0 {
+	// if len(spec.Arrays) > 0 {
 	// 	pointers++
 	// }
-	if int(level) > len(cgs.Arrays) {
-		if delta := int(cgs.Pointers) + len(cgs.Arrays) - int(level); delta > 0 {
+	if int(level) > len(spec.Arrays) {
+		if delta := int(spec.Pointers) + len(spec.Arrays) - int(level); delta > 0 {
 			return uint8(delta)
 		}
 	}
-	if level <= cgs.Pointers {
-		return cgs.Pointers - level
+	if level <= spec.Pointers {
+		return spec.Pointers - level
 	}
 	return 0
 }
 
-func (cgs *CGoSpec) AtLevel(level uint8) string {
+func (spec *CGoSpec) AtLevel(level uint8) string {
 	buf := new(bytes.Buffer)
-	for i, size := range cgs.Arrays {
+	for i, size := range spec.Arrays {
 		if i < int(level) {
 			continue
 		} else if i == 0 {
@@ -130,15 +130,38 @@ func (cgs *CGoSpec) AtLevel(level uint8) string {
 		}
 		buf.WriteString(size.String())
 	}
-	if int(level) > len(cgs.Arrays) {
-		if delta := int(cgs.Pointers) + len(cgs.Arrays) - int(level); delta > 0 {
+	if int(level) > len(spec.Arrays) {
+		if delta := int(spec.Pointers) + len(spec.Arrays) - int(level); delta > 0 {
 			fmt.Fprint(buf, strings.Repeat("*", delta))
 		}
 	} else {
-		fmt.Fprint(buf, ptrs(cgs.Pointers))
+		fmt.Fprint(buf, ptrs(spec.Pointers))
 	}
-	fmt.Fprint(buf, cgs.Base)
+	fmt.Fprint(buf, spec.Base)
 	return buf.String()
+}
+
+func (spec *CGoSpec) SpecAtLevel(level uint8) CGoSpec {
+	buf := CGoSpec{
+		Base: spec.Base,
+	}
+	for i, size := range spec.Arrays {
+		if i < int(level) {
+			continue
+		} else if i == 0 {
+			buf.Pointers = 1
+			continue
+		}
+		buf.Arrays = append(buf.Arrays, size)
+	}
+	if int(level) > len(spec.Arrays) {
+		if delta := int(spec.Pointers) + len(spec.Arrays) - int(level); delta > 0 {
+			buf.Pointers += uint8(delta)
+		}
+	} else {
+		buf.Pointers += spec.Pointers
+	}
+	return buf
 }
 
 func ptrs(n uint8) string {

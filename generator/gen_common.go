@@ -57,6 +57,7 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 		return
 	}
 	fmt.Fprintf(wr, "ref%2x *%s\n", crc, cgoSpec)
+	fmt.Fprintf(wr, "allocs%2x interface{}\n", crc)
 }
 
 func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpec tl.CType) {
