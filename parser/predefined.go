@@ -18,6 +18,7 @@ var predefinedBase = `
 #define __asm__(x)
 #define __asm(x)
 #define __inline inline
+#define __signed signed
 #define __attribute__(x)
 #define __POSIX_C_DEPRECATED(ver)
 `
