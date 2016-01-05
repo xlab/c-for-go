@@ -74,21 +74,21 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	} else {
 		return nil, errors.New("cgogen: generator config was not specified")
 	}
-	p, err := parser.New(cfg.Parser)
+
+	// parse the headers
+	unit, macros, err := parser.ParseWith(cfg.Parser)
 	if err != nil {
 		return nil, err
 	}
-	unit, err := p.Parse()
-	if err != nil {
-		return nil, err
-	}
+
+	// learn the model
 	tl, err := translator.New(cfg.Translator)
 	if err != nil {
 		return nil, err
 	}
-	if err := tl.Learn(unit); err != nil {
-		return nil, err
-	}
+	tl.Learn(unit, macros)
+
+	// begin generation
 	pkg := filepath.Base(cfg.Generator.PackageName)
 	gen, err := generator.New(pkg, cfg.Generator, tl)
 	if err != nil {
