@@ -1,1 +1,1 @@
-The latest stable revision of cznic/cc: ca1153faf2e15dfab994094fa3d5d79642ce027f
+The latest stable revision of cznic/cc: d959006a0c2a02bc81a8b23fe828c9f29d6577e6
