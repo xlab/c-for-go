@@ -261,6 +261,12 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 		srcParts := make([]string, 0, len(tokens))
 		exprParts := make([]string, 0, len(tokens))
 		valid := true
+
+		// TODO: some state machine
+		needsTypecast := false
+		typecastValue := false
+		typecastValueParens := 0
+
 		for _, token := range tokens {
 			src := cc.TokSrc(token)
 			srcParts = append(srcParts, src)
@@ -271,6 +277,7 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 					exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
 				} else if _, ok := t.typedefsSet[src]; ok {
 					// type reference
+					needsTypecast = true
 					exprParts = append(exprParts, string(t.TransformName(TargetType, src, true)))
 				} else {
 					// an unresolved reference
@@ -278,7 +285,28 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 					break
 				}
 			default:
-				exprParts = append(exprParts, src)
+				// TODO: state machine
+				const (
+					lparen = rune(40)
+					rparen = rune(41)
+				)
+				switch {
+				case needsTypecast && token.Rune == rparen:
+					typecastValue = true
+					needsTypecast = false
+					exprParts = append(exprParts, src+"(")
+				case typecastValue && token.Rune == lparen:
+					typecastValueParens++
+				case typecastValue && token.Rune == rparen:
+					if typecastValueParens == 0 {
+						typecastValue = false
+						exprParts = append(exprParts, ")"+src)
+					} else {
+						typecastValueParens--
+					}
+				default:
+					exprParts = append(exprParts, src)
+				}
 			}
 			if !valid {
 				break
