@@ -76,15 +76,10 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool)
 	goName := gen.tr.TransformName(tl.TargetType, cName)
 
 	if !decl.Spec.IsComplete() {
-		// not a template, so a struct referenced by a tag declares a new type
-		typeRef := gen.tr.TranslateSpec(decl.Spec).UnderlyingString()
-
-		if typeName := string(goName); typeName != typeRef {
-			fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
-			fmt.Fprintf(wr, "type %s %s", goName, typeRef)
-			writeSpace(wr, 1)
-			return
-		}
+		// opaque struct
+		fmt.Fprintf(wr, "// %s as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
+		fmt.Fprintf(wr, "type %s C.%s", goName, decl.Spec.CGoName())
+		writeSpace(wr, 1)
 		return
 	}
 

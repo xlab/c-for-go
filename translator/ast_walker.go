@@ -116,7 +116,8 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSp
 			m := t.walkEnumerator(list.Enumerator)
 			list = list.EnumeratorList
 
-			if m.Value == nil {
+			switch {
+			case m.Value == nil:
 				if idx > 0 {
 					// get previous enumerator
 					prevM := spec.Members[idx-1]
@@ -134,8 +135,10 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSp
 					m.Value = int32(0)
 					m.Expression = "0"
 				}
-			} else if t.constRules[ConstEnum] == ConstCGOAlias {
+			case t.constRules[ConstEnum] == ConstCGOAlias:
 				m.Expression = fmt.Sprintf("C.%s", blessName([]byte(m.Name)))
+			default:
+				m.Expression = fmt.Sprintf("%d", m.Value)
 			}
 
 			idx++
@@ -143,7 +146,6 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSp
 			spec.Members = append(spec.Members, m)
 			t.valueMap[m.Name] = m.Value
 			t.exprMap[m.Name] = m.Expression
-
 		}
 	case 2: // "enum" IDENTIFIER
 		spec.PromoteType(int32(0))
