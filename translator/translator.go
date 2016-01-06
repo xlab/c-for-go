@@ -628,6 +628,10 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 			return cgo
 		}
 	}
+	if spec.IsOpaque() {
+		cgo.Base = "byte"
+		return cgo
+	}
 	cgo.Base = "C." + spec.CGoName()
 	return cgo
 }

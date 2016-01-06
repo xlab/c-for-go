@@ -197,7 +197,7 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		})`, levelSpec)
 		fmt.Fprintf(buf1, "\n\nmem0 := %s(1)\n", h.Name)
 		fmt.Fprintf(buf1, "allocs.Add(mem0)\n")
-		fmt.Fprintf(buf1, "v0 := (*%s)(mem0)\n", cgoSpec)
+		fmt.Fprintf(buf1, "v0 := *(*%s)(mem0)\n", cgoSpec)
 		fmt.Fprintf(buf1, "for i0 := range x {\n")
 		if isArg {
 			buf2.Linef("return\n")
@@ -676,12 +676,18 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		isPlain && goSpec.Slices > 0 && len(goSpec.Arrays) > 0, // ex: [4][]byte
 		isPlain && goSpec.Slices > 1:                           // ex: [][]byte
 		helper := gen.getPackHelper(memTip, goSpec, cgoSpec)
+		gen.submitHelper(sliceHeader)
 		gen.submitHelper(helper)
 		if len(goSpec.Arrays) > 0 {
 			ptrName = fmt.Sprintf("(*%s)(unsafe.Pointer(&%s))", cgoSpec, ptrName)
 		}
-		gen.submitHelper(sliceHeader)
-		proxy = fmt.Sprintf("%s(%s, %s)", helper.Name, varName, ptrName)
+		var ref string
+		if goSpec.Pointers == 0 {
+			if len(goSpec.Arrays) > 0 || goSpec.Slices == 0 {
+				ref = "&"
+			}
+		}
+		proxy = fmt.Sprintf("%s(%s%s, %s)", helper.Name, ref, varName, ptrName)
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
 		gen.submitHelper(sliceHeader)

@@ -300,6 +300,7 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 	case cc.Union:
 		spec.Base = "char"
 		spec.Unsigned = true
+		spec.Opaque = true
 		spec.Arrays = fmt.Sprintf("[%d]", typ.SizeOf())
 	case cc.Struct:
 		isRef := false

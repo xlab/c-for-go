@@ -16,6 +16,7 @@ type CTypeSpec struct {
 	Short     bool
 	Long      bool
 	Complex   bool
+	Opaque    bool
 	Arrays    string
 	VarArrays uint8
 	Pointers  uint8
@@ -89,7 +90,7 @@ func (c *CTypeSpec) IsComplete() bool {
 }
 
 func (c *CTypeSpec) IsOpaque() bool {
-	return true
+	return c.Opaque
 }
 
 func (c *CTypeSpec) Kind() CTypeKind {
