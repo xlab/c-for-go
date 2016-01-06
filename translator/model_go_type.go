@@ -77,7 +77,10 @@ func (spec GoTypeSpec) String() string {
 		return buf.String()
 	}
 	if spec.Unsigned {
-		buf.WriteString("u")
+		switch spec.Base {
+		case "char", "short", "long", "int":
+			buf.WriteString("u")
+		}
 	}
 	buf.WriteString(spec.Base)
 	if spec.Bits > 0 {
