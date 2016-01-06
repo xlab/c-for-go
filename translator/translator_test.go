@@ -51,7 +51,7 @@ func TestLearn(t *testing.T) {
 		t.Fatal(err)
 	}
 	tl.Learn(unit, macros)
-	//	tl.Report()
+	tl.Report()
 }
 
 func ss(n []uint64) []ArraySizeSpec {

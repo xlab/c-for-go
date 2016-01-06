@@ -218,12 +218,12 @@ func (s declList) Less(i, j int) bool {
 }
 
 func (t *Translator) Learn(unit *cc.TranslationUnit, defines cc.DefinesMap) {
-	t.collectDefines(defines)
-	sort.Sort(declList(t.defines))
 	t.walkTranslationUnit(unit)
 	t.resolveTypedefs(t.typedefs)
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
+	t.collectDefines(defines)
+	sort.Sort(declList(t.defines))
 }
 
 // func (t *Translator) Report() {
@@ -266,12 +266,17 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 			srcParts = append(srcParts, src)
 			switch token.Rune {
 			case cc.IDENTIFIER:
-				if _, ok := defines[src]; !ok {
-					// an unresolved const reference
+				if _, ok := defines[src]; ok {
+					// const reference
+					exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
+				} else if _, ok := t.typedefsSet[src]; ok {
+					// type reference
+					exprParts = append(exprParts, string(t.TransformName(TargetType, src, true)))
+				} else {
+					// an unresolved reference
 					valid = false
 					break
 				}
-				exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
 			default:
 				exprParts = append(exprParts, src)
 			}

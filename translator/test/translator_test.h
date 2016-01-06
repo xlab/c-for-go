@@ -18,6 +18,9 @@
 
 // #define VPX_TEST 1+2
 
+// typedef unsigned int foo;
+// #define bar ((foo) 0x80000000)
+
 // enum LOL {
 //   One = 1,
 //   Two,
