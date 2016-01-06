@@ -737,7 +737,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
 		proxy = fmt.Sprintf("%s := (*(*[0x7fffffff]%s%s)(unsafe.Pointer(%s)))[:0]",
-			varName, ptrs(goSpec.Pointers), goSpec.Raw, ptrName)
+			varName, ptrs(goSpec.Pointers), goSpec.Base, ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
