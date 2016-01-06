@@ -61,6 +61,10 @@ func getHelperName(goSpec tl.GoTypeSpec) string {
 	if goSpec.Unsigned {
 		buf.WriteRune('U')
 	}
+	if len(goSpec.Raw) > 0 {
+		buf.WriteString(strings.Title(goSpec.Raw))
+		return buf.String()
+	}
 	buf.WriteString(strings.Title(goSpec.Base))
 	return buf.String()
 }

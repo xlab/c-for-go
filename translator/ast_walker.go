@@ -297,7 +297,11 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 			s.Typedef = typedefNameOf(typ)
 		}
 		return s
-	case cc.Struct, cc.Union:
+	case cc.Union:
+		spec.Base = "char"
+		spec.Unsigned = true
+		spec.Arrays = fmt.Sprintf("[%d]", typ.SizeOf())
+	case cc.Struct:
 		isRef := false
 		tag := t.getStructTag(typ)
 		if len(tag) > 0 {
