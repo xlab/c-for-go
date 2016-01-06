@@ -197,16 +197,14 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		})`, levelSpec)
 		fmt.Fprintf(buf1, "\n\nmem0 := %s(1)\n", h.Name)
 		fmt.Fprintf(buf1, "allocs.Add(mem0)\n")
-		fmt.Fprintf(buf1, "v0 := *(*%s)(mem0)\n", cgoSpec)
+		fmt.Fprintf(buf1, "v0 := (*%s)(mem0)\n", cgoSpec)
 		fmt.Fprintf(buf1, "for i0 := range x {\n")
+		buf2.Linef("return\n")
 		if isArg {
-			buf2.Linef("return\n")
 			buf2.Linef("unpacked = (%s)(mem0)\n", levelSpec)
 		} else {
-			buf2.Linef("return\n")
-			buf2.Linef("unpacked = v0\n")
+			buf2.Linef("unpacked = *(*%s)(mem0)\n", cgoSpec.String())
 		}
-
 		buf2.Linef("}\n")
 		return
 	}

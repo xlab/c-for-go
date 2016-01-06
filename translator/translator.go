@@ -628,7 +628,7 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 			return cgo
 		}
 	}
-	if spec.IsOpaque() {
+	if spec.Kind() == TypeKind && spec.IsOpaque() {
 		cgo.Base = "byte"
 		return cgo
 	}
