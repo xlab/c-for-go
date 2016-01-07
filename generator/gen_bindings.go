@@ -61,11 +61,7 @@ func getHelperName(goSpec tl.GoTypeSpec) string {
 	if goSpec.Unsigned {
 		buf.WriteRune('U')
 	}
-	if len(goSpec.Raw) > 0 {
-		buf.WriteString(strings.Title(goSpec.Raw))
-		return buf.String()
-	}
-	buf.WriteString(strings.Title(goSpec.Base))
+	buf.WriteString(strings.Title(goSpec.GetName()))
 	return buf.String()
 }
 
@@ -595,9 +591,9 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	switch {
 	case isPlain && isSlice:
 		gen.submitHelper(sliceHeader)
-		gen.packPlainSlice(buf1, goSpec.Base, goSpec.Pointers, level)
+		gen.packPlainSlice(buf1, goSpec.GetName(), goSpec.Pointers, level)
 	case isPlain:
-		packPlain(buf1, cgoSpec, goSpec.Base, goSpec.Pointers, level)
+		packPlain(buf1, cgoSpec, goSpec.GetName(), goSpec.Pointers, level)
 	case isSlice:
 		packSlice(buf1, buf2, cgoSpec, level)
 		goSpec.Slices = 0
@@ -652,6 +648,10 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("*%s = *(*%s)(unsafe.Pointer(&%s))", varName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
+		if goSpec.Kind == tl.FunctionKind {
+			proxy = fmt.Sprintf("// %s is a callback func", varName)
+			return
+		}
 		proxy = fmt.Sprintf("*%s = *(New%sRef(%s))", varName, goSpec.Raw, ptrName)
 		return
 	}
@@ -710,6 +710,10 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("%s = %s(%s%s)(unsafe.Pointer(%s%s))", varName, ptr, ptr, goSpec, ref, ptrName)
 		return
 	default: // ex: *SomeType
+		if goSpec.Kind == tl.FunctionKind {
+			proxy = fmt.Sprintf("// %s is a callback func", varName)
+			return
+		}
 		var ref, deref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"
@@ -745,7 +749,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
 		proxy = fmt.Sprintf("%s := (*(*[0x7fffffff]%s%s)(unsafe.Pointer(%s)))[:0]",
-			varName, ptrs(goSpec.Pointers), goSpec.Base, ptrName)
+			varName, ptrs(goSpec.Pointers), goSpec.GetName(), ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
@@ -756,6 +760,10 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("%s := *(*%s)(unsafe.Pointer(&%s))", varName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
+		if goSpec.Kind == tl.FunctionKind {
+			proxy = fmt.Sprintf("// %s is a callback func", varName)
+			return
+		}
 		var deref, ref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"

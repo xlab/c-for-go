@@ -182,9 +182,17 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 			// TODO: generate setters
 		}
 
+		typeName := m.Spec.GetBase()
+		switch m.Spec.Kind() {
+		case tl.StructKind, tl.OpaqueStructKind, tl.EnumKind:
+			if !gen.tr.IsAcceptableName(tl.TargetType, typeName) {
+				continue
+			}
+		}
+
 		memTip := memTipRx.TipAt(i)
-		if tag := m.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
-			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
+		if len(typeName) > 0 && !memTip.IsValid() {
+			if memTipRx, ok := gen.tr.MemTipRx(typeName); ok {
 				memTip = memTipRx.TipAt(i)
 			}
 		}
@@ -245,27 +253,36 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 	writeSpace(buf, 1)
 
 	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeStruct, cStructName, spec)
-	for i, mem := range structSpec.Members {
-		if len(mem.Name) == 0 {
+	for i, m := range structSpec.Members {
+		if len(m.Name) == 0 {
 			continue
 			// TODO: generate getters
 		}
+
+		typeName := m.Spec.GetBase()
+		switch m.Spec.Kind() {
+		case tl.StructKind, tl.OpaqueStructKind, tl.EnumKind:
+			if !gen.tr.IsAcceptableName(tl.TargetType, typeName) {
+				continue
+			}
+		}
+
 		memTip := memTipRx.TipAt(i)
-		if tag := mem.Spec.GetBase(); len(tag) > 0 && !memTip.IsValid() {
-			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
+		if len(typeName) > 0 && !memTip.IsValid() {
+			if memTipRx, ok := gen.tr.MemTipRx(typeName); ok {
 				memTip = memTipRx.TipAt(i)
 			}
 		}
 		var goSpec tl.GoTypeSpec
 		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
-			goSpec = gen.tr.TranslateSpec(mem.Spec, ptrTip)
+			goSpec = gen.tr.TranslateSpec(m.Spec, ptrTip)
 		} else {
-			goSpec = gen.tr.TranslateSpec(mem.Spec)
+			goSpec = gen.tr.TranslateSpec(m.Spec)
 		}
 		const public = true
-		goName := "x." + string(gen.tr.TransformName(tl.TargetType, mem.Name, public))
-		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, mem.Name)
-		cgoSpec := gen.tr.CGoSpec(mem.Spec)
+		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
+		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, m.Name)
+		cgoSpec := gen.tr.CGoSpec(m.Spec)
 		toProxy, _ := gen.proxyValueToGo(memTip, goName, cgoName, goSpec, cgoSpec)
 		fmt.Fprintln(buf, toProxy)
 	}

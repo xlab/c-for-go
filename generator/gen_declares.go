@@ -114,7 +114,9 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl *tl.CDecl, ptrTi
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
 	if tag := decl.Spec.GetBase(); len(tag) > 0 {
 		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
-		fmt.Fprintf(wr, "var %s %s", goName, goSpec)
+		if string(goName) != goSpec.String() {
+			fmt.Fprintf(wr, "var %s %s", goName, goSpec)
+		}
 		return
 	}
 	if !decl.Spec.IsComplete() {

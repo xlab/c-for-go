@@ -34,7 +34,7 @@ yystate0:
 	case 0: // start condition: INITIAL
 		goto yystart1
 	case 1: // start condition: TRIGRAPHS
-		goto yystart4
+		goto yystart5
 	}
 
 	goto yystate0 // silence unused label error
@@ -90,30 +90,32 @@ yystate3:
 		goto yyabort
 	case c == '\n':
 		goto yystate2
+	case c == '\r':
+		goto yystate4
 	}
 
-	goto yystate4 // silence unused label error
 yystate4:
 	c = t.Next()
-yystart4:
 	switch {
 	default:
 		goto yyabort
-	case c == '?':
-		goto yystate5
-	case c == '\\':
-		goto yystate3
-	case c == '\r':
+	case c == '\n':
 		goto yystate2
 	}
 
+	goto yystate5 // silence unused label error
 yystate5:
 	c = t.Next()
+yystart5:
 	switch {
 	default:
 		goto yyabort
 	case c == '?':
 		goto yystate6
+	case c == '\\':
+		goto yystate3
+	case c == '\r':
+		goto yystate2
 	}
 
 yystate6:
@@ -121,57 +123,66 @@ yystate6:
 	switch {
 	default:
 		goto yyabort
-	case c == '!':
+	case c == '?':
 		goto yystate7
-	case c == '(':
-		goto yystate9
-	case c == ')':
-		goto yystate10
-	case c == '-':
-		goto yystate11
-	case c == '/':
-		goto yystate12
-	case c == '<':
-		goto yystate14
-	case c == '=':
-		goto yystate15
-	case c == '>':
-		goto yystate16
-	case c == '\'':
-		goto yystate8
 	}
 
 yystate7:
+	c = t.Next()
+	switch {
+	default:
+		goto yyabort
+	case c == '!':
+		goto yystate8
+	case c == '(':
+		goto yystate10
+	case c == ')':
+		goto yystate11
+	case c == '-':
+		goto yystate12
+	case c == '/':
+		goto yystate13
+	case c == '<':
+		goto yystate16
+	case c == '=':
+		goto yystate17
+	case c == '>':
+		goto yystate18
+	case c == '\'':
+		goto yystate9
+	}
+
+yystate8:
 	c = t.Next()
 	yyrule = 1
 	t.Mark()
 	goto yyrule1
 
-yystate8:
+yystate9:
 	c = t.Next()
 	yyrule = 2
 	t.Mark()
 	goto yyrule2
 
-yystate9:
+yystate10:
 	c = t.Next()
 	yyrule = 3
 	t.Mark()
 	goto yyrule3
 
-yystate10:
+yystate11:
 	c = t.Next()
 	yyrule = 4
 	t.Mark()
 	goto yyrule4
 
-yystate11:
+yystate12:
 	c = t.Next()
 	yyrule = 5
 	t.Mark()
 	goto yyrule5
 
-yystate12:
+yystate13:
 	c = t.Next()
 	yyrule = 6
 	t.Mark()
@@ -179,28 +190,39 @@ yystate12:
 	default:
 		goto yyrule6
 	case c == '\n':
-		goto yystate13
+		goto yystate14
+	case c == '\r':
+		goto yystate15
 	}
 
-yystate13:
+yystate14:
 	c = t.Next()
 	yyrule = 11
 	t.Mark()
 	goto yyrule11
 
-yystate14:
+yystate15:
+	c = t.Next()
+	switch {
+	default:
+		goto yyabort
+	case c == '\n':
+		goto yystate14
+	}
+
+yystate16:
 	c = t.Next()
 	yyrule = 7
 	t.Mark()
 	goto yyrule7
 
-yystate15:
+yystate17:
 	c = t.Next()
 	yyrule = 8
 	t.Mark()
 	goto yyrule8
 
-yystate16:
+yystate18:
 	c = t.Next()
 	yyrule = 9
 	t.Mark()
@@ -242,8 +264,8 @@ yyrule9: // "??>"
 	{
 		return '}'
 	}
-yyrule10: // \\\n|\r
-yyrule11: // "??/"\n
+yyrule10: // \\\r?\n|\r
+yyrule11: // "??/"\r?\n
 
 	goto yystate0
 	panic("unreachable")

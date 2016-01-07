@@ -85,15 +85,11 @@ func (t *Translator) getStructTag(typ cc.Type) (tag string) {
 }
 
 func (t *Translator) getEnumTag(typ cc.Type) (tag string) {
-	b := t.fileScope.Lookup(cc.NSTags, typ.Tag())
-	es, ok := b.Node.(*cc.EnumSpecifier)
-	if !ok {
-		return
+	spec := typ.TypeSpecifier().EnumSpecifier
+	if spec.IdentifierOpt != nil {
+		return blessName(spec.IdentifierOpt.Token.S())
 	}
-	if es.IdentifierOpt != nil {
-		return blessName(es.IdentifierOpt.Token.S())
-	}
-	return
+	return blessName(spec.Token2.S())
 }
 
 func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSpec {
@@ -220,6 +216,7 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 	if !isRet {
 		spec.Raw = typedefNameOf(typ)
 	}
+
 	for typ.Kind() == cc.Array {
 		size := typ.Elements()
 		typ = typ.Element()
@@ -230,6 +227,13 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 	for typ.Kind() == cc.Ptr {
 		typ = typ.Element()
 		spec.Pointers++
+	}
+	for typ.Kind() == cc.Array {
+		size := typ.Elements()
+		typ = typ.Element()
+		if size >= 0 {
+			spec.AddArray(uint64(size))
+		}
 	}
 
 	switch typ.Kind() {

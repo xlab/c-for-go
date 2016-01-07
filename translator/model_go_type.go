@@ -56,6 +56,13 @@ func (spec *GoTypeSpec) IsReference() bool {
 	return len(spec.Arrays) > 0
 }
 
+func (spec *GoTypeSpec) GetName() string {
+	if len(spec.Raw) > 0 {
+		return spec.Raw
+	}
+	return spec.Base
+}
+
 func (spec GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
 	if len(spec.Arrays) > 0 {

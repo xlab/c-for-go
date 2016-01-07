@@ -373,7 +373,7 @@ func (l *lexer) Reduced(rule, state int, lval *yySymType) (stop bool) {
 
 func (l *lexer) parsePPConstExpr(list PPTokenList, p *pp) bool {
 	l.toks = l.toks[:0]
-	p.expand(&tokenBuf{decodeTokens(list, l.toks)}, true, func(toks []xc.Token) {
+	p.expand(&tokenBuf{decodeTokens(list, nil)}, true, func(toks []xc.Token) {
 		l.toks = append(l.toks, toks...)
 	})
 	for i, tok := range l.toks {

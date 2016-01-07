@@ -28,14 +28,15 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 			goSpec := gen.tr.TranslateSpec(member.Spec, ptrTip)
 			fmt.Fprintf(wr, "%s %s", declName, goSpec)
 		case tl.StructKind, tl.OpaqueStructKind:
-			if tag := member.Spec.GetBase(); len(tag) > 0 {
-				goSpec := gen.tr.TranslateSpec(member.Spec, ptrTip)
-				fmt.Fprintf(wr, "%s %s", declName, goSpec)
+			if !gen.tr.IsAcceptableName(tl.TargetType, member.Spec.GetBase()) {
+				continue
 			}
-		case tl.UnionKind:
-			cgoSpec := gen.tr.CGoSpec(member.Spec)
-			fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
+			goSpec := gen.tr.TranslateSpec(member.Spec, ptrTip)
+			fmt.Fprintf(wr, "%s %s", declName, goSpec)
 		case tl.EnumKind:
+			if !gen.tr.IsAcceptableName(tl.TargetType, member.Spec.GetBase()) {
+				continue
+			}
 			typeRef := gen.tr.TranslateSpec(member.Spec, ptrTip).String()
 			fmt.Fprintf(wr, "%s %s", declName, typeRef)
 		case tl.FunctionKind:
@@ -78,17 +79,12 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 				fmt.Fprintf(wr, "%s %s", declName, goSpec)
 			}
 		case tl.StructKind, tl.OpaqueStructKind:
-			if tag := param.Spec.GetBase(); len(tag) > 0 {
-				goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip)
-				if len(goSpec.Arrays) > 0 {
-					fmt.Fprintf(wr, "%s *%s", declName, goSpec)
-				} else {
-					fmt.Fprintf(wr, "%s %s", declName, goSpec)
-				}
+			goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip)
+			if len(goSpec.Arrays) > 0 {
+				fmt.Fprintf(wr, "%s *%s", declName, goSpec)
+			} else {
+				fmt.Fprintf(wr, "%s %s", declName, goSpec)
 			}
-		case tl.UnionKind:
-			cgoSpec := gen.tr.CGoSpec(param.Spec)
-			fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", declName, cgoSpec.Base)
 		case tl.EnumKind:
 			typeRef := gen.tr.TranslateSpec(param.Spec, ptrTip).String()
 			fmt.Fprintf(wr, "%s %s", declName, typeRef)

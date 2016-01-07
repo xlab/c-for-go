@@ -45,8 +45,8 @@ func (t *trigraphsReader) scan() (r int) {
 <TRIGRAPHS>"??="        return '#'
 <TRIGRAPHS>"??>"        return '}'
 
-\\\n|\r |
-<TRIGRAPHS>"??/"\n
+\\\r?\n|\r |
+<TRIGRAPHS>"??/"\r?\n
 
 %%
         if c, ok := t.Abort(); ok {

@@ -36,7 +36,7 @@
 		{
 			"importpath": "github.com/xlab/c",
 			"repository": "https://github.com/xlab/c",
-			"revision": "582ef0031955c3ebb42559245cd3ce831f3fe4d0",
+			"revision": "b1e5ca94ffd18cb57d682282dc5edf3edc3463a7",
 			"branch": "cgogen"
 		},
 		{

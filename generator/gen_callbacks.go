@@ -66,8 +66,7 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	})
 
 	cgoSpec := gen.tr.CGoSpec(&tl.CTypeSpec{
-		Base:     cFuncName,
-		Pointers: 1,
+		Base: cFuncName,
 	})
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x %s) PassRef() (ref %s, allocs *cgoAllocMap)", goFuncName, cgoSpec)
@@ -215,7 +214,7 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 		gen.submitHelper(sliceHeader)
 		buf := new(bytes.Buffer)
 		postfix := gen.randPostfix()
-		fmt.Fprintf(buf, "var %s %s", varName, goSpec)
+		fmt.Fprintf(buf, "var %s %s\n", varName, goSpec)
 		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
 		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
