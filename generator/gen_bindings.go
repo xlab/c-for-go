@@ -851,7 +851,7 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 	}
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		fmt.Fprint(wr, "ret := ")
+		fmt.Fprint(wr, "__ret := ")
 	}
 	fmt.Fprintf(wr, "C.%s", decl.Name)
 	writeStartParams(wr)
@@ -874,12 +874,13 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 		}
 		goSpec := gen.tr.TranslateSpec((*spec).Return, ptrTip)
 		cgoSpec := gen.tr.CGoSpec((*spec).Return)
-		retProxy, nillable := gen.proxyRetToGo(memTipRx.Self(), "v", "ret", goSpec, cgoSpec)
+
+		retProxy, nillable := gen.proxyRetToGo(memTipRx.Self(), "__v", "__ret", goSpec, cgoSpec)
 		if nillable {
 			fmt.Fprintln(wr, "if ret == nil {\nreturn nil\n}")
 		}
 		fmt.Fprintln(wr, retProxy)
-		fmt.Fprintln(wr, "return v")
+		fmt.Fprintln(wr, "return __v")
 	}
 	writeEndFuncBody(wr)
 }
