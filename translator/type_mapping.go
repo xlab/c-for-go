@@ -55,12 +55,12 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "long", Long: true, Unsigned: true}: Uint64Spec,
 	// signed long long -> int64
 	CTypeSpec{Base: "long", Long: true, Signed: true}: Int64Spec,
-	// int -> int
-	CTypeSpec{Base: "int"}: IntSpec,
-	// unsigned int -> uint
-	CTypeSpec{Base: "int", Unsigned: true}: UintSpec,
-	// signed int -> int
-	CTypeSpec{Base: "int", Signed: true}: IntSpec,
+	// int -> int32
+	CTypeSpec{Base: "int"}: Int32Spec,
+	// unsigned int -> uint32
+	CTypeSpec{Base: "int", Unsigned: true}: Uint32Spec,
+	// signed int -> int32
+	CTypeSpec{Base: "int", Signed: true}: Int32Spec,
 	// short int -> int16
 	CTypeSpec{Base: "int", Short: true}: Int16Spec,
 	// unsigned short int -> uint16

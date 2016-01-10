@@ -30,7 +30,6 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	fmt.Fprintf(buf, "func (x *%s) Free()", goStructName)
 	fmt.Fprintf(buf, `{
 		if x != nil && x.allocs%2x != nil {
-			runtime.SetFinalizer(x, nil)
 			x.allocs%2x.(*cgoAllocMap).Free()
 			x.ref%2x = nil
 		}
@@ -50,12 +49,11 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 		}
 		obj := new(%s)
 		obj.ref%2x = ref
-		// enable this if the reference is unmanaged:
-		// runtime.SetFinalizer(obj, func(x *%s) {
-		// 	C.free(unsafe.Pointer(x.ref%2x))
-		// })
 		return obj
-	}`, goStructName, crc, goStructName, crc)
+	}`, goStructName, crc)
+	// runtime.SetFinalizer(obj, func(x *%s) {
+	// 	C.free(unsafe.Pointer(x.ref%2x))
+	// })
 	name := fmt.Sprintf("New%sRef", goStructName)
 	helpers = append(helpers, &Helper{
 		Name:        name,
@@ -64,7 +62,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	})
 
 	buf = new(bytes.Buffer)
-	fmt.Fprintf(buf, "func (x *%s) PassRef() (ref *%s, allocs *cgoAllocMap) {\n", goStructName, cgoSpec)
+	fmt.Fprintf(buf, "func (x *%s) PassRef() (*%s, *cgoAllocMap) {\n", goStructName, cgoSpec)
 	buf.Write(gen.getPassRefSource(goStructName, cStructName, spec))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
@@ -74,7 +72,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	})
 
 	buf = new(bytes.Buffer)
-	fmt.Fprintf(buf, "func (x *%s) PassValue() (value %s, allocs *cgoAllocMap) {\n", goStructName, cgoSpec)
+	fmt.Fprintf(buf, "func (x *%s) PassValue() (%s, *cgoAllocMap) {\n", goStructName, cgoSpec)
 	buf.Write(gen.getPassValueSource(goStructName, spec))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{

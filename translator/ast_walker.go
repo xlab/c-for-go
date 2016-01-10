@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"go/token"
 
 	"github.com/xlab/c/cc"
 	"github.com/xlab/c/xc"
@@ -177,10 +178,14 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStru
 	}
 	members, _ := typ.Members()
 	for _, m := range members {
+		var pos token.Pos
+		if m.Declarator != nil {
+			pos = m.Declarator.Pos()
+		}
 		spec.Members = append(spec.Members, &CDecl{
 			Name: memberName(m),
 			Spec: t.typeSpec(m.Type, isRef, false),
-			Pos:  m.Declarator.Pos(),
+			Pos:  pos,
 		})
 	}
 	return spec
