@@ -127,7 +127,7 @@ func getRuleActionRxs(rules Rules, action RuleAction) (RxMap, error) {
 		for _, spec := range specs {
 			if len(spec.Load) > 0 {
 				if s, ok := builtinRules[spec.Load]; ok {
-					spec = s
+					spec.LoadSpec(s)
 				} else {
 					return nil, fmt.Errorf("no builtin rule found: %s", spec.Load)
 				}

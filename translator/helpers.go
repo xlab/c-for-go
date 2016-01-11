@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go/token"
 	"path/filepath"
-	"runtime"
+	"regexp"
 	"sync"
 
 	"github.com/xlab/c/xc"
@@ -96,19 +96,48 @@ func replaceBytes(buf []byte, idx []int, piece []byte) []byte {
 	return altered
 }
 
-func SrcLocation(p token.Pos) string {
+var srcReferenceRx = regexp.MustCompile(`(?P<path>[^;]+);(?P<file>[^;]+);(?P<line>[^;]+);(?P<name>[^;]+);`)
+
+func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Pos) string {
 	pos := xc.FileSet.Position(p)
-	return fmt.Sprintf("%s:%d", narrowPath(pos.Filename), pos.Line)
-}
+	filename := filepath.Base(pos.Filename)
+	defaultLocation := func() string {
+		return fmt.Sprintf("%s:%d", narrowPath(pos.Filename), pos.Line)
+	}
+	rxs, ok := t.compiledRxs[ActionDocument][docTarget]
+	if !ok {
+		global, ok1 := t.compiledRxs[ActionDocument][TargetGlobal]
+		post, ok2 := t.compiledRxs[ActionDocument][TargetPostGlobal]
+		// other targets won't be supported
+		switch {
+		case ok1:
+			rxs = global
+		case ok2:
+			rxs = post
+		default:
+			return defaultLocation()
+		}
+	}
 
-func unresolvedIdentifierWarn(name string, p token.Pos) {
-	_, file, line, _ := runtime.Caller(1)
-	fmt.Printf("WARN: %s:%d unresolved identifier %s at %s\n", narrowPath(file), line, name, SrcLocation(p))
-}
+	var template string
+	for i := range rxs {
+		if rxs[i].From.MatchString(name) {
+			template = string(rxs[i].To)
+			break
+		}
+	}
+	if len(template) == 0 {
+		return defaultLocation()
+	}
 
-func unmanagedCaseWarn(c int, p token.Pos) {
-	_, file, line, _ := runtime.Caller(1)
-	fmt.Printf("WARN: %s:%d unmanaged case %d at %s\n", narrowPath(file), line, c, SrcLocation(p))
+	values := fmt.Sprintf("%s;%s;%d;%s;", narrowPath(pos.Filename), filename, pos.Line, name)
+	// indices := srcReferenceRx.FindAllStringSubmatchIndex(values, -1)
+	location := srcReferenceRx.ReplaceAllString(values, template)
+	// for i := len(indices); i > 0; i-- {
+	// 	idx := indices[i-1]
+	// 	location := srcReferenceRx.ExpandString(nil, template, src, idx)
+	// }
+	return location
 }
 
 func incVal(v Value) Value {

@@ -12,17 +12,33 @@ type RuleSpec struct {
 	Load      string
 }
 
+func (r *RuleSpec) LoadSpec(r2 RuleSpec) {
+	if len(r.From) == 0 {
+		r.From = r2.From
+	}
+	if len(r.To) == 0 {
+		r.To = r2.To
+	}
+	if len(r.Action) == 0 {
+		r.Action = r2.Action
+	}
+	if len(r.Transform) == 0 {
+		r.Transform = r2.Transform
+	}
+}
+
 type RuleAction string
 
 const (
-	ActionNone    RuleAction = ""
-	ActionAccept  RuleAction = "accept"
-	ActionIgnore  RuleAction = "ignore"
-	ActionReplace RuleAction = "replace"
+	ActionNone     RuleAction = ""
+	ActionAccept   RuleAction = "accept"
+	ActionIgnore   RuleAction = "ignore"
+	ActionReplace  RuleAction = "replace"
+	ActionDocument RuleAction = "doc"
 )
 
 var ruleActions = []RuleAction{
-	ActionAccept, ActionIgnore, ActionReplace,
+	ActionAccept, ActionIgnore, ActionReplace, ActionDocument,
 }
 
 type RuleTransform string
@@ -104,5 +120,7 @@ const (
 type Tips []Tip
 
 var builtinRules = map[string]RuleSpec{
-	"snakecase": RuleSpec{From: "_([^_]+)", To: "$1", Action: ActionReplace, Transform: TransformTitle},
+	"snakecase":  RuleSpec{Action: ActionReplace, From: "_([^_]+)", To: "$1", Transform: TransformTitle},
+	"doc.file":   RuleSpec{Action: ActionDocument, To: "$path:$line"},
+	"doc.google": RuleSpec{Action: ActionDocument, To: "https://google.com/search?q=$file+$name"},
 }

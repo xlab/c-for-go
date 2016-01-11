@@ -21,7 +21,8 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) {
 			decl.Expression = skipNameStr
 		}
 		name := gen.tr.TransformName(tl.TargetConst, decl.Name)
-		fmt.Fprintf(wr, "// %s as defined in %s\n", name, tl.SrcLocation(decl.Pos))
+		fmt.Fprintf(wr, "// %s as defined in %s\n", name,
+			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 		fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
 		writeSpace(wr, 1)
 	}
@@ -30,7 +31,8 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) {
 
 func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 	declName := gen.tr.TransformName(tl.TargetConst, decl.Name)
-	fmt.Fprintf(wr, "// %s as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
+	fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
+		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	if len(decl.Expression) == 0 {
 		decl.Expression = skipNameStr
 	}
@@ -50,10 +52,12 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 	spec := decl.Spec.(*tl.CEnumSpec)
 	if hasType {
 		enumType := gen.tr.TranslateSpec(&spec.Type)
-		fmt.Fprintf(wr, "// %s as declared in %s\n", typeName, tl.SrcLocation(decl.Pos))
+		fmt.Fprintf(wr, "// %s as declared in %s\n", typeName,
+			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 		fmt.Fprintf(wr, "type %s %s\n", typeName, enumType)
 		writeSpace(wr, 1)
-		fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName, tl.SrcLocation(decl.Pos))
+		fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName,
+			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	}
 	writeStartConst(wr)
 	for _, m := range spec.Members {
@@ -66,7 +70,8 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 			namesSeen[string(mName)] = true
 		}
 		if !hasType {
-			fmt.Fprintf(wr, "// %s as declared in %s\n", mName, tl.SrcLocation(m.Pos))
+			fmt.Fprintf(wr, "// %s as declared in %s\n", mName,
+				gen.tr.SrcLocation(tl.TargetConst, m.Name, m.Pos))
 		}
 		if len(m.Expression) == 0 {
 			m.Expression = skipNameStr
@@ -93,19 +98,22 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 	spec := decl.Spec.(*tl.CEnumSpec)
 	tagName := gen.tr.TransformName(tl.TargetType, decl.Spec.GetBase())
 	enumType := gen.tr.TranslateSpec(&spec.Type)
-	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName, tl.SrcLocation(decl.Pos))
+	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName,
+		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
 	writeSpace(wr, 1)
 	if isTypedef {
 		if !bytes.Equal(tagName, declName) && len(declName) > 0 {
 			// alias type decl name to the tag
-			fmt.Fprintf(wr, "// %s as declared in %s\n", declName, tl.SrcLocation(decl.Pos))
+			fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
+				gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 			fmt.Fprintf(wr, "type %s %s", declName, tagName)
 			writeSpace(wr, 1)
 		}
 	}
 
-	fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName, tl.SrcLocation(decl.Pos))
+	fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName,
+		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	writeStartConst(wr)
 	for _, m := range spec.Members {
 		mName := gen.tr.TransformName(tl.TargetConst, m.Name)

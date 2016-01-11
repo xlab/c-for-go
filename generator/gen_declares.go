@@ -72,7 +72,8 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl, ptr
 	if returnRef == string(goName) {
 		goName = gen.tr.TransformName(tl.TargetFunction, "new_"+cName, public)
 	}
-	fmt.Fprintf(wr, "// %s function as declared in %s\n", goName, tl.SrcLocation(decl.Pos))
+	fmt.Fprintf(wr, "// %s function as declared in %s\n", goName,
+		gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos))
 	fmt.Fprintf(wr, "func %s", goName)
 	gen.writeFunctionParams(wr, cName, decl.Spec)
 	if len(returnRef) > 0 {
