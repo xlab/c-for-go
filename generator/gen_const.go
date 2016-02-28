@@ -8,10 +8,7 @@ import (
 	tl "github.com/xlab/cgogen/translator"
 )
 
-func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) {
-	if len(defines) == 0 {
-		return
-	}
+func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n int) {
 	writeStartConst(wr)
 	for _, decl := range defines {
 		if !decl.IsDefine {
@@ -25,8 +22,10 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) {
 			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 		fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
 		writeSpace(wr, 1)
+		n++
 	}
 	writeEndConst(wr)
+	return
 }
 
 func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
@@ -61,6 +60,9 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 	}
 	writeStartConst(wr)
 	for _, m := range spec.Members {
+		if !gen.tr.IsAcceptableName(tl.TargetConst, m.Name) {
+			continue
+		}
 		mName := gen.tr.TransformName(tl.TargetConst, m.Name)
 		if len(mName) == 0 {
 			continue
@@ -74,7 +76,8 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 				gen.tr.SrcLocation(tl.TargetConst, m.Name, m.Pos))
 		}
 		if len(m.Expression) == 0 {
-			m.Expression = skipNameStr
+			fmt.Fprintf(wr, "%s\n", mName)
+			continue
 		}
 		if hasType {
 			fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, m.Expression)
@@ -116,12 +119,16 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	writeStartConst(wr)
 	for _, m := range spec.Members {
+		if !gen.tr.IsAcceptableName(tl.TargetConst, m.Name) {
+			continue
+		}
 		mName := gen.tr.TransformName(tl.TargetConst, m.Name)
 		if len(mName) == 0 {
 			continue
 		}
 		if len(m.Expression) == 0 {
-			m.Expression = skipNameStr
+			fmt.Fprintf(wr, "%s\n", mName)
+			continue
 		}
 		fmt.Fprintf(wr, "%s %s = %s\n", mName, declName, m.Expression)
 	}

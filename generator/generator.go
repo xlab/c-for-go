@@ -59,7 +59,10 @@ func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
 
 func (gen *Generator) WriteConst(wr io.Writer) int {
 	var count int
-	gen.writeDefinesGroup(wr, gen.tr.Defines())
+	if defines := gen.tr.Defines(); len(defines) > 0 {
+		n := gen.writeDefinesGroup(wr, defines)
+		count = count + n
+	}
 	writeSpace(wr, 1)
 	tagsSeen := make(map[string]bool)
 	namesSeen := make(map[string]bool)

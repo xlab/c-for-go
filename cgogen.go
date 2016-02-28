@@ -106,9 +106,10 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	for opt := range goBufferNames {
 		c.goBuffers[opt] = new(bytes.Buffer)
 	}
+	goHelpersBuf := c.goBuffers[BufHelpers]
 	go func() {
 		c.genSync.Add(1)
-		c.gen.MonitorAndWriteHelpers(c.goBuffers[BufHelpers], c.chHelpersBuf, c.ccHelpersBuf)
+		c.gen.MonitorAndWriteHelpers(goHelpersBuf, c.chHelpersBuf, c.ccHelpersBuf)
 		c.genSync.Done()
 	}()
 	return c, nil
@@ -128,7 +129,7 @@ func (c *CGOGen) Generate() {
 	if wr, ok := c.goBuffers[BufConst]; ok {
 		c.gen.WritePackageHeader(wr)
 		c.gen.WriteIncludes(wr)
-		if c.gen.WriteConst(wr) < 1 {
+		if n := c.gen.WriteConst(wr); n == 0 {
 			c.goBuffers[BufConst] = nil
 		}
 	} else {
@@ -137,7 +138,7 @@ func (c *CGOGen) Generate() {
 	if wr, ok := c.goBuffers[BufTypes]; ok {
 		c.gen.WritePackageHeader(wr)
 		c.gen.WriteIncludes(wr)
-		if c.gen.WriteTypedefs(wr) < 1 {
+		if n := c.gen.WriteTypedefs(wr); n == 0 {
 			c.goBuffers[BufTypes] = nil
 		}
 	} else {
@@ -146,7 +147,7 @@ func (c *CGOGen) Generate() {
 	if wr, ok := c.goBuffers[BufUnions]; ok {
 		c.gen.WritePackageHeader(wr)
 		c.gen.WriteIncludes(wr)
-		if c.gen.WriteUnions(wr) < 1 {
+		if n := c.gen.WriteUnions(wr); n == 0 {
 			c.goBuffers[BufUnions] = nil
 		}
 	} else {
