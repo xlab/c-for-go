@@ -15,6 +15,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/cznic/mathutil/mersenne",
+			"repository": "https://github.com/cznic/mathutil",
+			"revision": "38a5fe05cd94d69433fd1c928417834c604f281d",
+			"branch": "master",
+			"path": "/mersenne"
+		},
+		{
 			"importpath": "github.com/cznic/sortutil",
 			"repository": "https://github.com/cznic/sortutil",
 			"revision": "4c7342852e65c2088c981288f2c5610d10b9f7f4",
@@ -36,7 +43,7 @@
 		{
 			"importpath": "github.com/xlab/c",
 			"repository": "https://github.com/xlab/c",
-			"revision": "88f4157992fa2af8bf4c9bfd93a2a6131029bce7",
+			"revision": "a3c89fafe0d04e2969f5a35c2d80bce753e53d94",
 			"branch": "cgogen"
 		},
 		{

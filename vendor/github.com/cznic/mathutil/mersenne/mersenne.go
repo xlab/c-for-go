@@ -89,6 +89,7 @@ var Knowns = []uint32{
 	42643801, // #46
 	43112609, // #47
 	57885161, // #48
+	74207281, // #49
 }
 
 // Known maps the exponent of known Mersenne primes its ordinal number/rank.

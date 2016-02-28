@@ -413,7 +413,8 @@ func fromSlashes(a []string) []string {
 }
 
 type ctype struct {
-	dds             []*DirectDeclarator
+	dds0            []*DirectDeclarator // Unexpanded, only for typedefs
+	dds             []*DirectDeclarator // Expanded.
 	model           *Model
 	resultAttr      int
 	resultSpecifier Specifier
@@ -660,6 +661,7 @@ func (n *ctype) Kind() Kind {
 	i := 1
 	for {
 		switch dd := n.dds[i]; dd.Case {
+		//TODO case 1: // '(' Declarator ')'
 		case 2: // DirectDeclarator '[' TypeQualifierListOpt ExpressionOpt ']'
 			if dd.elements < 0 {
 				return Ptr

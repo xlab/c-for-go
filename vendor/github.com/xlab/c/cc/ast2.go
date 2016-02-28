@@ -151,7 +151,7 @@ func (n *Declarator) isCompatible(m *Declarator) (r bool) {
 
 func (n *Declarator) setFull(lx *lexer) Type {
 	d := n
-	var dds []*DirectDeclarator
+	var dds0, dds []*DirectDeclarator
 	for dd := d.DirectDeclarator; dd != nil; dd = dd.directDeclarator() {
 		dds = append(dds, dd)
 	}
@@ -161,6 +161,10 @@ func (n *Declarator) setFull(lx *lexer) Type {
 
 	resultAttr := 0
 	mask := 0
+
+	if d.specifier != nil && d.specifier.IsTypedef() {
+		dds0 = append([]*DirectDeclarator(nil), dds...)
+	}
 	for d.specifier != nil && d.specifier.kind() == TypedefName {
 		resultAttr |= d.specifier.attrs()
 		ts := d.specifier.firstTypeSpecifier()
@@ -170,8 +174,8 @@ func (n *Declarator) setFull(lx *lexer) Type {
 		}
 
 		nd := dd.top().declarator
-		mask = saTypedef // nd.specifier.isTypedef() == true
-		dds2 := nd.Type.(*ctype).dds
+		mask = saTypedef // nd.specifier.IsTypedef() == true
+		dds2 := nd.Type.(*ctype).dds0
 		d2 := d.clone()
 		d2.specifier = nil
 		dd2 := &DirectDeclarator{
@@ -271,6 +275,7 @@ func (n *Declarator) setFull(lx *lexer) Type {
 
 		stars, resultStars = resultStars, 0
 	default:
+	again:
 		i := 1
 	loop:
 		for {
@@ -278,6 +283,11 @@ func (n *Declarator) setFull(lx *lexer) Type {
 			case 1: // '(' Declarator ')'
 				if dds[i-1].Case == 0 { // IDENTIFIER
 					stars = dd.Declarator.stars()
+					if stars == 0 {
+						copy(dds[i:], dds[i+1:])
+						dds = dds[:len(dds)-1 : len(dds)-1]
+						goto again
+					}
 				} else {
 					//dbg("", resultStars, stars, d.specifier.str(), ddsStr(dds))
 					panic("TODO")
@@ -299,6 +309,7 @@ func (n *Declarator) setFull(lx *lexer) Type {
 	resultAttr |= resultSpecifier.attrs()
 	resultAttr &^= mask
 	t := &ctype{
+		dds0:            dds0,
 		dds:             dds,
 		model:           lx.model,
 		resultAttr:      resultAttr,
@@ -307,8 +318,10 @@ func (n *Declarator) setFull(lx *lexer) Type {
 		stars:           stars,
 	}
 	n.Type = t
-	//dbg("setFull %v: %v: %v, %v %v", position(n.Pos()), t, t.Kind(), t.resultStars, t.stars)
+	//dbg("==== %v", position(n.Pos()))
+	//dbg("setFull %v: %v, %v %v", t, t.Kind(), t.resultStars, t.stars)
 	//dbg("", t.str())
+	//dbg("", t)
 
 	dd := dds[0]
 	id := dd.Token.Val
@@ -388,7 +401,7 @@ func (n *Declarator) setFull(lx *lexer) Type {
 		if prev, ok := lx.externs[id]; ok && !n.isCompatible(prev) {
 			lx.report.Err(n.Pos(),
 				"conflicting types for %s '%s' with external linkage, previous declaration at %s '%s'",
-				xc.Dict.S(id), n.Type, prev.Pos(), prev.Type)
+				xc.Dict.S(id), n.Type, position(prev.Pos()), prev.Type)
 			break
 		}
 
@@ -400,7 +413,7 @@ func (n *Declarator) setFull(lx *lexer) Type {
 		if prev != nil && !n.isCompatible(prev) {
 			lx.report.Err(n.Pos(),
 				"conflicting types for %s '%s' with internal linkage, previous declaration at %s '%s'",
-				xc.Dict.S(id), n.Type, prev.Pos(), prev.Type)
+				xc.Dict.S(id), n.Type, position(prev.Pos()), prev.Type)
 		}
 	case None:
 		// [0]6.2.2, 2: Each declaration of an identifier with no
