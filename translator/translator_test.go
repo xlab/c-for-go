@@ -54,13 +54,13 @@ func TestLearn(t *testing.T) {
 	tl.Report()
 }
 
-func ss(n []uint64) []ArraySizeSpec {
-	ss := make([]ArraySizeSpec, 0, len(n))
-	for i := range n {
-		ss = append(ss, ArraySizeSpec{N: n[i]})
-	}
-	return ss
-}
+// func ss(n []uint64) []ArraySizeSpec {
+// 	ss := make([]ArraySizeSpec, 0, len(n))
+// 	for i := range n {
+// 		ss = append(ss, ArraySizeSpec{N: n[i]})
+// 	}
+// 	return ss
+// }
 
 func TestCGoSpecAtLevel(t *testing.T) {
 	assert := assert.New(t)

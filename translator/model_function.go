@@ -6,20 +6,10 @@ import (
 )
 
 type CFunctionSpec struct {
-	Typedef   string
-	Return    CType
-	Params    []*CDecl
-	Arrays    string
-	VarArrays uint8
-	Pointers  uint8
-}
-
-func (c *CFunctionSpec) AddArray(size uint64) {
-	if size > 0 {
-		c.Arrays = fmt.Sprintf("%s[%d]", c.Arrays, size)
-		return
-	}
-	c.VarArrays++
+	Typedef  string
+	Return   CType
+	Params   []*CDecl
+	Pointers uint8
 }
 
 func (c CFunctionSpec) String() string {
@@ -77,12 +67,19 @@ func (c *CFunctionSpec) SetRaw(x string) {
 	c.Typedef = x
 }
 
-func (c *CFunctionSpec) GetArrays() string {
-	return c.Arrays
+func (c *CFunctionSpec) AddOuterArr(uint64) {}
+func (c *CFunctionSpec) AddInnerArr(uint64) {}
+func (c *CFunctionSpec) OuterArraySizes() []ArraySizeSpec {
+	return nil
 }
-
-func (c *CFunctionSpec) GetVarArrays() uint8 {
-	return c.VarArrays
+func (c *CFunctionSpec) InnerArraySizes() []ArraySizeSpec {
+	return nil
+}
+func (c *CFunctionSpec) OuterArrays() ArraySpec {
+	return ""
+}
+func (c *CFunctionSpec) InnerArrays() ArraySpec {
+	return ""
 }
 
 func (c *CFunctionSpec) GetPointers() uint8 {

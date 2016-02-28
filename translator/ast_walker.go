@@ -96,10 +96,10 @@ func (t *Translator) getEnumTag(typ cc.Type) (tag string) {
 func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSpec {
 	tag := t.getEnumTag(typ)
 	spec := &CEnumSpec{
-		Tag:       tag,
-		Arrays:    base.Arrays,
-		VarArrays: base.VarArrays,
-		Pointers:  base.Pointers,
+		Tag:      tag,
+		Pointers: base.Pointers,
+		OuterArr: base.OuterArr,
+		InnerArr: base.InnerArr,
 	}
 
 	// this would work with patched cznic/cc, replace when workaround is ready
@@ -167,11 +167,11 @@ func (t *Translator) walkEnumerator(e *cc.Enumerator) *CDecl {
 func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStructSpec {
 	tag := t.getStructTag(typ)
 	spec := &CStructSpec{
-		Tag:       tag,
-		Arrays:    base.Arrays,
-		VarArrays: base.VarArrays,
-		Pointers:  base.Pointers,
-		IsUnion:   typ.Kind() == cc.Union,
+		Tag:      tag,
+		IsUnion:  typ.Kind() == cc.Union,
+		Pointers: base.Pointers,
+		OuterArr: base.OuterArr,
+		InnerArr: base.InnerArr,
 	}
 	if isRef {
 		return spec
@@ -193,9 +193,7 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStru
 
 func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CFunctionSpec {
 	spec := &CFunctionSpec{
-		Arrays:    base.Arrays,
-		VarArrays: base.VarArrays,
-		Pointers:  base.Pointers,
+		Pointers: base.Pointers,
 	}
 	if isRef {
 		return spec
@@ -226,7 +224,7 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		size := typ.Elements()
 		typ = typ.Element()
 		if size >= 0 {
-			spec.AddArray(uint64(size))
+			spec.AddOuterArr(uint64(size))
 		}
 	}
 	for typ.Kind() == cc.Ptr {
@@ -237,16 +235,13 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		size := typ.Elements()
 		typ = typ.Element()
 		if size >= 0 {
-			spec.AddArray(uint64(size))
+			spec.AddInnerArr(uint64(size))
 		}
 	}
 
 	switch typ.Kind() {
 	case cc.Void:
 		spec.Base = "void"
-	case cc.Ptr:
-		spec.Base = "void"
-		spec.Pointers = 1
 	case cc.Char:
 		spec.Base = "char"
 	case cc.SChar:
@@ -310,7 +305,7 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		spec.Base = "char"
 		spec.Unsigned = true
 		spec.Opaque = true
-		spec.Arrays = fmt.Sprintf("[%d]", typ.SizeOf())
+		spec.InnerArr.AddSized(uint64(typ.SizeOf()))
 	case cc.Struct:
 		isRef := false
 		tag := t.getStructTag(typ)

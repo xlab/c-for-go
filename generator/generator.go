@@ -20,9 +20,9 @@ type Generator struct {
 }
 
 type ArchFlagSet struct {
-	Name  string
-	Arch  []string
-	Flags []string
+	Name  string   `yaml:"Name"`
+	Arch  []string `yaml:"Arch"`
+	Flags []string `yaml:"Flags"`
 }
 
 type Config struct {
@@ -115,7 +115,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 		}
 		if decl.Spec.Kind() != tl.TypeKind {
 			continue
-		} else if !decl.IsConst() {
+		} else if !decl.Spec.IsConst() {
 			continue
 		}
 		if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
@@ -151,7 +151,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
 			continue
 		}
-		switch decl.Kind() {
+		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
 			if tag := decl.Spec.GetTag(); len(tag) > 0 && decl.Spec.IsComplete() {
 				if seenStructTags[tag] {
@@ -218,7 +218,7 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 			continue
 		}
 		const public = true
-		switch decl.Kind() {
+		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
 			if len(decl.Name) == 0 {
 				continue

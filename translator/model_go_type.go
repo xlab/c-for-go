@@ -7,9 +7,10 @@ import (
 )
 
 type GoTypeSpec struct {
-	Arrays   string
 	Slices   uint8
 	Pointers uint8
+	InnerArr ArraySpec
+	OuterArr ArraySpec
 	Unsigned bool
 	Kind     CTypeKind
 	Base     string
@@ -52,10 +53,6 @@ func (spec GoTypeSpec) IsPlain() bool {
 	return false
 }
 
-func (spec *GoTypeSpec) IsReference() bool {
-	return len(spec.Arrays) > 0
-}
-
 func (spec *GoTypeSpec) GetName() string {
 	if len(spec.Raw) > 0 {
 		return spec.Raw
@@ -65,12 +62,8 @@ func (spec *GoTypeSpec) GetName() string {
 
 func (spec GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
-	if len(spec.Arrays) > 0 {
-		buf.WriteString(spec.Arrays)
-	}
-	if spec.Slices > 0 {
-		buf.WriteString(strings.Repeat("[]", int(spec.Slices)))
-	}
+	buf.WriteString(slcs(spec.Slices))
+	buf.WriteString(arrs(spec.OuterArr))
 
 	var unsafePointer uint8
 	if spec.Base == "unsafe.Pointer" && len(spec.Raw) == 0 {
@@ -79,6 +72,8 @@ func (spec GoTypeSpec) String() string {
 	if spec.Pointers > 0 {
 		buf.WriteString(ptrs(spec.Pointers - unsafePointer))
 	}
+	buf.WriteString(arrs(spec.InnerArr))
+
 	if len(spec.Raw) > 0 {
 		buf.WriteString(spec.Raw)
 		return buf.String()
@@ -98,12 +93,8 @@ func (spec GoTypeSpec) String() string {
 
 func (spec GoTypeSpec) UnderlyingString() string {
 	buf := new(bytes.Buffer)
-	if len(spec.Arrays) > 0 {
-		buf.WriteString(spec.Arrays)
-	}
-	if spec.Slices > 0 {
-		buf.WriteString(strings.Repeat("[]", int(spec.Slices)))
-	}
+	buf.WriteString(slcs(spec.Slices))
+	buf.WriteString(arrs(spec.OuterArr))
 
 	var unsafePointer uint8
 	if spec.Base == "unsafe.Pointer" {
@@ -112,6 +103,8 @@ func (spec GoTypeSpec) UnderlyingString() string {
 	if spec.Pointers > 0 {
 		buf.WriteString(ptrs(spec.Pointers - unsafePointer))
 	}
+	buf.WriteString(arrs(spec.InnerArr))
+
 	if spec.Unsigned {
 		buf.WriteString("u")
 	}
@@ -119,39 +112,29 @@ func (spec GoTypeSpec) UnderlyingString() string {
 	if spec.Bits > 0 {
 		fmt.Fprintf(buf, "%d", int(spec.Bits))
 	}
-	return buf.String()
-}
 
-func (a ArraySizeSpec) String() string {
-	if len(a.Str) > 0 {
-		return fmt.Sprintf("[%s]", a.Str)
-	} else {
-		return fmt.Sprintf("[%d]", a.N)
-	}
+	return buf.String()
 }
 
 type CGoSpec struct {
 	Base     string
 	Pointers uint8
-	Arrays   []ArraySizeSpec
+	OuterArr ArraySpec
+	InnerArr ArraySpec
 }
 
 func (spec CGoSpec) String() string {
 	buf := new(bytes.Buffer)
-	for _, size := range spec.Arrays {
-		buf.WriteString(size.String())
-	}
-	fmt.Fprintf(buf, "%s%s", ptrs(spec.Pointers), spec.Base)
+	buf.WriteString(arrs(spec.OuterArr))
+	buf.WriteString(ptrs(spec.Pointers))
+	buf.WriteString(arrs(spec.InnerArr))
+	buf.WriteString(spec.Base)
 	return buf.String()
 }
 
 func (spec *CGoSpec) PointersAtLevel(level uint8) uint8 {
-	// var pointers uint8
-	// if len(spec.Arrays) > 0 {
-	// 	pointers++
-	// }
-	if int(level) > len(spec.Arrays) {
-		if delta := int(spec.Pointers) + len(spec.Arrays) - int(level); delta > 0 {
+	if int(level) > len(spec.OuterArr) {
+		if delta := int(spec.Pointers) + len(spec.OuterArr.Sizes()) - int(level); delta > 0 {
 			return uint8(delta)
 		}
 	}
@@ -163,41 +146,43 @@ func (spec *CGoSpec) PointersAtLevel(level uint8) uint8 {
 
 func (spec *CGoSpec) AtLevel(level uint8) string {
 	buf := new(bytes.Buffer)
-	for i, size := range spec.Arrays {
+	for i, size := range spec.OuterArr {
 		if i < int(level) {
 			continue
 		} else if i == 0 {
-			fmt.Fprint(buf, "*")
+			buf.WriteRune('*')
 			continue
 		}
-		buf.WriteString(size.String())
+		fmt.Fprintf(buf, "[%d]", size)
 	}
-	if int(level) > len(spec.Arrays) {
-		if delta := int(spec.Pointers) + len(spec.Arrays) - int(level); delta > 0 {
-			fmt.Fprint(buf, strings.Repeat("*", delta))
+	if int(level) > len(spec.OuterArr) {
+		if delta := int(spec.Pointers) + len(spec.OuterArr.Sizes()) - int(level); delta > 0 {
+			buf.WriteString(ptrs(uint8(delta)))
 		}
 	} else {
-		fmt.Fprint(buf, ptrs(spec.Pointers))
+		buf.WriteString(ptrs(spec.Pointers))
 	}
-	fmt.Fprint(buf, spec.Base)
+	buf.WriteString(arrs(spec.InnerArr))
+	buf.WriteString(spec.Base)
 	return buf.String()
 }
 
 func (spec *CGoSpec) SpecAtLevel(level uint8) CGoSpec {
 	buf := CGoSpec{
-		Base: spec.Base,
+		InnerArr: spec.InnerArr,
+		Base:     spec.Base,
 	}
-	for i, size := range spec.Arrays {
+	for i, size := range spec.OuterArr.Sizes() {
 		if i < int(level) {
 			continue
 		} else if i == 0 {
 			buf.Pointers = 1
 			continue
 		}
-		buf.Arrays = append(buf.Arrays, size)
+		buf.OuterArr.AddSized(size.N)
 	}
-	if int(level) > len(spec.Arrays) {
-		if delta := int(spec.Pointers) + len(spec.Arrays) - int(level); delta > 0 {
+	if int(level) > len(spec.OuterArr) {
+		if delta := int(spec.Pointers) + len(spec.OuterArr.Sizes()) - int(level); delta > 0 {
 			buf.Pointers += uint8(delta)
 		}
 	} else {
@@ -208,4 +193,12 @@ func (spec *CGoSpec) SpecAtLevel(level uint8) CGoSpec {
 
 func ptrs(n uint8) string {
 	return strings.Repeat("*", int(n))
+}
+
+func slcs(slcs uint8) string {
+	return strings.Repeat("[]", int(slcs))
+}
+
+func arrs(spec ArraySpec) string {
+	return string(spec)
 }

@@ -261,17 +261,17 @@ func (n *TipCache) Set(scope TipScope, name string, result TipSpecRx) {
 	n.mux.Unlock()
 }
 
-func getVarArrayCount(arraySizes []uint32) (count uint8) {
-	for i := range arraySizes {
-		if arraySizes[i] == 0 {
-			count++
-		}
-	}
-	return
-}
+// func getVarArrayCount(arraySizes []uint6432) (count uint8) {
+// 	for i := range arraySizes {
+// 		if arraySizes[i] == 0 {
+// 			count++
+// 		}
+// 	}
+// 	return
+// }
 
 func tagAnonymousMembers(decl CDecl) {
-	if decl.Kind() != StructKind {
+	if decl.Spec.Kind() != StructKind {
 		return
 	}
 	structSpec := decl.Spec.(*CStructSpec)

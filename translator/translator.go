@@ -327,8 +327,8 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 
 func (t *Translator) resolveTypedefs(typedefs []*CDecl) {
 	for _, decl := range typedefs {
-		if decl.Kind() != TypeKind {
-			t.typedefKinds[decl.Name] = decl.Kind()
+		if decl.Spec.Kind() != TypeKind {
+			t.typedefKinds[decl.Name] = decl.Spec.Kind()
 			continue
 		}
 		if goSpec := t.TranslateSpec(decl.Spec); goSpec.IsPlain() {
@@ -505,7 +505,8 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Pointers: typeSpec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
-			gospec.Arrays = spec.GetArrays() + gospec.Arrays
+			gospec.OuterArr.Prepend(typeSpec.OuterArr)
+			gospec.InnerArr.Prepend(typeSpec.InnerArr)
 			if gospec.Pointers == 0 && gospec.Slices > 0 {
 				switch ptrTip {
 				case TipPtrRef:
@@ -531,8 +532,9 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			return gospec
 		}
 		wrapper := GoTypeSpec{
-			Kind:   t.typedefKinds[lookupSpec.Base],
-			Arrays: spec.GetArrays(),
+			Kind:     t.typedefKinds[lookupSpec.Base],
+			OuterArr: typeSpec.OuterArr,
+			InnerArr: typeSpec.InnerArr,
 		}
 		if lookupSpec.Pointers > 0 {
 			for lookupSpec.Pointers > 0 {
@@ -552,8 +554,9 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {
 					gospec.Slices += wrapper.Slices
 					gospec.Pointers += wrapper.Pointers
-					gospec.Arrays = wrapper.Arrays + gospec.Arrays
-					gospec.Pointers += spec.GetVarArrays()
+					gospec.OuterArr.Prepend(wrapper.OuterArr)
+					gospec.InnerArr.Prepend(wrapper.InnerArr)
+					//					gospec.Pointers += spec.GetVarArrays()
 					if gospec.Kind == TypeKind {
 						if gospec.IsPlain() {
 							gospec.Kind = PlainTypeKind
@@ -572,7 +575,7 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 				}
 			}
 		}
-		wrapper.Pointers += spec.GetVarArrays()
+		//		wrapper.Pointers += spec.GetVarArrays()
 		if t.IsAcceptableName(TargetType, typeSpec.Raw) {
 			wrapper.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
 		}
@@ -586,13 +589,13 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			// pointers won't work with Go functions
 			wrapper.Pointers = 0
 			wrapper.Slices = 0
-			wrapper.Arrays = ""
+			wrapper.OuterArr = ArraySpec("")
+			wrapper.InnerArr = ArraySpec("")
 		}
 		return wrapper
 	case FunctionKind:
 		wrapper := GoTypeSpec{
-			Kind:   spec.Kind(),
-			Arrays: spec.GetArrays(),
+			Kind: spec.Kind(),
 		}
 		// won't work with Go functions anyways.
 		// wrapper.splitPointers(ptrTip, spec.GetPointers())
@@ -601,11 +604,12 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		return wrapper
 	default:
 		wrapper := GoTypeSpec{
-			Kind:   spec.Kind(),
-			Arrays: spec.GetArrays(),
+			Kind:     spec.Kind(),
+			OuterArr: spec.OuterArrays(),
+			InnerArr: spec.InnerArrays(),
 		}
 		wrapper.splitPointers(ptrTip, spec.GetPointers())
-		wrapper.Pointers += spec.GetVarArrays()
+		//		wrapper.Pointers += spec.GetVarArrays()
 		if base := spec.GetBase(); len(base) > 0 {
 			wrapper.Raw = string(t.TransformName(TargetType, base))
 		} else if cgoName := spec.CGoName(); len(cgoName) > 0 {
@@ -618,9 +622,9 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 func (t *Translator) CGoSpec(spec CType) CGoSpec {
 	cgo := CGoSpec{
 		Pointers: spec.GetPointers(),
+		OuterArr: spec.OuterArrays(),
+		InnerArr: spec.InnerArrays(),
 	}
-	cgo.Pointers += spec.GetVarArrays()
-	cgo.Arrays = GetArraySizes(spec.GetArrays())
 	if typ, ok := spec.(*CTypeSpec); ok {
 		if typ.Base == "void" {
 			cgo.Base = "unsafe.Pointer"

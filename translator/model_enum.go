@@ -7,21 +7,13 @@ import (
 )
 
 type CEnumSpec struct {
-	Tag       string
-	Typedef   string
-	Members   []*CDecl
-	Type      CTypeSpec
-	Arrays    string
-	VarArrays uint8
-	Pointers  uint8
-}
-
-func (c *CEnumSpec) AddArray(size uint64) {
-	if size > 0 {
-		c.Arrays = fmt.Sprintf("%s[%d]", c.Arrays, size)
-		return
-	}
-	c.VarArrays++
+	Tag      string
+	Typedef  string
+	Members  []*CDecl
+	Type     CTypeSpec
+	Pointers uint8
+	InnerArr ArraySpec
+	OuterArr ArraySpec
 }
 
 func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
@@ -112,8 +104,9 @@ func (spec CEnumSpec) String() string {
 		writePrefix()
 	}
 
-	buf.WriteString(strings.Repeat("*", int(spec.Pointers)))
-	buf.WriteString(spec.Arrays)
+	buf.WriteString(arrs(spec.OuterArr))
+	buf.WriteString(ptrs(spec.Pointers))
+	buf.WriteString(arrs(spec.InnerArr))
 	return buf.String()
 }
 
@@ -159,12 +152,28 @@ func (c *CEnumSpec) CGoName() string {
 	return "enum_" + c.Tag
 }
 
-func (c *CEnumSpec) GetArrays() string {
-	return c.Arrays
+func (c *CEnumSpec) AddOuterArr(size uint64) {
+	c.OuterArr.AddSized(size)
 }
 
-func (c *CEnumSpec) GetVarArrays() uint8 {
-	return c.VarArrays
+func (c *CEnumSpec) AddInnerArr(size uint64) {
+	c.InnerArr.AddSized(size)
+}
+
+func (c *CEnumSpec) OuterArraySizes() []ArraySizeSpec {
+	return c.OuterArr.Sizes()
+}
+
+func (c *CEnumSpec) InnerArraySizes() []ArraySizeSpec {
+	return c.InnerArr.Sizes()
+}
+
+func (c *CEnumSpec) OuterArrays() ArraySpec {
+	return c.OuterArr
+}
+
+func (c *CEnumSpec) InnerArrays() ArraySpec {
+	return c.InnerArr
 }
 
 func (c *CEnumSpec) GetPointers() uint8 {

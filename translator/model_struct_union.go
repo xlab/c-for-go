@@ -7,21 +7,13 @@ import (
 )
 
 type CStructSpec struct {
-	Tag       string
-	Typedef   string
-	IsUnion   bool
-	Members   []*CDecl
-	Arrays    string
-	VarArrays uint8
-	Pointers  uint8
-}
-
-func (c *CStructSpec) AddArray(size uint64) {
-	if size > 0 {
-		c.Arrays = fmt.Sprintf("%s[%d]", c.Arrays, size)
-		return
-	}
-	c.VarArrays++
+	Tag      string
+	Typedef  string
+	IsUnion  bool
+	Members  []*CDecl
+	Pointers uint8
+	InnerArr ArraySpec
+	OuterArr ArraySpec
 }
 
 func (spec CStructSpec) String() string {
@@ -52,8 +44,9 @@ func (spec CStructSpec) String() string {
 		writePrefix()
 	}
 
-	buf.WriteString(strings.Repeat("*", int(spec.Pointers)))
-	buf.WriteString(spec.Arrays)
+	buf.WriteString(arrs(spec.OuterArr))
+	buf.WriteString(ptrs(spec.Pointers))
+	buf.WriteString(arrs(spec.InnerArr))
 	return buf.String()
 }
 
@@ -109,12 +102,28 @@ func (c *CStructSpec) CGoName() string {
 	return "struct_" + c.Tag
 }
 
-func (c *CStructSpec) GetArrays() string {
-	return c.Arrays
+func (c *CStructSpec) AddOuterArr(size uint64) {
+	c.OuterArr.AddSized(size)
 }
 
-func (c *CStructSpec) GetVarArrays() uint8 {
-	return c.VarArrays
+func (c *CStructSpec) AddInnerArr(size uint64) {
+	c.InnerArr.AddSized(size)
+}
+
+func (c *CStructSpec) OuterArraySizes() []ArraySizeSpec {
+	return c.OuterArr.Sizes()
+}
+
+func (c *CStructSpec) InnerArraySizes() []ArraySizeSpec {
+	return c.InnerArr.Sizes()
+}
+
+func (c *CStructSpec) OuterArrays() ArraySpec {
+	return c.OuterArr
+}
+
+func (c *CStructSpec) InnerArrays() ArraySpec {
+	return c.InnerArr
 }
 
 func (c *CStructSpec) GetPointers() uint8 {

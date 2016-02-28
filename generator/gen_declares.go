@@ -25,7 +25,7 @@ func (gen *Generator) writeArgType(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, 
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
 	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
-	if len(goSpec.Arrays) > 0 {
+	if len(goSpec.OuterArr) > 0 {
 		fmt.Fprintf(wr, "%s *%s", goName, goSpec)
 	} else {
 		fmt.Fprintf(wr, "%s %s", goName, goSpec)

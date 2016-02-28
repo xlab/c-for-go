@@ -3,57 +3,21 @@ package translator
 import (
 	"bytes"
 	"fmt"
-	"strconv"
-	"strings"
 )
 
 type CTypeSpec struct {
-	Raw       string
-	Base      string
-	Const     bool
-	Signed    bool
-	Unsigned  bool
-	Short     bool
-	Long      bool
-	Complex   bool
-	Opaque    bool
-	Arrays    string
-	VarArrays uint8
-	Pointers  uint8
-}
-
-func (c *CTypeSpec) AddArray(size uint64) {
-	if size > 0 {
-		c.Arrays += fmt.Sprintf("[%d]", size)
-		return
-	}
-	c.VarArrays++
-}
-
-type ArraySizeSpec struct {
-	N   uint64
-	Str string
-}
-
-func GetArraySizes(arr string) (sizes []ArraySizeSpec) {
-	if len(arr) == 0 {
-		return
-	}
-	for len(arr) > 0 {
-		// get "n" from "[k][l][m][n]"
-		p1 := strings.LastIndexByte(arr, '[')
-		p2 := strings.LastIndexByte(arr, ']')
-		part := arr[p1+1 : p2]
-		// and try to convert uint64
-		if u, err := strconv.ParseUint(part, 10, 64); err != nil || u == 0 {
-			// use size spec as-is (i.e. unsafe.Sizeof(x))
-			sizes = append(sizes, ArraySizeSpec{Str: part})
-		} else {
-			sizes = append(sizes, ArraySizeSpec{N: u})
-		}
-		arr = arr[:p1]
-	}
-	return sizes
+	Raw      string
+	Base     string
+	Const    bool
+	Signed   bool
+	Unsigned bool
+	Short    bool
+	Long     bool
+	Complex  bool
+	Opaque   bool
+	Pointers uint8
+	InnerArr ArraySpec
+	OuterArr ArraySpec
 }
 
 func (spec CTypeSpec) String() string {
@@ -72,12 +36,15 @@ func (spec CTypeSpec) String() string {
 		buf.WriteString("complex ")
 	}
 	fmt.Fprint(buf, spec.Base)
-	unsafePointer := 0
+
+	var unsafePointer uint8
 	if spec.Base == "unsafe.Pointer" {
 		unsafePointer = 1
 	}
-	buf.WriteString(strings.Repeat("*", int(spec.Pointers)-unsafePointer))
-	buf.WriteString(spec.Arrays)
+
+	buf.WriteString(arrs(spec.OuterArr))
+	buf.WriteString(ptrs(spec.Pointers - unsafePointer))
+	buf.WriteString(arrs(spec.InnerArr))
 	return buf.String()
 }
 
@@ -141,12 +108,28 @@ func (c *CTypeSpec) CGoName() (name string) {
 	return
 }
 
-func (c *CTypeSpec) GetArrays() string {
-	return c.Arrays
+func (c *CTypeSpec) AddOuterArr(size uint64) {
+	c.OuterArr.AddSized(size)
 }
 
-func (c *CTypeSpec) GetVarArrays() uint8 {
-	return c.VarArrays
+func (c *CTypeSpec) AddInnerArr(size uint64) {
+	c.InnerArr.AddSized(size)
+}
+
+func (c *CTypeSpec) OuterArraySizes() []ArraySizeSpec {
+	return c.OuterArr.Sizes()
+}
+
+func (c *CTypeSpec) InnerArraySizes() []ArraySizeSpec {
+	return c.InnerArr.Sizes()
+}
+
+func (c *CTypeSpec) OuterArrays() ArraySpec {
+	return c.OuterArr
+}
+
+func (c *CTypeSpec) InnerArrays() ArraySpec {
+	return c.InnerArr
 }
 
 func (c *CTypeSpec) GetPointers() uint8 {

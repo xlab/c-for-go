@@ -73,14 +73,14 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 		switch param.Spec.Kind() {
 		case tl.TypeKind:
 			goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip)
-			if len(goSpec.Arrays) > 0 {
+			if len(goSpec.OuterArr) > 0 {
 				fmt.Fprintf(wr, "%s *%s", declName, goSpec)
 			} else {
 				fmt.Fprintf(wr, "%s %s", declName, goSpec)
 			}
 		case tl.StructKind, tl.OpaqueStructKind:
 			goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip)
-			if len(goSpec.Arrays) > 0 {
+			if len(goSpec.OuterArr) > 0 {
 				fmt.Fprintf(wr, "%s *%s", declName, goSpec)
 			} else {
 				fmt.Fprintf(wr, "%s %s", declName, goSpec)

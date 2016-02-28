@@ -24,7 +24,7 @@ var (
 	Complex64Spec     = GoTypeSpec{Base: "complex", Bits: 64}
 	Complex128Spec    = GoTypeSpec{Base: "complex", Bits: 128}
 	UnsafePointerSpec = GoTypeSpec{Base: "unsafe.Pointer", Pointers: 1}
-	VoidSpec          = GoTypeSpec{Base: "byte", Arrays: "[0]"}
+	VoidSpec          = GoTypeSpec{Base: "byte", OuterArr: "[0]"}
 	//
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )

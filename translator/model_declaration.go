@@ -25,11 +25,14 @@ type CType interface {
 	GetTag() string
 	SetRaw(x string)
 	CGoName() string
-	GetArrays() string
-	GetVarArrays() uint8
 	GetPointers() uint8
 	SetPointers(uint8)
-	AddArray(uint64)
+	AddOuterArr(uint64)
+	AddInnerArr(uint64)
+	OuterArrays() ArraySpec
+	InnerArrays() ArraySpec
+	OuterArraySizes() []ArraySizeSpec
+	InnerArraySizes() []ArraySizeSpec
 	//
 	IsConst() bool
 	IsOpaque() bool
@@ -53,26 +56,6 @@ type CDecl struct {
 	IsDefine   bool
 	Pos        token.Pos
 	Src        string
-}
-
-func (c *CDecl) Kind() CTypeKind {
-	return c.Spec.Kind()
-}
-
-func (c *CDecl) IsOpaque() bool {
-	return c.Spec.IsOpaque()
-}
-
-func (c *CDecl) IsConst() bool {
-	return c.Spec.IsConst()
-}
-
-func (c *CDecl) SetPointers(n uint8) {
-	c.Spec.SetPointers(n)
-}
-
-func (c *CDecl) AddArray(size uint64) {
-	c.Spec.AddArray(size)
 }
 
 func (c CDecl) String() string {
