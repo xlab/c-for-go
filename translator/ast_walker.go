@@ -321,7 +321,8 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		if !isRet {
 			s.Typedef = typedefNameOf(typ)
 		}
-		t.typeCache.Delete(tag)
+		// TODO(xlab): better recursive types management
+		// t.typeCache.Delete(tag)
 		return s
 	case cc.Function:
 		s := t.functionSpec(spec, typ, isRef)
