@@ -305,6 +305,13 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 						typecastValueParens--
 					}
 				default:
+					if len(src) > 0 && isDigit([]rune(src)[0]) {
+						src = strings.TrimSuffix(src, "LL")
+						src = strings.TrimSuffix(src, "LU")
+						src = strings.TrimSuffix(src, "L")
+						// TODO(xlab): better const handling
+						// should be resolved by switching to the upstream CC
+					}
 					exprParts = append(exprParts, src)
 				}
 			}
