@@ -610,8 +610,16 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 		wrapper.Base = "func"
 		return wrapper
 	default:
+		kind := spec.Kind()
+		if kind == OpaqueStructKind {
+			if decl, ok := t.tagMap[spec.GetTag()]; ok {
+				if !decl.Spec.IsOpaque() {
+					kind = StructKind
+				}
+			}
+		}
 		wrapper := GoTypeSpec{
-			Kind:     spec.Kind(),
+			Kind:     kind,
 			OuterArr: spec.OuterArrays(),
 			InnerArr: spec.InnerArrays(),
 		}
