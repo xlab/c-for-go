@@ -14,7 +14,10 @@ type Config struct {
 	Arch         string   `yaml:"Arch"`
 	IncludePaths []string `yaml:"IncludePaths"`
 	SourcesPaths []string `yaml:"SourcesPaths"`
-	archBits     TargetArchBits
+
+	Defines map[string]interface{} `yaml:"Defines"`
+
+	archBits TargetArchBits
 }
 
 func NewConfig(paths ...string) *Config {
@@ -34,6 +37,18 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, cc.DefinesMap, error) {
 	predefined, ok := predefines[cfg.archBits]
 	if !ok {
 		predefined = predefinedBase
+	}
+	for name, value := range cfg.Defines {
+		switch value.(type) {
+		case string:
+			predefined += fmt.Sprintf("\n#define %s \"%s\"", name, value)
+		case int, int16, int32, int64, uint, uint16, uint32, uint64:
+			predefined += fmt.Sprintf("\n#define %s %d", name, value)
+		case float32, float64:
+			predefined += fmt.Sprintf("\n#define %s %ff", name, value)
+		default: // a corner case: undef using an unknown value type
+			predefined += fmt.Sprintf("\n#undef %s", name)
+		}
 	}
 	model := models[cfg.archBits]
 	return cc.Parse(predefined, cfg.SourcesPaths, model, cc.SysIncludePaths(cfg.IncludePaths))

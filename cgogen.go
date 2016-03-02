@@ -115,7 +115,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	return c, nil
 }
 
-func (c *CGOGen) Generate() {
+func (c *CGOGen) Generate(noCGO bool) {
 	main := c.goBuffers[BufMain]
 	if wr, ok := c.goBuffers[BufDoc]; ok {
 		if !c.gen.WriteDoc(wr) {
@@ -125,10 +125,14 @@ func (c *CGOGen) Generate() {
 	} else {
 		c.gen.WriteDoc(main)
 	}
-	c.gen.WriteIncludes(main)
+	if !noCGO {
+		c.gen.WriteIncludes(main)
+	}
 	if wr, ok := c.goBuffers[BufConst]; ok {
 		c.gen.WritePackageHeader(wr)
-		c.gen.WriteIncludes(wr)
+		if !noCGO {
+			c.gen.WriteIncludes(wr)
+		}
 		if n := c.gen.WriteConst(wr); n == 0 {
 			c.goBuffers[BufConst] = nil
 		}
@@ -137,26 +141,30 @@ func (c *CGOGen) Generate() {
 	}
 	if wr, ok := c.goBuffers[BufTypes]; ok {
 		c.gen.WritePackageHeader(wr)
-		c.gen.WriteIncludes(wr)
+		if !noCGO {
+			c.gen.WriteIncludes(wr)
+		}
 		if n := c.gen.WriteTypedefs(wr); n == 0 {
 			c.goBuffers[BufTypes] = nil
 		}
 	} else {
 		c.gen.WriteTypedefs(main)
 	}
-	if wr, ok := c.goBuffers[BufUnions]; ok {
-		c.gen.WritePackageHeader(wr)
-		c.gen.WriteIncludes(wr)
-		if n := c.gen.WriteUnions(wr); n == 0 {
-			c.goBuffers[BufUnions] = nil
+	if !noCGO {
+		if wr, ok := c.goBuffers[BufUnions]; ok {
+			c.gen.WritePackageHeader(wr)
+			c.gen.WriteIncludes(wr)
+			if n := c.gen.WriteUnions(wr); n == 0 {
+				c.goBuffers[BufUnions] = nil
+			}
+		} else {
+			c.gen.WriteUnions(main)
 		}
-	} else {
-		c.gen.WriteUnions(main)
+		c.gen.WriteDeclares(main)
 	}
-	c.gen.WriteDeclares(main)
 }
 
-func (c *CGOGen) Flush() error {
+func (c *CGOGen) Flush(noCGO bool) error {
 	c.gen.Close()
 	c.genSync.Wait()
 	filePrefix := filepath.Join(c.outputPath, c.cfg.Generator.PackageName)
@@ -207,14 +215,19 @@ func (c *CGOGen) Flush() error {
 		}
 	}
 
-	pkg := filepath.Base(c.cfg.Generator.PackageName)
-	if err := writeGoFile(BufMain, pkg); err != nil {
-		return err
+	if !noCGO {
+		pkg := filepath.Base(c.cfg.Generator.PackageName)
+		if err := writeGoFile(BufMain, pkg); err != nil {
+			return err
+		}
 	}
 	for opt, name := range goBufferNames {
 		if err := writeGoFile(opt, name); err != nil {
 			return err
 		}
+	}
+	if noCGO {
+		return nil
 	}
 	if c.chHelpersBuf.Len() > 0 {
 		if err := writeCHFile(c.chHelpersBuf, "cgo_helpers"); err != nil {

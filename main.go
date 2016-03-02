@@ -11,6 +11,7 @@ import (
 
 var (
 	outputPath = flag.String("out", "", "Specify the `directory` of output files.")
+	noCGO      = flag.Bool("nocgo", false, "Do not include CGo-specific header in files.")
 )
 
 var packageName string
@@ -39,8 +40,8 @@ func main() {
 		if err != nil {
 			Errorf(err.Error())
 		}
-		cgogen.Generate()
-		if err := cgogen.Flush(); err != nil {
+		cgogen.Generate(*noCGO)
+		if err := cgogen.Flush(*noCGO); err != nil {
 			Errorf(err.Error())
 		}
 		log.Printf("done in %v\n", time.Now().Sub(ts))
