@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"go/token"
 
+	"github.com/cznic/xc"
 	"github.com/xlab/c/cc"
-	"github.com/xlab/c/xc"
 )
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {

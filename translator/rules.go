@@ -73,14 +73,14 @@ const (
 	ConstExpand     ConstRule = "expand"
 	ConstExpandFull ConstRule = "expandFull"
 	ConstEval       ConstRule = "eval"
-	ConstEvalFull   ConstRule = "evalFull"
 )
 
 type ConstScope string
 
 const (
-	ConstEnum ConstScope = "enum"
-	ConstDecl ConstScope = "decl"
+	ConstEnum    ConstScope = "enum"
+	ConstDecl    ConstScope = "decl"
+	ConstDefines ConstScope = "defines"
 )
 
 type Tip string

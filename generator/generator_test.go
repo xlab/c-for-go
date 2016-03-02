@@ -84,7 +84,7 @@ func getGenerator(originHeader string) (*Generator, error) {
 
 	t, err := tl.New(&tl.Config{
 		ConstRules: tl.ConstRules{
-			tl.ConstEnum: tl.ConstEvalFull,
+			tl.ConstEnum: tl.ConstEval,
 			tl.ConstDecl: tl.ConstExpand,
 		},
 		PtrTips: tl.PtrTips{

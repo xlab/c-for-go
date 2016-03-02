@@ -26,13 +26,13 @@ func NewConfig(paths ...string) *Config {
 	}
 }
 
-func ParseWith(cfg *Config) (*cc.TranslationUnit, cc.DefinesMap, error) {
+func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 	if len(cfg.SourcesPaths) == 0 {
-		return nil, nil, errors.New("parser: no target paths specified")
+		return nil, errors.New("parser: no target paths specified")
 	}
 	cfg, err := checkConfig(cfg)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	predefined, ok := predefines[cfg.archBits]
 	if !ok {
@@ -61,7 +61,7 @@ func checkConfig(cfg *Config) (*Config, error) {
 	if arch, ok := arches[cfg.Arch]; !ok {
 		// default to 64-bit arch
 		cfg.archBits = Arch64
-	} else if arch != Arch32 && arch != Arch64 {
+	} else if arch != Arch32 && arch != Arch64 && arch != Arch48 {
 		// default to 64-bit arch
 		cfg.archBits = Arch64
 	}

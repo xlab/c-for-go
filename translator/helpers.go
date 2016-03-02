@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/xlab/c/xc"
+	"github.com/cznic/xc"
 )
 
 var (

@@ -40,7 +40,7 @@ func TestLearn(t *testing.T) {
 		},
 	}
 	constRules := ConstRules{
-		ConstEnum: ConstEvalFull,
+		ConstEnum: ConstEval,
 		ConstDecl: ConstExpand,
 	}
 	tl, err := New(&Config{

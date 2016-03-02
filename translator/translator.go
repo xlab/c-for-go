@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cznic/xc"
 	"github.com/xlab/c/cc"
 )
 
@@ -217,12 +218,12 @@ func (s declList) Less(i, j int) bool {
 	}
 }
 
-func (t *Translator) Learn(unit *cc.TranslationUnit, defines cc.DefinesMap) {
+func (t *Translator) Learn(unit *cc.TranslationUnit) {
 	t.walkTranslationUnit(unit)
 	t.resolveTypedefs(t.typedefs)
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
-	t.collectDefines(defines)
+	t.collectDefines(unit.Macros)
 	sort.Sort(declList(t.defines))
 }
 
@@ -251,13 +252,50 @@ func (t *Translator) Learn(unit *cc.TranslationUnit, defines cc.DefinesMap) {
 // 	fmt.Printf("\n)\n\n")
 // }
 
-func (t *Translator) collectDefines(defines cc.DefinesMap) {
-	for name, tokens := range defines {
-		if !t.IsAcceptableName(TargetConst, name) {
-			continue
-		} else if len(tokens) == 0 {
+func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
+	seen := make(map[string]struct{}, len(defines))
+	for _, macro := range defines {
+		if macro.IsFnLike || macro.Value == nil {
 			continue
 		}
+		name := string(macro.DefTok.S())
+		if !t.IsAcceptableName(TargetConst, name) {
+			continue
+		}
+		seen[name] = struct{}{}
+
+		expand := false
+		if t.constRules[ConstDefines] == ConstExpand ||
+			t.constRules[ConstDefines] == ConstExpandFull {
+			expand = true
+		}
+
+		if !expand {
+			switch val := macro.Value.(type) {
+			case bool: // ban bools
+				continue
+			case cc.StringLitID:
+				macro.Value = string(xc.Dict.S(int(val)))
+			}
+			t.defines = append(t.defines, &CDecl{
+				IsDefine: true,
+				Name:     name,
+				Value:    Value(macro.Value),
+				Pos:      macro.DefTok.Pos(),
+			})
+			continue
+		}
+		tokens := macro.ReplacementToks()
+		if len(tokens) == 0 {
+			t.defines = append(t.defines, &CDecl{
+				IsDefine: true,
+				Name:     name,
+				Value:    Value(macro.Value),
+				Pos:      macro.DefTok.Pos(),
+			})
+			continue
+		}
+
 		srcParts := make([]string, 0, len(tokens))
 		exprParts := make([]string, 0, len(tokens))
 		valid := true
@@ -272,7 +310,7 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 			srcParts = append(srcParts, src)
 			switch token.Rune {
 			case cc.IDENTIFIER:
-				if _, ok := defines[src]; ok {
+				if _, ok := seen[src]; ok {
 					// const reference
 					exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
 				} else if _, ok := t.typedefsSet[src]; ok {
@@ -323,11 +361,11 @@ func (t *Translator) collectDefines(defines cc.DefinesMap) {
 			continue
 		}
 		t.defines = append(t.defines, &CDecl{
-			Pos:        tokens[0].Pos(),
 			IsDefine:   true,
 			Name:       name,
 			Expression: strings.Join(exprParts, " "),
 			Src:        strings.Join(srcParts, " "),
+			Pos:        macro.DefTok.Pos(),
 		})
 	}
 }

@@ -76,7 +76,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	}
 
 	// parse the headers
-	unit, macros, err := parser.ParseWith(cfg.Parser)
+	unit, err := parser.ParseWith(cfg.Parser)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	if err != nil {
 		return nil, err
 	}
-	tl.Learn(unit, macros)
+	tl.Learn(unit)
 
 	// begin generation
 	pkg := filepath.Base(cfg.Generator.PackageName)

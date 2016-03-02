@@ -20,7 +20,11 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 		name := gen.tr.TransformName(tl.TargetConst, decl.Name)
 		fmt.Fprintf(wr, "// %s as defined in %s\n", name,
 			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
-		fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
+		if decl.Value != nil {
+			fmt.Fprintf(wr, "%s = %v", name, decl.Value)
+		} else {
+			fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
+		}
 		writeSpace(wr, 1)
 		n++
 	}
@@ -36,6 +40,10 @@ func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 		decl.Expression = skipNameStr
 	}
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
+	if decl.Value != nil {
+		fmt.Fprintf(wr, "const %s %s = %v", declName, goSpec, decl.Value)
+		return
+	}
 	fmt.Fprintf(wr, "const %s %s = %s", declName, goSpec, decl.Expression)
 }
 
