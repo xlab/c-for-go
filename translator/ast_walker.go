@@ -94,9 +94,10 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSp
 		InnerArr: base.InnerArr,
 	}
 	for _, en := range typ.EnumeratorList() {
-		name := blessName(xc.Dict.S(en.ID))
+		name := blessName(en.DefTok.S())
 		m := &CDecl{
 			Name: name,
+			Pos:  en.DefTok.Pos(),
 		}
 		switch {
 		case en.Value == nil:

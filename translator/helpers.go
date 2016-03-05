@@ -339,7 +339,23 @@ func isNumeric(v []rune) bool {
 
 // readNumeric reads numeric part of the value, ex: -1000.f being read as -1000.
 func readNumeric(v []rune) string {
+	long := false
+	unsigned := false
 	result := make([]rune, 0, len(v))
+
+	wrap := func() string {
+		switch {
+		case unsigned && long:
+			return "uint64(" + string(result) + ")"
+		case unsigned:
+			return "uint32(" + string(result) + ")"
+		case long:
+			return "int64(" + string(result) + ")"
+		default:
+			return string(result)
+		}
+	}
+
 	for _, r := range v {
 		switch r {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
@@ -348,10 +364,16 @@ func readNumeric(v []rune) string {
 			result = append(result, r)
 		case 'A', 'B', 'C', 'D', 'E', 'F':
 			result = append(result, r)
-			// c'mon, get some roman numerals here
+		// c'mon, get some roman numerals here
+		case 'L', 'l':
+			long = true
+			continue
+		case 'U', 'u':
+			unsigned = true
+			continue
 		default:
-			return string(result)
+			return wrap()
 		}
 	}
-	return string(result)
+	return wrap()
 }

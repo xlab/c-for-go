@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"math/rand"
+	"sort"
 
 	tl "github.com/xlab/cgogen/translator"
 )
@@ -57,6 +58,18 @@ func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
 	return gen, nil
 }
 
+type declList []*tl.CDecl
+
+func (s declList) Len() int      { return len(s) }
+func (s declList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s declList) Less(i, j int) bool {
+	if s[i].Pos != s[j].Pos {
+		return s[i].Pos < s[j].Pos
+	} else {
+		return s[i].Name < s[j].Name
+	}
+}
+
 func (gen *Generator) WriteConst(wr io.Writer) int {
 	var count int
 	if defines := gen.tr.Defines(); len(defines) > 0 {
@@ -83,6 +96,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 		}
 	}
 
+	enumList := make([]*tl.CDecl, 0, len(gen.tr.TagMap()))
 	for tag, decl := range gen.tr.TagMap() {
 		if decl.Spec.Kind() != tl.EnumKind {
 			continue
@@ -92,10 +106,15 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 		if !gen.tr.IsAcceptableName(tl.TargetType, tag) {
 			continue
 		}
-		if expandEnum(decl) {
+		enumList = append(enumList, decl)
+	}
+	sort.Sort(declList(enumList))
+	for i := range enumList {
+		if expandEnum(enumList[i]) {
 			count++
 		}
 	}
+
 	for _, decl := range gen.tr.Typedefs() {
 		if decl.Spec.Kind() != tl.EnumKind {
 			continue

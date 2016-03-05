@@ -29,9 +29,8 @@ type Translator struct {
 	typedefs []*CDecl
 	declares []*CDecl
 
-	typedefsSet  map[string]struct{}
-	typedefKinds map[string]CTypeKind
-	//	translateCache *SpecTranslateCache
+	typedefsSet    map[string]struct{}
+	typedefKinds   map[string]CTypeKind
 	transformCache *NameTransformCache
 	typeCache      *TypeCache
 
@@ -254,6 +253,9 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) {
 
 func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 	seen := make(map[string]struct{}, len(defines))
+
+	// double traverse because macros can depend on each other and the map
+	// brings a randomized order of them.
 	for _, macro := range defines {
 		if macro.IsFnLike {
 			continue
@@ -263,7 +265,13 @@ func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 			continue
 		}
 		seen[name] = struct{}{}
+	}
 
+	for _, macro := range defines {
+		name := string(macro.DefTok.S())
+		if _, ok := seen[name]; !ok {
+			continue
+		}
 		expand := false
 		if t.constRules[ConstDefines] == ConstExpand {
 			expand = true
@@ -292,16 +300,6 @@ func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 			continue
 		}
 		tokens := macro.ReplacementToks()
-		if len(tokens) == 0 {
-			t.defines = append(t.defines, &CDecl{
-				IsDefine: true,
-				Name:     name,
-				Value:    Value(macro.Value),
-				Pos:      macro.DefTok.Pos(),
-			})
-			continue
-		}
-
 		srcParts := make([]string, 0, len(tokens))
 		exprParts := make([]string, 0, len(tokens))
 		valid := true
@@ -349,6 +347,10 @@ func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 						typecastValueParens--
 					}
 				default:
+					// somewhere in the world a kitten died because of this
+					if token.Rune == '~' {
+						src = "^"
+					}
 					if runes := []rune(src); len(runes) > 0 && isNumeric(runes) {
 						// TODO(xlab): better const handling
 						// should be resolved by switching to the upstream CC
@@ -362,6 +364,15 @@ func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 			}
 		}
 		if !valid {
+			if macro.Value != nil {
+				// fallback to the evaluated value
+				t.defines = append(t.defines, &CDecl{
+					IsDefine: true,
+					Name:     name,
+					Value:    Value(macro.Value),
+					Pos:      macro.DefTok.Pos(),
+				})
+			}
 			continue
 		}
 		t.defines = append(t.defines, &CDecl{
