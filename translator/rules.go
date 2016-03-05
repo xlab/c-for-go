@@ -69,10 +69,9 @@ const (
 type ConstRule string
 
 const (
-	ConstCGOAlias   ConstRule = "cgo"
-	ConstExpand     ConstRule = "expand"
-	ConstExpandFull ConstRule = "expandFull"
-	ConstEval       ConstRule = "eval"
+	ConstCGOAlias ConstRule = "cgo"
+	ConstExpand   ConstRule = "expand"
+	ConstEval     ConstRule = "eval"
 )
 
 type ConstScope string

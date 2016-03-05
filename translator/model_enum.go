@@ -18,63 +18,22 @@ type CEnumSpec struct {
 
 func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
 	var (
-		uint32Spec = CTypeSpec{Base: "int", Unsigned: true}
-		int32Spec  = CTypeSpec{Base: "int"}
-		uint64Spec = CTypeSpec{Base: "long", Unsigned: true}
-		int64Spec  = CTypeSpec{Base: "long"}
+		int32Spec = CTypeSpec{Base: "int"}
+		int64Spec = CTypeSpec{Base: "long int"}
 	)
 	switch c.Type {
-	case uint32Spec:
-		switch v := v.(type) {
-		case int32:
-			if v < 0 {
-				c.Type = int32Spec
-			}
-		case uint64:
-			c.Type = uint64Spec
+	case int32Spec: // need promotion
+		switch v.(type) {
 		case int64:
-			if v < 0 {
-				c.Type = int64Spec
-			} else {
-				c.Type = uint64Spec
-			}
+			c.Type = int64Spec
 		}
-	case int32Spec:
-		switch v := v.(type) {
-		case uint64:
-			c.Type = uint64Spec
-		case int64:
-			if v < 0 {
-				c.Type = int64Spec
-			} else {
-				c.Type = uint64Spec
-			}
-		}
-	case uint64Spec:
-		switch v := v.(type) {
-		case int64:
-			if v < 0 {
-				c.Type = int64Spec
-			}
-		}
+	case int64Spec:
 	default:
-		switch v := v.(type) {
-		case uint32:
-			c.Type = uint32Spec
+		switch v.(type) {
 		case int32:
-			if v < 0 {
-				c.Type = int32Spec
-			} else {
-				c.Type = uint32Spec
-			}
-		case uint64:
-			c.Type = uint64Spec
+			c.Type = int32Spec
 		case int64:
-			if v < 0 {
-				c.Type = int64Spec
-			} else {
-				c.Type = uint64Spec
-			}
+			c.Type = int64Spec
 		}
 	}
 	return &c.Type

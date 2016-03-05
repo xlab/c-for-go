@@ -14,12 +14,10 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 		if !decl.IsDefine {
 			continue
 		}
-		if len(decl.Expression) == 0 {
-			decl.Expression = skipNameStr
-		}
 		name := gen.tr.TransformName(tl.TargetConst, decl.Name)
 		fmt.Fprintf(wr, "// %s as defined in %s\n", name,
 			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+
 		if decl.Value != nil {
 			fmt.Fprintf(wr, "%s = %v", name, decl.Value)
 		} else {
@@ -36,10 +34,8 @@ func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 	declName := gen.tr.TransformName(tl.TargetConst, decl.Name)
 	fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
 		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
-	if len(decl.Expression) == 0 {
-		decl.Expression = skipNameStr
-	}
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
+
 	if decl.Value != nil {
 		fmt.Fprintf(wr, "const %s %s = %v", declName, goSpec, decl.Value)
 		return
@@ -83,15 +79,23 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 			fmt.Fprintf(wr, "// %s as declared in %s\n", mName,
 				gen.tr.SrcLocation(tl.TargetConst, m.Name, m.Pos))
 		}
-		if len(m.Expression) == 0 {
+		switch {
+		case m.Value != nil:
+			if hasType {
+				fmt.Fprintf(wr, "%s %s = %v\n", mName, typeName, m.Value)
+				continue
+			}
+			fmt.Fprintf(wr, "%s = %v\n", mName, m.Value)
+		case len(m.Expression) != 0:
+			if hasType {
+				fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, m.Expression)
+				continue
+			}
+			fmt.Fprintf(wr, "%s = %s\n", mName, m.Expression)
+		default:
 			fmt.Fprintf(wr, "%s\n", mName)
 			continue
 		}
-		if hasType {
-			fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, m.Expression)
-			continue
-		}
-		fmt.Fprintf(wr, "%s = %s\n", mName, m.Expression)
 	}
 	writeEndConst(wr)
 	writeSpace(wr, 1)
@@ -134,11 +138,15 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 		if len(mName) == 0 {
 			continue
 		}
-		if len(m.Expression) == 0 {
+		switch {
+		case m.Value != nil:
+			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, m.Value)
+		case len(m.Expression) != 0:
+			fmt.Fprintf(wr, "%s %s = %s\n", mName, declName, m.Expression)
+		default:
 			fmt.Fprintf(wr, "%s\n", mName)
 			continue
 		}
-		fmt.Fprintf(wr, "%s %s = %s\n", mName, declName, m.Expression)
 	}
 	writeEndConst(wr)
 	writeSpace(wr, 1)

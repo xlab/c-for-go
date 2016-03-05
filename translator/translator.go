@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cznic/cc"
 	"github.com/cznic/xc"
-	"github.com/xlab/c/cc"
 )
 
 type Translator struct {
@@ -255,7 +255,7 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) {
 func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 	seen := make(map[string]struct{}, len(defines))
 	for _, macro := range defines {
-		if macro.IsFnLike || macro.Value == nil {
+		if macro.IsFnLike {
 			continue
 		}
 		name := string(macro.DefTok.S())
@@ -265,24 +265,30 @@ func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 		seen[name] = struct{}{}
 
 		expand := false
-		if t.constRules[ConstDefines] == ConstExpand ||
-			t.constRules[ConstDefines] == ConstExpandFull {
+		if t.constRules[ConstDefines] == ConstExpand {
 			expand = true
 		}
 
 		if !expand {
 			switch val := macro.Value.(type) {
+			case nil: // unresolved value -> try to expand
+				expand = true
 			case bool: // ban bools
 				continue
 			case cc.StringLitID:
-				macro.Value = string(xc.Dict.S(int(val)))
+				macro.Value = fmt.Sprintf(`"%s"`, xc.Dict.S(int(val)))
 			}
-			t.defines = append(t.defines, &CDecl{
-				IsDefine: true,
-				Name:     name,
-				Value:    Value(macro.Value),
-				Pos:      macro.DefTok.Pos(),
-			})
+			if !expand {
+				t.defines = append(t.defines, &CDecl{
+					IsDefine: true,
+					Name:     name,
+					Value:    Value(macro.Value),
+					Pos:      macro.DefTok.Pos(),
+				})
+				continue
+			}
+		} else if _, ok := macro.Value.(bool); ok {
+			// ban bools
 			continue
 		}
 		tokens := macro.ReplacementToks()
@@ -343,12 +349,10 @@ func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 						typecastValueParens--
 					}
 				default:
-					if len(src) > 0 && isDigit([]rune(src)[0]) {
-						src = strings.TrimSuffix(src, "LL")
-						src = strings.TrimSuffix(src, "LU")
-						src = strings.TrimSuffix(src, "L")
+					if runes := []rune(src); len(runes) > 0 && isNumeric(runes) {
 						// TODO(xlab): better const handling
 						// should be resolved by switching to the upstream CC
+						src = readNumeric(runes)
 					}
 					exprParts = append(exprParts, src)
 				}

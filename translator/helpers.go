@@ -322,11 +322,36 @@ func rewriteName(name []byte) []byte {
 	return append(skipStr, name...)
 }
 
-func isDigit(r rune) bool {
-	switch r {
-	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		return true
-	default:
-		return false
+// readNumeric checks if the value looks like a numeric value, i.e. -1000.f
+func isNumeric(v []rune) bool {
+	for _, r := range v {
+		switch r {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			return true
+		case '-', '+', '.':
+			continue
+		default:
+			return false
+		}
 	}
+	return false
+}
+
+// readNumeric reads numeric part of the value, ex: -1000.f being read as -1000.
+func readNumeric(v []rune) string {
+	result := make([]rune, 0, len(v))
+	for _, r := range v {
+		switch r {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			result = append(result, r)
+		case '-', '+', '.', 'x', 'b':
+			result = append(result, r)
+		case 'A', 'B', 'C', 'D', 'E', 'F':
+			result = append(result, r)
+			// c'mon, get some roman numerals here
+		default:
+			return string(result)
+		}
+	}
+	return string(result)
 }

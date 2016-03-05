@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"go/token"
 
+	"github.com/cznic/cc"
 	"github.com/cznic/xc"
-	"github.com/xlab/c/cc"
 )
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
@@ -85,69 +85,36 @@ func (t *Translator) getStructTag(typ cc.Type) (tag string) {
 	return
 }
 
-func (t *Translator) getEnumTag(typ cc.Type) (tag string) {
-	spec := typ.TypeSpecifier().EnumSpecifier
-	if spec.IdentifierOpt != nil {
-		return blessName(spec.IdentifierOpt.Token.S())
-	}
-	return blessName(spec.Token2.S())
-}
-
 func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSpec {
-	tag := t.getEnumTag(typ)
+	tag := blessName(xc.Dict.S(typ.Tag()))
 	spec := &CEnumSpec{
 		Tag:      tag,
 		Pointers: base.Pointers,
 		OuterArr: base.OuterArr,
 		InnerArr: base.InnerArr,
 	}
-
-	// this would work with patched cznic/cc, replace when workaround is ready
-	enumSpecifier := typ.TypeSpecifier().EnumSpecifier
-
-	var idx int
-	switch enumSpecifier.Case {
-	case 0: // "enum" IdentifierOpt '{' EnumeratorList CommaOpt '}'
-		list := enumSpecifier.EnumeratorList
-		for list != nil {
-			m := t.walkEnumerator(list.Enumerator)
-			list = list.EnumeratorList
-
-			switch {
-			case m.Value == nil:
-				if idx > 0 {
-					// get previous enumerator
-					prevM := spec.Members[idx-1]
-					m.Value = incVal(prevM.Value)
-					switch t.constRules[ConstEnum] {
-					case ConstExpandFull:
-						m.Expression = prevM.Expression + "+1"
-					case ConstExpand:
-						m.Expression = prevM.Name + "+1"
-					case ConstCGOAlias:
-						m.Expression = fmt.Sprintf("C.%s", blessName([]byte(m.Name)))
-					}
-					m.Spec = prevM.Spec.Copy()
-				} else {
-					m.Value = int32(0)
-					m.Expression = "0"
-				}
-			case t.constRules[ConstEnum] == ConstCGOAlias:
-				m.Expression = fmt.Sprintf("C.%s", blessName([]byte(m.Name)))
-			default:
-				m.Expression = fmt.Sprintf("%d", m.Value)
-			}
-
-			idx++
-			m.Spec = spec.PromoteType(m.Value)
-			spec.Members = append(spec.Members, m)
-			t.valueMap[m.Name] = m.Value
-			t.exprMap[m.Name] = m.Expression
+	for _, en := range typ.EnumeratorList() {
+		name := blessName(xc.Dict.S(en.ID))
+		m := &CDecl{
+			Name: name,
 		}
-	case 2: // "enum" IDENTIFIER
-		spec.PromoteType(int32(0))
-		return spec
+		switch {
+		case en.Value == nil:
+			panic("value cannot be nil in enum")
+		case t.constRules[ConstEnum] == ConstCGOAlias:
+			m.Expression = fmt.Sprintf("C.%s", name)
+		case t.constRules[ConstEnum] == ConstExpand:
+			// TODO(xlab): support expand
+			m.Expression = fmt.Sprintf("C.%s", name)
+		default:
+			m.Value = en.Value
+		}
+		m.Spec = spec.PromoteType(en.Value)
+		spec.Members = append(spec.Members, m)
+		t.valueMap[m.Name] = en.Value
+		t.exprMap[m.Name] = m.Expression
 	}
+
 	return spec
 }
 

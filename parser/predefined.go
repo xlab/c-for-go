@@ -1,6 +1,6 @@
 package parser
 
-import "github.com/xlab/c/cc"
+import "github.com/cznic/cc"
 
 type TargetArchBits int
 

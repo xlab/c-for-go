@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xlab/c/cc"
+	"github.com/cznic/cc"
 )
 
 type Config struct {
