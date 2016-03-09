@@ -33,8 +33,8 @@ func (gen *Generator) WriteDoc(wr io.Writer) bool {
 func (gen *Generator) WriteIncludes(wr io.Writer) {
 	writeStartComment(wr)
 	writePkgConfig(wr, gen.cfg.PkgConfigOpts)
-	for _, set := range gen.cfg.Flags {
-		writeFlagSet(wr, set)
+	for _, group := range gen.cfg.FlagGroups {
+		writeFlagGroup(wr, group)
 	}
 	for _, path := range gen.cfg.SysIncludes {
 		writeSysInclude(wr, path)
@@ -124,19 +124,19 @@ func (gen *Generator) WritePackageHeader(wr io.Writer) {
 	writeSpace(wr, 1)
 }
 
-func writeFlagSet(wr io.Writer, flags ArchFlagSet) {
-	if len(flags.Name) == 0 {
+func writeFlagGroup(wr io.Writer, group TraitFlagGroup) {
+	if len(group.Name) == 0 {
 		return
 	}
-	if len(flags.Flags) == 0 {
+	if len(group.Flags) == 0 {
 		return
 	}
-	if len(flags.Arch) == 0 {
-		fmt.Fprintf(wr, "#cgo %s: %s\n", flags.Name, strings.Join(flags.Flags, " "))
+	if len(group.Traits) == 0 {
+		fmt.Fprintf(wr, "#cgo %s: %s\n", group.Name, strings.Join(group.Flags, " "))
 		return
 	}
-	constraints := strings.Join(flags.Arch, " ")
-	fmt.Fprintf(wr, "#cgo %s %s: %s\n", constraints, flags.Name, strings.Join(flags.Flags, " "))
+	traits := strings.Join(group.Traits, " ")
+	fmt.Fprintf(wr, "#cgo %s %s: %s\n", traits, group.Name, strings.Join(group.Flags, " "))
 }
 
 func writeSysInclude(wr io.Writer, path string) {

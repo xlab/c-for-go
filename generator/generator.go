@@ -20,20 +20,20 @@ type Generator struct {
 	rand          *rand.Rand
 }
 
-type ArchFlagSet struct {
-	Name  string   `yaml:"Name"`
-	Arch  []string `yaml:"Arch"`
-	Flags []string `yaml:"Flags"`
+type TraitFlagGroup struct {
+	Name   string   `yaml:"name"`
+	Traits []string `yaml:"traits"`
+	Flags  []string `yaml:"flags"`
 }
 
 type Config struct {
-	PackageName        string        `yaml:"PackageName"`
-	PackageDescription string        `yaml:"PackageDescription"`
-	PackageLicense     string        `yaml:"PackageLicense"`
-	PkgConfigOpts      []string      `yaml:"PkgConfigOpts"`
-	Flags              []ArchFlagSet `yaml:"Flags"`
-	SysIncludes        []string      `yaml:"SysIncludes"`
-	Includes           []string      `yaml:"Includes"`
+	PackageName        string           `yaml:"PackageName"`
+	PackageDescription string           `yaml:"PackageDescription"`
+	PackageLicense     string           `yaml:"PackageLicense"`
+	PkgConfigOpts      []string         `yaml:"PkgConfigOpts"`
+	FlagGroups         []TraitFlagGroup `yaml:"FlagGroups"`
+	SysIncludes        []string         `yaml:"SysIncludes"`
+	Includes           []string         `yaml:"Includes"`
 }
 
 func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
