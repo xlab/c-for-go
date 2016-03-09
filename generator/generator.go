@@ -27,16 +27,13 @@ type ArchFlagSet struct {
 }
 
 type Config struct {
-	PackageName        string      `yaml:"PackageName"`
-	PackageDescription string      `yaml:"PackageDescription"`
-	PackageLicense     string      `yaml:"PackageLicense"`
-	PkgConfigOpts      []string    `yaml:"PkgConfigOpts"`
-	CFlags             ArchFlagSet `yaml:"CFlags"`
-	LDFlags            ArchFlagSet `yaml:"LDFlags"`
-	CPPFlags           ArchFlagSet `yaml:"CPPFlags"`
-	CXXFlags           ArchFlagSet `yaml:"CXXFlags"`
-	SysIncludes        []string    `yaml:"SysIncludes"`
-	Includes           []string    `yaml:"Includes"`
+	PackageName        string        `yaml:"PackageName"`
+	PackageDescription string        `yaml:"PackageDescription"`
+	PackageLicense     string        `yaml:"PackageLicense"`
+	PkgConfigOpts      []string      `yaml:"PkgConfigOpts"`
+	Flags              []ArchFlagSet `yaml:"Flags"`
+	SysIncludes        []string      `yaml:"SysIncludes"`
+	Includes           []string      `yaml:"Includes"`
 }
 
 func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {

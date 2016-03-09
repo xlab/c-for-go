@@ -136,8 +136,8 @@ func writeFlagSet(wr io.Writer, flags ArchFlagSet) {
 		fmt.Fprintf(wr, "#cgo %s: %s\n", flags.Name, strings.Join(flags.Flags, " "))
 		return
 	}
-	constrains := strings.Join(flags.Arch, " ")
-	fmt.Fprintf(wr, "#cgo %s %s: %s\n", constrains, flags.Name, strings.Join(flags.Flags, " "))
+	constraints := strings.Join(flags.Arch, " ")
+	fmt.Fprintf(wr, "#cgo %s %s: %s\n", constraints, flags.Name, strings.Join(flags.Flags, " "))
 }
 
 func writeSysInclude(wr io.Writer, path string) {
