@@ -33,10 +33,9 @@ func (gen *Generator) WriteDoc(wr io.Writer) bool {
 func (gen *Generator) WriteIncludes(wr io.Writer) {
 	writeStartComment(wr)
 	writePkgConfig(wr, gen.cfg.PkgConfigOpts)
-	writeFlagSet(wr, gen.cfg.CPPFlags)
-	writeFlagSet(wr, gen.cfg.CXXFlags)
-	writeFlagSet(wr, gen.cfg.CFlags)
-	writeFlagSet(wr, gen.cfg.LDFlags)
+	for _, set := range gen.cfg.Flags {
+		writeFlagSet(wr, set)
+	}
 	for _, path := range gen.cfg.SysIncludes {
 		writeSysInclude(wr, path)
 	}
