@@ -248,7 +248,7 @@ func flushBufferToFile(buf []byte, f *os.File, fmt bool) error {
 			_, err = f.Write(fmtBuf)
 			return err
 		} else {
-			log.Printf("[WARN]: cannot gofmt %s: %s\n", f.Name(), err.Error())
+			log.Printf("[WARN] cannot gofmt %s: %s\n", f.Name(), err.Error())
 			f.Write(buf)
 			return nil
 		}
@@ -263,7 +263,7 @@ func includePathsFromPkgConfig(opts []string) []string {
 	}
 	pc, err := pkg.NewConfig(nil)
 	if err != nil {
-		log.Println("[WARN]:", err)
+		log.Println("[WARN]", err)
 	}
 	for _, opt := range opts {
 		if strings.HasPrefix(opt, "-") || strings.HasPrefix(opt, "--") {
@@ -271,10 +271,10 @@ func includePathsFromPkgConfig(opts []string) []string {
 		}
 		if pcPath, err := pc.Locate(opt); err == nil {
 			if err := pc.Load(pcPath, true); err != nil {
-				log.Println("[WARN]: pkg-config:", err)
+				log.Println("[WARN] pkg-config:", err)
 			}
 		} else {
-			log.Printf("[WARN]: %s.pc referenced in pkg-config options but cannot be found: %s", opt, err.Error())
+			log.Printf("[WARN] %s.pc referenced in pkg-config options but cannot be found: %s", opt, err.Error())
 		}
 	}
 	flags := pc.CFlags()
