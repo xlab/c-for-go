@@ -22,7 +22,7 @@ var (
 var packageName string
 
 const logo = `Copyright (c) 2015-2016 Maxim Kupriianov <max@kc.vc>
-Based on C99 compiler front end by Jan Mercl <0xjnml@gmail.com>
+Based on a C99 compiler front end by Jan Mercl <0xjnml@gmail.com>
 
 ╔═╗╔═╗╔═╗┌─┐┌─┐┌┐┌
 ║  ║ ╦║ ║│ ┬├┤ │││
