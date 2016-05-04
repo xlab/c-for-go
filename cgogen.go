@@ -23,7 +23,6 @@ type Buf int
 
 const (
 	BufDoc Buf = iota
-	BufInludes
 	BufConst
 	BufTypes
 	BufUnions

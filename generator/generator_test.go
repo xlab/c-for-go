@@ -74,7 +74,7 @@ func TestProxies(t *testing.T) {
 }
 
 func getGenerator(originHeader string) (*Generator, error) {
-	unit, defines, err := parser.ParseWith(&parser.Config{
+	unit, err := parser.ParseWith(&parser.Config{
 		SourcesPaths: []string{originHeader},
 		IncludePaths: []string{"/usr/include"},
 	})
@@ -125,7 +125,7 @@ func getGenerator(originHeader string) (*Generator, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Learn(unit, defines)
+	t.Learn(unit)
 	// t.Report()
 
 	genCfg := &Config{

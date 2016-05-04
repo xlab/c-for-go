@@ -19,8 +19,6 @@ var (
 	debug      = flag.Bool("debug", false, "Enable some debug info.")
 )
 
-var packageName string
-
 const logo = `Copyright (c) 2015-2016 Maxim Kupriianov <max@kc.vc>
 Based on a C99 compiler front end by Jan Mercl <0xjnml@gmail.com>
 

@@ -19,7 +19,7 @@ func TestLearn(t *testing.T) {
 	cfg := parser.NewConfig("test/translator_test.h")
 	cfg.IncludePaths = []string{"/usr/local/include", "/usr/include"}
 
-	unit, macros, err := parser.ParseWith(cfg)
+	unit, err := parser.ParseWith(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,17 +50,9 @@ func TestLearn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tl.Learn(unit, macros)
+	tl.Learn(unit)
 	tl.Report()
 }
-
-// func ss(n []uint64) []ArraySizeSpec {
-// 	ss := make([]ArraySizeSpec, 0, len(n))
-// 	for i := range n {
-// 		ss = append(ss, ArraySizeSpec{N: n[i]})
-// 	}
-// 	return ss
-// }
 
 func TestCGoSpecAtLevel(t *testing.T) {
 	assert := assert.New(t)

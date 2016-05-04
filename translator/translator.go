@@ -226,22 +226,21 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) {
 	sort.Sort(declList(t.defines))
 }
 
+// This has been left intentionally.
+//
 // func (t *Translator) Report() {
 // 	fmt.Printf("[!] TAGS:\n")
 // 	for tag, decl := range t.tagMap {
 // 		fmt.Printf("%s refers to %v\n", tag, decl)
 // 	}
-
 // 	fmt.Printf("\n\n\n[!] TYPEDEFs:\n")
 // 	for _, decl := range t.typedefs {
 // 		fmt.Printf("%v\n", decl)
 // 	}
-
 // 	fmt.Printf("\n\n\n[!] DECLARATIONS:\n")
 // 	for _, decl := range t.declares {
 // 		fmt.Printf("%v\n", decl)
 // 	}
-
 // 	fmt.Printf("\n\n\n[!] const (")
 // 	for _, line := range t.defines {
 // 		fmt.Printf("\n// %s\n//   > define %s %v\n%s = %s",

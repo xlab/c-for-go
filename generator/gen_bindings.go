@@ -521,7 +521,6 @@ func (gen *Generator) packObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CG
 
 func packArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level uint8) {
 	if level == 0 {
-		fmt.Fprintln(buf1, "const m = 0x7fffffff")
 		fmt.Fprintln(buf1, "for i0 := range v {")
 		fmt.Fprintf(buf1, "ptr1 := ptr0[i0]\n")
 		buf2.Linef("}\n")

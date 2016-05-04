@@ -9,7 +9,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	unit, defines, err := ParseWith(NewConfig("test/parser_test.h"))
+	unit, err := ParseWith(NewConfig("test/parser_test.h"))
 	if err != nil {
 		t.Fatal(err)
 	} else if len(defines["LOL"]) == 0 {

@@ -35,31 +35,6 @@ func (s bytesSlice) Len() int           { return len(s) }
 func (s bytesSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s bytesSlice) Less(i, j int) bool { return bytes.Compare(s[i], s[j]) < 0 }
 
-func bytesJoin(buf1, buf2 []byte, sep string) []byte {
-	if len(buf1) == 0 {
-		return buf2
-	}
-	if len(buf2) == 0 {
-		return buf1
-	}
-	// both are not empty
-	return bytes.Join([][]byte{buf1, buf2}, []byte(sep))
-}
-
-func bytesWrap(buf []byte, w1, w2 string) []byte {
-	if len(buf) == 0 {
-		return nil
-	}
-	res := make([]byte, 0, len(buf)+2)
-	res = append(res, []byte(w1)...)
-	res = append(res, buf...)
-	res = append(res, []byte(w2)...)
-	return res
-}
-
-func isRestrictedBase(b []byte) bool {
-	return bytes.Contains(restrictedNames, b)
-}
 
 // narrowPath reduces full path to file name and parent dir only.
 func narrowPath(fp string) string {
@@ -72,19 +47,6 @@ func narrowPath(fp string) string {
 		}
 	}
 	return filepath.Join(filepath.Base(filepath.Dir(fp)), filepath.Base(fp))
-}
-
-func alterBytesPart(buf []byte, idx []int, altFn func([]byte) []byte) []byte {
-	copy(buf[idx[0]:idx[1]], altFn(buf[idx[0]:idx[1]]))
-	return buf // for chaining
-
-	// a copying version:
-	//
-	// altered := make([]byte, len(buf))
-	// copy(altered[:idx[0]], buf[:idx[0]])
-	// copy(altered[idx[0]:idx[1]], altFn(buf[idx[0]:idx[1]]))
-	// copy(altered[idx[1]:], buf[idx[1]:])
-	// return altered
 }
 
 func replaceBytes(buf []byte, idx []int, piece []byte) []byte {
@@ -131,28 +93,8 @@ func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Pos)
 	}
 
 	values := fmt.Sprintf("%s;%s;%d;%s;", narrowPath(pos.Filename), filename, pos.Line, name)
-	// indices := srcReferenceRx.FindAllStringSubmatchIndex(values, -1)
 	location := srcReferenceRx.ReplaceAllString(values, template)
-	// for i := len(indices); i > 0; i-- {
-	// 	idx := indices[i-1]
-	// 	location := srcReferenceRx.ExpandString(nil, template, src, idx)
-	// }
 	return location
-}
-
-func incVal(v Value) Value {
-	switch v := v.(type) {
-	case int32:
-		return v + 1
-	case int64:
-		return v + 1
-	case uint32:
-		return v + 1
-	case uint64:
-		return v + 1
-	default:
-		return v
-	}
 }
 
 type TypeCache struct {
@@ -259,30 +201,6 @@ func (n *TipCache) Set(scope TipScope, name string, result TipSpecRx) {
 		string
 	}{scope, name}] = result
 	n.mux.Unlock()
-}
-
-// func getVarArrayCount(arraySizes []uint6432) (count uint8) {
-// 	for i := range arraySizes {
-// 		if arraySizes[i] == 0 {
-// 			count++
-// 		}
-// 	}
-// 	return
-// }
-
-func tagAnonymousMembers(decl CDecl) {
-	if decl.Spec.Kind() != StructKind {
-		return
-	}
-	structSpec := decl.Spec.(*CStructSpec)
-	for _, m := range structSpec.Members {
-		switch spec := m.Spec.(type) {
-		case *CStructSpec:
-			if len(spec.Tag) == 0 {
-				spec.Tag = fmt.Sprintf("%s_%s", decl.Name, m.Name)
-			}
-		}
-	}
 }
 
 var v = struct{}{}
