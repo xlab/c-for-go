@@ -1,6 +1,10 @@
 package parser
 
-import "github.com/cznic/cc"
+import (
+	"strings"
+
+	"github.com/cznic/cc"
+)
 
 type TargetArch string
 
@@ -8,15 +12,11 @@ const (
 	Arch32    TargetArch = "i386"
 	Arch48    TargetArch = "x86_48"
 	Arch64    TargetArch = "x86_64"
-	ArchArm7A TargetArch = "armv7a"
-	ArchArm8A TargetArch = "armv8a"
+	ArchArm32 TargetArch = "arm"
+	ArchArm64 TargetArch = "aarch64"
 )
 
-var predefinedBase = `
-#define __STDC_HOSTED__ 1
-#define __STDC_VERSION__ 199901L
-#define __STDC__ 1
-#define __GNUC__ 4
+var builtinBase = `
 #define __builtin_va_list void *
 #define __asm__(x)
 #define __asm(x)
@@ -26,17 +26,31 @@ var predefinedBase = `
 #define __signed__ signed
 #define __extension__
 #define __attribute__(x)
+#define __restrict
+`
+
+var basePredefines = `
+#define __STDC_HOSTED__ 1
+#define __STDC_VERSION__ 199901L
+#define __STDC__ 1
+#define __GNUC__ 4
 #define __POSIX_C_DEPRECATED(ver)
 
 void __GO__(char*, ...);
 `
 
-var predefines = map[TargetArch]string{
-	Arch32:    predefinedBase + `#define __i386__ 1`,
-	Arch48:    predefinedBase + `#define __x86_64__ 1`,
-	Arch64:    predefinedBase + `#define __x86_64__ 1`,
-	ArchArm7A: predefinedBase + `#define __ARM_ARCH_7A__ 1` + "\n" + `#define __arm__ 1`,
-	ArchArm8A: predefinedBase + `#define __ARM_ARCH_8A__ 1` + "\n" + `#define __aarch64__ 1`,
+var archPredefines = map[TargetArch]string{
+	Arch32: `#define __i386__ 1`,
+	Arch48: `#define __x86_64__ 1`,
+	Arch64: `#define __x86_64__ 1`,
+	ArchArm32: strings.Join([]string{
+		`#define __ARM_EABI__ 1`,
+		`#define __arm__ 1`,
+	}, "\n"),
+	ArchArm64: strings.Join([]string{
+		`#define __ARM_EABI__ 1`,
+		`#define __aarch64__ 1`,
+	}, "\n"),
 	// TODO(xlab): https://sourceforge.net/p/predef/wiki/Architectures/
 }
 
@@ -44,25 +58,26 @@ var models = map[TargetArch]*cc.Model{
 	Arch32:    model32,
 	Arch48:    model48,
 	Arch64:    model64,
-	ArchArm7A: model32,
-	ArchArm8A: model64,
+	ArchArm32: model32,
+	ArchArm64: model64,
 }
 
 var arches = map[string]TargetArch{
 	"386":         Arch32,
-	"arm":         ArchArm7A,
-	"armv7a":      ArchArm7A,
-	"armv8a":      ArchArm8A,
-	"armeabi-v7a": ArchArm7A,
-	"armeabi-v8a": ArchArm8A,
-	"armbe":       ArchArm7A,
+	"arm":         ArchArm32,
+	"aarch64":     ArchArm64,
+	"armv7a":      ArchArm32,
+	"armv8a":      ArchArm64,
+	"armeabi-v7a": ArchArm32,
+	"armeabi-v8a": ArchArm64,
+	"armbe":       ArchArm32,
 	"mips":        Arch32,
 	"mipsle":      Arch32,
 	"sparc":       Arch32,
 	"amd64":       Arch64,
-	"amd64p32":    ArchArm7A,
-	"arm64":       ArchArm8A,
-	"arm64be":     ArchArm8A,
+	"amd64p32":    ArchArm32,
+	"arm64":       ArchArm64,
+	"arm64be":     ArchArm64,
 	"ppc64":       Arch64,
 	"ppc64le":     Arch64,
 	"mips64":      Arch64,

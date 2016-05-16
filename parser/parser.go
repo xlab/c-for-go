@@ -3,7 +3,9 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -17,13 +19,8 @@ type Config struct {
 
 	Defines map[string]interface{} `yaml:"Defines"`
 
+	CCDefs   bool `yaml:"-"`
 	archBits TargetArch
-}
-
-func NewConfig(paths ...string) *Config {
-	return &Config{
-		SourcesPaths: paths,
-	}
 }
 
 func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
@@ -34,24 +31,40 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 	if err != nil {
 		return nil, err
 	}
-	predefined, ok := predefines[cfg.archBits]
-	if !ok {
-		predefined = predefinedBase
+
+	predefined := builtinBase
+	// user-provided defines take precedence
+	for name, value := range cfg.Defines {
+		switch v := value.(type) {
+		case string:
+			predefined += fmt.Sprintf("\n#define %s \"%s\"", name, v)
+		case int, int16, int32, int64, uint, uint16, uint32, uint64:
+			predefined += fmt.Sprintf("\n#define %s %d", name, v)
+		case float32, float64:
+			predefined += fmt.Sprintf("\n#define %s %ff", name, v)
+		default: // a corner case: undef using an unknown value type
+			predefined += fmt.Sprintf("\n#undef %s", name)
+		}
 	}
+	if cfg.CCDefs {
+		if defs, ok := stealDefinesFromCC(); ok {
+			predefined += fmt.Sprintf("\n%s", defs)
+		}
+	} else if archDefs, ok := archPredefines[cfg.archBits]; ok {
+		predefined += fmt.Sprintf("\n%s", archDefs)
+	}
+	// undefines?
 	for name, value := range cfg.Defines {
 		switch value.(type) {
-		case string:
-			predefined += fmt.Sprintf("\n#define %s \"%s\"", name, value)
-		case int, int16, int32, int64, uint, uint16, uint32, uint64:
-			predefined += fmt.Sprintf("\n#define %s %d", name, value)
-		case float32, float64:
-			predefined += fmt.Sprintf("\n#define %s %ff", name, value)
+		case string, int, int16, int32, int64, uint, uint16, uint32, uint64, float32, float64:
+			continue
 		default: // a corner case: undef using an unknown value type
 			predefined += fmt.Sprintf("\n#undef %s", name)
 		}
 	}
 	model := models[cfg.archBits]
-	return cc.Parse(predefined, cfg.SourcesPaths, model, cc.SysIncludePaths(cfg.IncludePaths))
+	return cc.Parse(predefined, cfg.SourcesPaths, model, cc.SysIncludePaths(cfg.IncludePaths),
+		cc.EnableAnonymousStructFields())
 }
 
 func checkConfig(cfg *Config) (*Config, error) {
@@ -100,4 +113,22 @@ func findFile(path string, includePaths []string) (string, error) {
 		}
 	}
 	return "", errors.New("not found")
+}
+
+func stealDefinesFromCC() (defs string, ok bool) {
+	cc, ok := os.LookupEnv("CC")
+	if !ok { // second chance for CPP
+		cc, ok = os.LookupEnv("CPP")
+		if !ok {
+			return
+		}
+	}
+	cmd := exec.Command(cc, "-dM", "-E", "-x", "c", "/dev/null")
+	buf, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println("[WARN]:", err)
+		return
+	}
+	defs = string(buf)
+	return defs, true
 }
