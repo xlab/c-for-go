@@ -17,7 +17,7 @@ type Config struct {
 
 	Defines map[string]interface{} `yaml:"Defines"`
 
-	archBits TargetArchBits
+	archBits TargetArch
 }
 
 func NewConfig(paths ...string) *Config {

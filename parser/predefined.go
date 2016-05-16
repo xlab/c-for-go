@@ -2,12 +2,14 @@ package parser
 
 import "github.com/cznic/cc"
 
-type TargetArchBits int
+type TargetArch string
 
 const (
-	Arch32 TargetArchBits = 32
-	Arch48 TargetArchBits = 48
-	Arch64 TargetArchBits = 64
+	Arch32    TargetArch = "i386"
+	Arch48    TargetArch = "x86_48"
+	Arch64    TargetArch = "x86_64"
+	ArchArm7A TargetArch = "armv7a"
+	ArchArm8A TargetArch = "armv8a"
 )
 
 var predefinedBase = `
@@ -29,29 +31,38 @@ var predefinedBase = `
 void __GO__(char*, ...);
 `
 
-var predefines = map[TargetArchBits]string{
-	Arch32: predefinedBase + `#define __i386__ 1`,
-	Arch48: predefinedBase + `#define __x86_64__ 1`,
-	Arch64: predefinedBase + `#define __x86_64__ 1`,
+var predefines = map[TargetArch]string{
+	Arch32:    predefinedBase + `#define __i386__ 1`,
+	Arch48:    predefinedBase + `#define __x86_64__ 1`,
+	Arch64:    predefinedBase + `#define __x86_64__ 1`,
+	ArchArm7A: predefinedBase + `#define __ARM_ARCH_7A__ 1` + "\n" + `#define __arm__ 1`,
+	ArchArm8A: predefinedBase + `#define __ARM_ARCH_8A__ 1` + "\n" + `#define __aarch64__ 1`,
+	// TODO(xlab): https://sourceforge.net/p/predef/wiki/Architectures/
 }
 
-var models = map[TargetArchBits]*cc.Model{
-	Arch32: model32,
-	Arch48: model48,
-	Arch64: model64,
+var models = map[TargetArch]*cc.Model{
+	Arch32:    model32,
+	Arch48:    model48,
+	Arch64:    model64,
+	ArchArm7A: model32,
+	ArchArm8A: model64,
 }
 
-var arches = map[string]TargetArchBits{
+var arches = map[string]TargetArch{
 	"386":         Arch32,
-	"arm":         Arch32,
-	"armbe":       Arch32,
+	"arm":         ArchArm7A,
+	"armv7a":      ArchArm7A,
+	"armv8a":      ArchArm8A,
+	"armeabi-v7a": ArchArm7A,
+	"armeabi-v8a": ArchArm8A,
+	"armbe":       ArchArm7A,
 	"mips":        Arch32,
 	"mipsle":      Arch32,
 	"sparc":       Arch32,
 	"amd64":       Arch64,
-	"amd64p32":    Arch48,
-	"arm64":       Arch64,
-	"arm64be":     Arch64,
+	"amd64p32":    ArchArm7A,
+	"arm64":       ArchArm8A,
+	"arm64be":     ArchArm8A,
 	"ppc64":       Arch64,
 	"ppc64le":     Arch64,
 	"mips64":      Arch64,
