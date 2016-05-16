@@ -42,14 +42,17 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 			predefined += fmt.Sprintf("\n#define %s %d", name, v)
 		case float32, float64:
 			predefined += fmt.Sprintf("\n#define %s %ff", name, v)
-		default: // a corner case: undef using an unknown value type
-			predefined += fmt.Sprintf("\n#undef %s", name)
 		}
 	}
+	var (
+		ccDefs   string
+		ccDefsOK bool
+	)
 	if cfg.CCDefs {
-		if defs, ok := stealDefinesFromCC(); ok {
-			predefined += fmt.Sprintf("\n%s", defs)
-		}
+		ccDefs, ccDefsOK = stealDefinesFromCC()
+	}
+	if ccDefsOK {
+		predefined += fmt.Sprintf("\n%s", ccDefs)
 	} else {
 		predefined += basePredefines
 		if archDefs, ok := archPredefines[cfg.archBits]; ok {
