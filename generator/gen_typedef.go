@@ -33,8 +33,10 @@ func (gen *Generator) writeEnumTypedef(wr io.Writer, decl *tl.CDecl) {
 
 func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 	var returnRef string
-	spec := decl.Spec.(*tl.CFunctionSpec)
-	if spec.Return != nil {
+	funcSpec := decl.Spec.Copy().(*tl.CFunctionSpec)
+	funcSpec.Pointers = 0 // function pointers not supported here
+
+	if funcSpec.Return != nil {
 		// defaults to ref for the return values
 		ptrTip := tl.TipPtrRef
 		if ptrTipRx, ok := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name); ok {
@@ -42,12 +44,12 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 				ptrTip = tip
 			}
 		}
-		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).UnderlyingString()
+		returnRef = gen.tr.TranslateSpec(funcSpec.Return, ptrTip).String()
 	}
 
 	ptrTipRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name)
 	goFuncName := gen.tr.TransformName(tl.TargetType, decl.Name)
-	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTipRx.Self())
+	goSpec := gen.tr.TranslateSpec(funcSpec, ptrTipRx.Self())
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goFuncName,
 		gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos))
 	fmt.Fprintf(wr, "type %s %s", goFuncName, goSpec)
@@ -117,7 +119,8 @@ func (gen *Generator) writeUnionTypedef(wr io.Writer, decl *tl.CDecl) {
 	if typeName := string(goName); typeName != typeRef {
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
 			gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos))
-		fmt.Fprintf(wr, "type %s %s", goName, typeRef)
+		fmt.Fprintf(wr, "const sizeof%s = unsafe.Sizeof(C.%s{})\n", goName, decl.Spec.CGoName())
+		fmt.Fprintf(wr, "type %s [sizeof%s]byte\n", goName, goName)
 		writeSpace(wr, 1)
 		return
 	}

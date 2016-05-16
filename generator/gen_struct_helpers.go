@@ -286,8 +286,3 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 	}
 	return buf.Bytes()
 }
-
-// func getSetterHelpers(goStructName []byte, crc uint32, spec tl.CType) []*Helper {
-// 	//	structSpec := spec.(*tl.CStructSpec)
-// 	return nil
-// }

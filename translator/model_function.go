@@ -6,6 +6,7 @@ import (
 )
 
 type CFunctionSpec struct {
+	Raw      string
 	Typedef  string
 	Return   CType
 	Params   []*CDecl
@@ -13,8 +14,8 @@ type CFunctionSpec struct {
 }
 
 func (c CFunctionSpec) String() string {
-	if len(c.Typedef) > 0 {
-		return c.Typedef
+	if len(c.Raw) > 0 {
+		return c.Raw
 	}
 	var params []string
 	for i, param := range c.Params {
@@ -56,15 +57,15 @@ func (c *CFunctionSpec) GetBase() string {
 }
 
 func (c *CFunctionSpec) GetTag() string {
-	return ""
+	return c.Raw
 }
 
 func (c *CFunctionSpec) CGoName() string {
-	return ""
+	return c.Raw
 }
 
 func (c *CFunctionSpec) SetRaw(x string) {
-	c.Typedef = x
+	c.Raw = x
 }
 
 func (c *CFunctionSpec) AddOuterArr(uint64) {}
@@ -88,4 +89,8 @@ func (c *CFunctionSpec) GetPointers() uint8 {
 
 func (c *CFunctionSpec) IsConst() bool {
 	return false
+}
+
+func (c CFunctionSpec) AtLevel(level int) CType {
+	return &c
 }

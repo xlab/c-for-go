@@ -143,3 +143,25 @@ func (c *CEnumSpec) IsConst() bool {
 	// could be c.Const
 	return false
 }
+
+func (c CEnumSpec) AtLevel(level int) CType {
+	spec := c
+	var outerArrSpec ArraySpec
+	for i, size := range spec.OuterArr.Sizes() {
+		if i < int(level) {
+			continue
+		} else if i == 0 {
+			spec.Pointers = 1
+			continue
+		}
+		outerArrSpec.AddSized(size.N)
+	}
+	if int(level) > len(spec.OuterArr) {
+		if delta := int(spec.Pointers) + len(spec.OuterArr.Sizes()) - int(level); delta > 0 {
+			spec.Pointers = uint8(delta)
+		}
+	}
+	spec.OuterArr = outerArrSpec
+	spec.InnerArr = ArraySpec("")
+	return &spec
+}

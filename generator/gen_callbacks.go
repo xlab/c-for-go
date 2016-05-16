@@ -29,10 +29,11 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		if len(param.Name) == 0 {
 			param.Name = fmt.Sprintf("arg%d", i)
 		}
-		params = append(params, param.String())
+		paramSpec := gen.tr.NormalizeSpecPointers(param.Spec)
+		params = append(params, fmt.Sprintf("%s %s", paramSpec.AtLevel(0), param.Name))
 		paramNames = append(paramNames, param.Name)
 		goName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, false))
-		paramNamesGo = append(paramNamesGo, string(goName))
+		paramNamesGo = append(paramNamesGo, fmt.Sprintf("%s%2x", goName, crc))
 	}
 	paramList := strings.Join(params, ", ")
 	paramNamesList := strings.Join(paramNames, ", ")
@@ -81,6 +82,22 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		Description: "PassRef returns a reference.",
 		Source:      buf.String(),
 	})
+
+	if spec.GetPointers() > 0 {
+		buf = new(bytes.Buffer)
+		fmt.Fprintf(buf, "func (x %s) PassValue() (ref %s, allocs *cgoAllocMap)", goFuncName, cgoSpec)
+		fmt.Fprintf(buf, `{
+		if %sFunc == nil {
+ 			%sFunc = x
+ 		}
+		return (%s)(C.%s), nil
+	}`, cbGoName, cbGoName, cgoSpec, cbCName)
+		helpers = append(helpers, &Helper{
+			Name:        fmt.Sprintf("%s.PassValue", goFuncName),
+			Description: "PassValue returns a value.",
+			Source:      buf.String(),
+		})
+	}
 
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "//export %s\n", cbGoName)
@@ -148,7 +165,7 @@ func (gen *Generator) writeCallbackProxyFuncParams(wr io.Writer, spec tl.CType) 
 			declName = []byte(fmt.Sprintf("arg%d", i))
 		}
 		cgoSpec := gen.tr.CGoSpec(param.Spec)
-		fmt.Fprintf(wr, "c%s %s", declName, cgoSpec)
+		fmt.Fprintf(wr, "c%s %s", declName, cgoSpec.AtLevel(0))
 
 		if i < len(funcSpec.Params)-1 {
 			fmt.Fprintf(wr, ", ")
@@ -161,6 +178,7 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 	spec := funcSpec.(*tl.CFunctionSpec)
 	to = make([]proxyDecl, 0, len(spec.Params))
 
+	crc := getRefCRC(funcSpec)
 	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, funcName, funcSpec)
 	for i, param := range spec.Params {
 		var goSpec tl.GoTypeSpec
@@ -176,11 +194,12 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 			refName = fmt.Sprintf("arg%d", i)
 		}
 		toBuf := new(bytes.Buffer)
-		name := "c" + refName
-		toProxy, _ := gen.proxyCallbackArgToGo(memTipRx.TipAt(i), refName, name, goSpec, cgoSpec)
+		cname := "c" + refName
+		refName = fmt.Sprintf("%s%2x", refName, crc)
+		toProxy, _ := gen.proxyCallbackArgToGo(memTipRx.TipAt(i), refName, cname, goSpec, cgoSpec)
 		if len(toProxy) > 0 {
 			fmt.Fprintln(toBuf, toProxy)
-			to = append(to, proxyDecl{Name: name, Decl: toBuf.String()})
+			to = append(to, proxyDecl{Name: cname, Decl: toBuf.String()})
 		}
 	}
 	return

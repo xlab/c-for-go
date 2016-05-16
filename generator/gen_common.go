@@ -27,7 +27,7 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 		case tl.TypeKind:
 			goSpec := gen.tr.TranslateSpec(member.Spec, ptrTip)
 			fmt.Fprintf(wr, "%s %s", declName, goSpec)
-		case tl.StructKind, tl.OpaqueStructKind:
+		case tl.StructKind, tl.OpaqueStructKind, tl.UnionKind:
 			if !gen.tr.IsAcceptableName(tl.TargetType, member.Spec.GetBase()) {
 				continue
 			}
@@ -78,7 +78,7 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 			} else {
 				fmt.Fprintf(wr, "%s %s", declName, goSpec)
 			}
-		case tl.StructKind, tl.OpaqueStructKind:
+		case tl.StructKind, tl.OpaqueStructKind, tl.UnionKind:
 			goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip)
 			if len(goSpec.OuterArr) > 0 {
 				fmt.Fprintf(wr, "%s *%s", declName, goSpec)

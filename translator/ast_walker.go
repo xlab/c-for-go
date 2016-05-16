@@ -75,12 +75,13 @@ func (t *Translator) declarator(d *cc.Declarator) *CDecl {
 
 func (t *Translator) getStructTag(typ cc.Type) (tag string) {
 	b := t.fileScope.Lookup(cc.NSTags, typ.Tag())
-	sus, ok := b.Node.(*cc.StructOrUnionSpecifier)
-	if !ok {
-		return
-	}
-	if sus.IdentifierOpt != nil {
-		return blessName(sus.IdentifierOpt.Token.S())
+	switch v := b.Node.(type) {
+	case *cc.StructOrUnionSpecifier:
+		if v.IdentifierOpt != nil {
+			return blessName(v.IdentifierOpt.Token.S())
+		}
+	case xc.Token:
+		return blessName(v.S())
 	}
 	return
 }
@@ -161,6 +162,7 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStru
 
 func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CFunctionSpec {
 	spec := &CFunctionSpec{
+		Raw:      identifierOf(typ.Declarator().DirectDeclarator),
 		Pointers: base.Pointers,
 	}
 	if isRef {
@@ -270,10 +272,14 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		}
 		return s
 	case cc.Union:
-		spec.Base = "char"
-		spec.Unsigned = true
-		spec.Opaque = true
-		spec.InnerArr.AddSized(uint64(typ.SizeOf()))
+		return &CStructSpec{
+			Tag:      t.getStructTag(typ),
+			IsUnion:  true,
+			Pointers: spec.Pointers,
+			OuterArr: spec.OuterArr,
+			InnerArr: spec.InnerArr,
+			Typedef:  typedefNameOf(typ),
+		}
 	case cc.Struct:
 		isRef := false
 		tag := t.getStructTag(typ)

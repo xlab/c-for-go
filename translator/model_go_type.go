@@ -37,7 +37,7 @@ func (spec *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
 
 func (spec GoTypeSpec) IsPlainKind() bool {
 	switch spec.Kind {
-	case PlainTypeKind, EnumKind, OpaqueStructKind, UnionKind:
+	case PlainTypeKind, OpaqueStructKind, EnumKind, UnionKind:
 		return true
 	}
 	return false
@@ -162,15 +162,17 @@ func (spec *CGoSpec) AtLevel(level uint8) string {
 	} else {
 		buf.WriteString(ptrs(spec.Pointers))
 	}
-	buf.WriteString(arrs(spec.InnerArr))
+	// drop inner arrays at levels
+	// buf.WriteString(arrs(spec.InnerArr))
 	buf.WriteString(spec.Base)
 	return buf.String()
 }
 
 func (spec *CGoSpec) SpecAtLevel(level uint8) CGoSpec {
 	buf := CGoSpec{
-		InnerArr: spec.InnerArr,
-		Base:     spec.Base,
+		// drop inner arrays at levels
+		// InnerArr: spec.InnerArr,
+		Base: spec.Base,
 	}
 	for i, size := range spec.OuterArr.Sizes() {
 		if i < int(level) {

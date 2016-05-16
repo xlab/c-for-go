@@ -38,6 +38,7 @@ type CType interface {
 	Kind() CTypeKind
 	String() string
 	Copy() CType
+	AtLevel(level int) CType
 }
 
 type (

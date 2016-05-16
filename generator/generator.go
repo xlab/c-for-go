@@ -172,7 +172,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		}
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
-			if tag := decl.Spec.GetTag(); len(tag) > 0 && decl.Spec.IsComplete() {
+			if tag := decl.Spec.GetTag(); len(tag) > 0 {
 				if seenStructTags[tag] {
 					continue
 				}

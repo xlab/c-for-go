@@ -615,7 +615,6 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 					gospec.Pointers += wrapper.Pointers
 					gospec.OuterArr.Prepend(wrapper.OuterArr)
 					gospec.InnerArr.Prepend(wrapper.InnerArr)
-					//					gospec.Pointers += spec.GetVarArrays()
 					if gospec.Kind == TypeKind {
 						if gospec.IsPlain() {
 							gospec.Kind = PlainTypeKind
@@ -634,7 +633,6 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 				}
 			}
 		}
-		//		wrapper.Pointers += spec.GetVarArrays()
 		if t.IsAcceptableName(TargetType, typeSpec.Raw) {
 			wrapper.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
 		}
@@ -645,38 +643,59 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 				wrapper.Kind = PlainTypeKind
 			}
 		case FunctionKind:
-			// pointers won't work with Go functions
-			wrapper.Pointers = 0
 			wrapper.Slices = 0
 			wrapper.OuterArr = ArraySpec("")
 			wrapper.InnerArr = ArraySpec("")
+			wrapper.Pointers = spec.GetPointers()
 		}
 		return wrapper
 	case FunctionKind:
 		wrapper := GoTypeSpec{
-			Kind: spec.Kind(),
+			Kind:     spec.Kind(),
+			Pointers: spec.GetPointers(),
 		}
-		// won't work with Go functions anyways.
-		// wrapper.splitPointers(ptrTip, spec.GetPointers())
-		// wrapper.Pointers += spec.GetVarArrays()
+		fspec := spec.(*CFunctionSpec)
+		decl, known := t.tagMap[fspec.Raw]
+		if !known {
+			// another try using the type
+			decl, known = t.tagMap[fspec.Typedef]
+		}
+		if known {
+			if decl.Spec.GetPointers() <= wrapper.Pointers {
+				wrapper.Pointers = wrapper.Pointers - decl.Spec.GetPointers()
+			}
+		}
 		wrapper.Base = "func"
 		return wrapper
 	default:
-		kind := spec.Kind()
-		if kind == OpaqueStructKind {
-			if decl, ok := t.tagMap[spec.GetTag()]; ok {
-				if !decl.Spec.IsOpaque() {
-					kind = StructKind
-				}
-			}
-		}
 		wrapper := GoTypeSpec{
-			Kind:     kind,
+			Kind:     spec.Kind(),
 			OuterArr: spec.OuterArrays(),
 			InnerArr: spec.InnerArrays(),
 		}
-		wrapper.splitPointers(ptrTip, spec.GetPointers())
-		//		wrapper.Pointers += spec.GetVarArrays()
+		switch wrapper.Kind {
+		case OpaqueStructKind, StructKind, FunctionKind, UnionKind:
+			decl, tagKnown := t.tagMap[spec.GetTag()]
+			if !tagKnown && wrapper.Kind == FunctionKind {
+				// another try using the type
+				fspec := spec.(*CFunctionSpec)
+				decl, tagKnown = t.tagMap[fspec.Typedef]
+			}
+			if tagKnown {
+				if !decl.Spec.IsOpaque() {
+					wrapper.Kind = StructKind
+				}
+				// count in the pointers of the base type under typedef
+				// e.g. typedef struct a_T* a; int f(a *arg);
+				// -> go_F(C.a *arg) but not go_F(C.a **arg) because of residual pointers.
+				wrapper.Pointers = 0
+				wrapper.splitPointers(ptrTip, spec.GetPointers()-decl.Spec.GetPointers())
+			} else {
+				wrapper.splitPointers(ptrTip, spec.GetPointers())
+			}
+		default:
+			wrapper.splitPointers(ptrTip, spec.GetPointers())
+		}
 		if base := spec.GetBase(); len(base) > 0 {
 			wrapper.Raw = string(t.TransformName(TargetType, base))
 		} else if cgoName := spec.CGoName(); len(cgoName) > 0 {
@@ -686,11 +705,27 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 	}
 }
 
+func (t *Translator) NormalizeSpecPointers(spec CType) CType {
+	if spec.Kind() == OpaqueStructKind {
+		decl, tagKnown := t.tagMap[spec.GetTag()]
+		if tagKnown {
+			spec := spec.Copy()
+			spec.SetPointers(spec.GetPointers() - decl.Spec.GetPointers())
+			return spec
+		}
+	}
+	return spec
+}
+
 func (t *Translator) CGoSpec(spec CType) CGoSpec {
 	cgo := CGoSpec{
 		Pointers: spec.GetPointers(),
 		OuterArr: spec.OuterArrays(),
 		InnerArr: spec.InnerArrays(),
+	}
+	if decl, ok := t.tagMap[spec.GetTag()]; ok {
+		// count in the pointers of the base type under typedef
+		cgo.Pointers = spec.GetPointers() - decl.Spec.GetPointers()
 	}
 	if typ, ok := spec.(*CTypeSpec); ok {
 		if typ.Base == "void" {
@@ -709,13 +744,24 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 
 func (t *Translator) registerTagsOf(decl *CDecl) {
 	switch decl.Spec.Kind() {
-	case EnumKind, StructKind, UnionKind:
+	case EnumKind, StructKind, OpaqueStructKind, UnionKind:
 		if tag := decl.Spec.GetTag(); len(tag) > 0 {
-			if prev, ok := t.tagMap[tag]; !ok {
+			prev, hasPrev := t.tagMap[tag]
+			switch {
+			case !hasPrev:
 				// first time seen -> store the tag
 				t.tagMap[tag] = decl
-			} else if !prev.Spec.IsComplete() {
-				// overwrite with a template declaration
+			case decl.IsTypedef && !prev.IsTypedef:
+				// a typedef for tag prevails simple tag declarations
+				t.tagMap[tag] = decl
+			case decl.Spec.IsComplete() && !prev.Spec.IsComplete():
+				// replace an opaque struct with the complete template
+				t.tagMap[tag] = decl
+			}
+		}
+	case FunctionKind:
+		if tag := decl.Spec.GetTag(); len(tag) > 0 {
+			if _, ok := t.tagMap[tag]; !ok {
 				t.tagMap[tag] = decl
 			}
 		}
@@ -723,16 +769,22 @@ func (t *Translator) registerTagsOf(decl *CDecl) {
 	switch typ := decl.Spec.(type) {
 	case *CStructSpec:
 		for _, m := range typ.Members {
-			if m.Spec.Kind() != StructKind {
-				continue
-			}
-			if tag := m.Spec.GetTag(); len(tag) > 0 {
-				if prev, ok := t.tagMap[tag]; !ok {
-					// first time seen -> store the tag
-					t.tagMap[tag] = m
-				} else if !prev.Spec.IsComplete() {
-					// overwrite with a template declaration
-					t.tagMap[tag] = m
+			switch m.Spec.Kind() {
+			case StructKind, OpaqueStructKind, UnionKind:
+				if tag := m.Spec.GetTag(); len(tag) > 0 {
+					if prev, ok := t.tagMap[tag]; !ok {
+						// first time seen -> store the tag
+						t.tagMap[tag] = m
+					} else if m.Spec.IsComplete() && !prev.Spec.IsComplete() {
+						// replace an opaque struct with the complete template
+						t.tagMap[tag] = m
+					}
+				}
+			case FunctionKind:
+				if tag := decl.Spec.GetTag(); len(tag) > 0 {
+					if _, ok := t.tagMap[tag]; !ok {
+						t.tagMap[tag] = decl
+					}
 				}
 			}
 		}

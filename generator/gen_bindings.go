@@ -431,7 +431,7 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("*(*%s)(unsafe.Pointer(&%s)), cgoAllocsUnknown", cgoSpec, name)
 		return
 	default: // ex: *SomeType
-		if cgoSpec.Pointers == 0 {
+		if goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s.PassValue()", name)
 			return
 		}
@@ -479,7 +479,7 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 			ptr, ptr, cgoSpec.AtLevel(0), ref, name)
 		return
 	default: // ex: *SomeType
-		if cgoSpec.Pointers == 0 {
+		if goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s.PassValue()", name)
 			return
 		}

@@ -105,9 +105,10 @@ func (gen *Generator) writeArgStruct(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip
 func (gen *Generator) writeArgUnion(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
-	cgoSpec := gen.tr.CGoSpec(decl.Spec)
-	fmt.Fprintf(wr, "%s [unsafe.Sizeof(%s)]byte", goName, cgoSpec.Base)
-	return
+	if tag := decl.Spec.GetBase(); len(tag) > 0 {
+		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+		fmt.Fprintf(wr, "%s %s", goName, goSpec)
+	}
 }
 
 func (gen *Generator) writeStructDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
@@ -135,7 +136,10 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl *tl.CDecl, ptrTi
 func (gen *Generator) writeUnionDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
-	cgoSpec := gen.tr.CGoSpec(decl.Spec)
-	fmt.Fprintf(wr, "var %s [unsafe.Sizeof(%s)]byte", goName, cgoSpec.Base)
-	return
+	if tag := decl.Spec.GetBase(); len(tag) > 0 {
+		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+		if string(goName) != goSpec.String() {
+			fmt.Fprintf(wr, "var %s %s", goName, goSpec)
+		}
+	}
 }
