@@ -50,8 +50,11 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		if defs, ok := stealDefinesFromCC(); ok {
 			predefined += fmt.Sprintf("\n%s", defs)
 		}
-	} else if archDefs, ok := archPredefines[cfg.archBits]; ok {
-		predefined += fmt.Sprintf("\n%s", archDefs)
+	} else {
+		predefined += basePredefines
+		if archDefs, ok := archPredefines[cfg.archBits]; ok {
+			predefined += fmt.Sprintf("\n%s", archDefs)
+		}
 	}
 	// undefines?
 	for name, value := range cfg.Defines {
