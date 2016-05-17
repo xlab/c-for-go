@@ -64,7 +64,7 @@ func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
 func (t *Translator) declarator(d *cc.Declarator) *CDecl {
 	specifier := d.RawSpecifier()
 	decl := &CDecl{
-		Spec:      t.typeSpec(d.Type, false, false),
+		Spec:      t.typeSpec(d.Type, 0, false),
 		Name:      identifierOf(d.DirectDeclarator),
 		IsTypedef: specifier.IsTypedef(),
 		IsStatic:  specifier.IsStatic(),
@@ -86,7 +86,7 @@ func (t *Translator) getStructTag(typ cc.Type) (tag string) {
 	return
 }
 
-func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CEnumSpec {
+func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
 	tag := blessName(xc.Dict.S(typ.Tag()))
 	spec := &CEnumSpec{
 		Tag:      tag,
@@ -133,7 +133,9 @@ func (t *Translator) walkEnumerator(e *cc.Enumerator) *CDecl {
 	return decl
 }
 
-func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStructSpec {
+const maxDeepLevel = 3
+
+func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, deep int) *CStructSpec {
 	tag := t.getStructTag(typ)
 	spec := &CStructSpec{
 		Tag:      tag,
@@ -142,7 +144,7 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStru
 		OuterArr: base.OuterArr,
 		InnerArr: base.InnerArr,
 	}
-	if isRef {
+	if deep > maxDeepLevel {
 		return spec
 	}
 	members, _ := typ.Members()
@@ -153,36 +155,36 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CStru
 		}
 		spec.Members = append(spec.Members, &CDecl{
 			Name: memberName(m),
-			Spec: t.typeSpec(m.Type, isRef, false),
+			Spec: t.typeSpec(m.Type, deep+1, false),
 			Pos:  pos,
 		})
 	}
 	return spec
 }
 
-func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, isRef bool) *CFunctionSpec {
+func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, deep int) *CFunctionSpec {
 	spec := &CFunctionSpec{
 		Raw:      identifierOf(typ.Declarator().DirectDeclarator),
 		Pointers: base.Pointers,
 	}
-	if isRef {
+	if deep > maxDeepLevel {
 		return spec
 	}
 	if ret := typ.Result(); ret != nil && ret.Kind() != cc.Void {
-		spec.Return = t.typeSpec(ret, isRef, true)
+		spec.Return = t.typeSpec(ret, deep+1, true)
 	}
 	params, _ := typ.Parameters()
 	for _, p := range params {
 		spec.Params = append(spec.Params, &CDecl{
 			Name: paramName(p),
-			Spec: t.typeSpec(p.Type, isRef, false),
+			Spec: t.typeSpec(p.Type, deep+1, false),
 			Pos:  p.Declarator.Pos(),
 		})
 	}
 	return spec
 }
 
-func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
+func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 	spec := &CTypeSpec{
 		Const: typ.Specifier().IsConst(),
 	}
@@ -266,7 +268,7 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		spec.Long = true
 		spec.Complex = true
 	case cc.Enum:
-		s := t.enumSpec(spec, typ, isRef)
+		s := t.enumSpec(spec, typ)
 		if !isRet {
 			s.Typedef = typedefNameOf(typ)
 		}
@@ -281,17 +283,7 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 			Typedef:  typedefNameOf(typ),
 		}
 	case cc.Struct:
-		isRef := false
-		tag := t.getStructTag(typ)
-		if len(tag) > 0 {
-			// avoid recursive structs
-			if t.typeCache.Get(tag) {
-				isRef = true
-			} else {
-				t.typeCache.Set(tag)
-			}
-		}
-		s := t.structSpec(spec, typ, isRef)
+		s := t.structSpec(spec, typ, deep+1)
 		if !isRet {
 			s.Typedef = typedefNameOf(typ)
 		}
@@ -299,7 +291,7 @@ func (t *Translator) typeSpec(typ cc.Type, isRef, isRet bool) CType {
 		// t.typeCache.Delete(tag)
 		return s
 	case cc.Function:
-		s := t.functionSpec(spec, typ, isRef)
+		s := t.functionSpec(spec, typ, deep+1)
 		if !isRet && !typ.Specifier().IsTypedef() {
 			s.Typedef = typedefNameOf(typ)
 			if s.Return != nil {

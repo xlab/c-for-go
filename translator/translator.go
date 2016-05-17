@@ -32,7 +32,6 @@ type Translator struct {
 	typedefsSet    map[string]struct{}
 	typedefKinds   map[string]CTypeKind
 	transformCache *NameTransformCache
-	typeCache      *TypeCache
 
 	ptrTipCache *TipCache
 	memTipCache *TipCache
@@ -97,7 +96,6 @@ func New(cfg *Config) (*Translator, error) {
 		typedefsSet:       make(map[string]struct{}),
 		typedefKinds:      make(map[string]CTypeKind),
 		transformCache:    &NameTransformCache{},
-		typeCache:         &TypeCache{},
 		ptrTipCache:       &TipCache{},
 		memTipCache:       &TipCache{},
 	}
