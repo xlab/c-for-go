@@ -197,6 +197,7 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 	if level == 0 {
 		h := gen.getAllocMemoryHelper(cgoSpec)
 		gen.submitHelper(h)
+		gen.submitHelper(sizeOfPtr)
 
 		levelSpec := cgoSpec.AtLevel(0)
 		fmt.Fprintf(buf1, `allocs = new(cgoAllocMap)
@@ -219,6 +220,7 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 
 	h := gen.getAllocMemoryHelper(cgoSpec.SpecAtLevel(level))
 	gen.submitHelper(h)
+	gen.submitHelper(sizeOfPtr)
 	fmt.Fprintf(buf1, "mem%d := %s(1)\n", level, h.Name)
 	fmt.Fprintf(buf1, "allocs.Add(mem%d)\n", level)
 	fmt.Fprintf(buf1, "v%d := (*%s)(mem%d)\n", level, cgoSpec.AtLevel(level), level)
@@ -243,6 +245,7 @@ func (gen *Generator) unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		levelSpec := cgoSpec.SpecAtLevel(1)
 		h := gen.getAllocMemoryHelper(levelSpec)
 		gen.submitHelper(h)
+		gen.submitHelper(sizeOfPtr)
 
 		fmt.Fprintf(buf1, `allocs = new(cgoAllocMap)
 		defer runtime.SetFinalizer(&unpacked, func(*%s) {
@@ -270,6 +273,7 @@ func (gen *Generator) unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 	levelSpec := cgoSpec.SpecAtLevel(level + 1)
 	h := gen.getAllocMemoryHelper(levelSpec)
 	gen.submitHelper(h)
+	gen.submitHelper(sizeOfPtr)
 	fmt.Fprintf(buf1, "len%d := len(x%s)\n", level, indices)
 	fmt.Fprintf(buf1, "mem%d := %s(len%d)\n", level, h.Name, level)
 	fmt.Fprintf(buf1, "allocs.Add(mem%d)\n", level)
@@ -531,17 +535,18 @@ func packArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level ui
 	buf2.Linef("}\n")
 }
 
-func packSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level uint8) {
+func packSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, sizeConst string, level uint8) {
+	cgoSpecLevel := cgoSpec.AtLevel(level + 1)
 	if level == 0 {
 		fmt.Fprintln(buf1, "const m = 0x7fffffff")
 		fmt.Fprintln(buf1, "for i0 := range v {")
-		fmt.Fprintf(buf1, "ptr1 := (*(*[m]%s)(unsafe.Pointer(ptr0)))[i0]\n", cgoSpec.AtLevel(level+1))
+		fmt.Fprintf(buf1, "ptr1 := (*(*[m/%s]%s)(unsafe.Pointer(ptr0)))[i0]\n", sizeConst, cgoSpecLevel)
 		buf2.Linef("}\n")
 		return
 	}
 	fmt.Fprintf(buf1, "for i%d := range v%s {\n", level, genIndices("i", level))
-	fmt.Fprintf(buf1, "ptr%d := (*(*[m]%s)(unsafe.Pointer(ptr%d)))[i%d]\n",
-		level+1, cgoSpec.AtLevel(level+1), level, level)
+	fmt.Fprintf(buf1, "ptr%d := (*(*[m/%s]%s)(unsafe.Pointer(ptr%d)))[i%d]\n",
+		level+1, sizeConst, cgoSpecLevel, level, level)
 	buf2.Linef("}\n")
 }
 
@@ -591,9 +596,18 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	}
 	goSpec.OuterArr = ""
 
+	getSizeSpec := func(level uint8) string {
+		sizeConst := "sizeOfPtr"
+		ptrs := cgoSpec.PointersAtLevel(level)
+		if ptrs == 0 {
+			// whoa, we're dealing with a value
+			sizeConst = "sizeOf" + gen.getTypedHelperName("value", cgoSpec.SpecAtLevel(level))
+		}
+		return sizeConst
+	}
 	for goSpec.Slices > 1 {
 		goSpec.Slices--
-		packSlice(buf1, buf2, cgoSpec, level)
+		packSlice(buf1, buf2, cgoSpec, getSizeSpec(level+1), level)
 		level++
 	}
 	isSlice := goSpec.Slices > 0
@@ -606,7 +620,7 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	case isPlain:
 		packPlain(buf1, cgoSpec, goSpec.GetName(), goSpec.Pointers, level)
 	case isSlice:
-		packSlice(buf1, buf2, cgoSpec, level)
+		packSlice(buf1, buf2, cgoSpec, getSizeSpec(level+1), level)
 		goSpec.Slices = 0
 		if helper := gen.packObj(buf1, goSpec, cgoSpec, level+1); helper != nil {
 			h.Requires = append(h.Requires, helper)
@@ -759,8 +773,9 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("var %s %s\n%s(%s%s, %s)", varName, goSpec, helper.Name, ref, varName, ptrName)
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
-		proxy = fmt.Sprintf("%s := (*(*[0x7fffffff]%s%s)(unsafe.Pointer(%s)))[:0]",
-			varName, ptrs(goSpec.Pointers), goSpec.GetName(), ptrName)
+		specStr := ptrs(goSpec.Pointers) + goSpec.GetName()
+		proxy = fmt.Sprintf("%s := (*(*[0x7fffffff]%s)(unsafe.Pointer(%s)))[:0]",
+			varName, specStr, ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
@@ -901,6 +916,10 @@ var (
 		Name:   "cgoGenTag",
 		Source: "#define __CGOGEN 1",
 		Side:   CHSide,
+	}
+	sizeOfPtr = &Helper{
+		Name:   "sizeOfPtr",
+		Source: "const sizeOfPtr = unsafe.Sizeof(&struct{}{})",
 	}
 	sliceHeader = &Helper{
 		Name: "sliceHeader",
