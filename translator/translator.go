@@ -561,17 +561,19 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Pointers: typeSpec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
-			tag := typeSpec.GetTag()
-			if gospec == UnsafePointerSpec && len(tag) > 0 {
-				if decl, ok := t.tagMap[tag]; ok && decl.Spec.GetPointers() > 0 {
-					wrapper := GoTypeSpec{ // wrapper for a typedef of void*
-						Kind:     PlainTypeKind,
-						Pointers: spec.GetPointers() - decl.Spec.GetPointers(),
-						Base:     "C." + spec.CGoName(),
-					}
-					return wrapper
-				}
-			}
+			// This logic is too smart for CGO built-in safety checker
+			// BUG: panic: interface conversion: interface {} is **portaudio._Ctype_PaStream, not *unsafe.Pointer
+			//
+			// tag := typeSpec.GetTag()
+			// if gospec == UnsafePointerSpec && len(tag) > 0 {
+			// 	if decl, ok := t.tagMap[tag]; ok && decl.Spec.GetPointers() > 0 {
+			// 		wrapper := GoTypeSpec{ // wrapper for a typedef of void*
+			// 			Pointers: spec.GetPointers() - decl.Spec.GetPointers(),
+			// 			Base:     "C." + spec.CGoName(),
+			// 		}
+			// 		return wrapper
+			// 	}
+			// }
 			gospec.OuterArr.Prepend(typeSpec.OuterArr)
 			gospec.InnerArr.Prepend(typeSpec.InnerArr)
 			if gospec.Pointers == 0 && gospec.Slices > 0 {
@@ -740,15 +742,9 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 			if cgo.Pointers > 0 {
 				cgo.Pointers--
 			}
-			if len(typ.Raw) == 0 {
-				cgo.Base = "unsafe.Pointer"
-				return cgo
-			}
+			cgo.Base = "unsafe.Pointer"
+			return cgo
 		}
-	}
-	if spec.Kind() == TypeKind && spec.IsOpaque() {
-		cgo.Base = "byte"
-		return cgo
 	}
 	cgo.Base = "C." + spec.CGoName()
 	return cgo
