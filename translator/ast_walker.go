@@ -161,6 +161,7 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
 			}
 
 			m.Expression = strings.Join(exprParts, " ")
+			m.Src = strings.Join(srcParts, " ")
 		default:
 			m.Value = en.Value
 		}
