@@ -80,12 +80,15 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool)
 	}
 	goName := gen.tr.TransformName(tl.TargetType, cName)
 
-	if !decl.Spec.IsComplete() {
+	if raw || !decl.Spec.IsComplete() {
 		// opaque struct
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
 			gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos))
 		fmt.Fprintf(wr, "type %s C.%s", goName, decl.Spec.CGoName())
 		writeSpace(wr, 1)
+		for _, helper := range gen.getRawStructHelpers(goName, decl.Spec) {
+			gen.submitHelper(helper)
+		}
 		return
 	}
 
@@ -97,12 +100,6 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool)
 	gen.writeStructMembers(wr, cName, decl.Spec)
 	writeEndStruct(wr)
 	writeSpace(wr, 1)
-	if raw {
-		for _, helper := range gen.getRawStructHelpers(goName, decl.Spec) {
-			gen.submitHelper(helper)
-		}
-		return
-	}
 	for _, helper := range gen.getStructHelpers(goName, cName, decl.Spec) {
 		gen.submitHelper(helper)
 	}

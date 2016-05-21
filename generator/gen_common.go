@@ -22,6 +22,13 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 		if !ptrTip.IsValid() {
 			ptrTip = tl.TipPtrArr
 		}
+		memTip := memTipRx.TipAt(i)
+		if !memTip.IsValid() {
+			memTip = gen.MemTipOf(member)
+		}
+		if memTip == tl.TipMemRaw {
+			ptrTip = tl.TipPtrSRef
+		}
 		declName := checkName(gen.tr.TransformName(tl.TargetType, member.Name, public))
 		switch member.Spec.Kind() {
 		case tl.TypeKind:

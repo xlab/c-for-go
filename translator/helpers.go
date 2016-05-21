@@ -35,7 +35,6 @@ func (s bytesSlice) Len() int           { return len(s) }
 func (s bytesSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s bytesSlice) Less(i, j int) bool { return bytes.Compare(s[i], s[j]) < 0 }
 
-
 // narrowPath reduces full path to file name and parent dir only.
 func narrowPath(fp string) string {
 	if !filepath.IsAbs(fp) {
@@ -278,9 +277,9 @@ func readNumeric(v []rune) string {
 		switch r {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			result = append(result, r)
-		case '-', '+', '.', 'x', 'b':
+		case '-', '+', '.', 'x':
 			result = append(result, r)
-		case 'A', 'B', 'C', 'D', 'E', 'F':
+		case 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f':
 			result = append(result, r)
 		// c'mon, get some roman numerals here
 		case 'L', 'l':

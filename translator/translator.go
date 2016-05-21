@@ -350,7 +350,6 @@ func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
 					}
 					if runes := []rune(src); len(runes) > 0 && isNumeric(runes) {
 						// TODO(xlab): better const handling
-						// should be resolved by switching to the upstream CC
 						src = readNumeric(runes)
 					}
 					exprParts = append(exprParts, src)
@@ -562,6 +561,14 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Pointers: typeSpec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
+			if gospec == UnsafePointerSpec && len(typeSpec.Raw) > 0 {
+				wrapper := GoTypeSpec{ // wrapper for a typedef of void*
+					Kind:     PlainTypeKind,
+					Pointers: spec.GetPointers() - 1,
+					Base:     "C." + spec.CGoName(),
+				}
+				return wrapper
+			}
 			gospec.OuterArr.Prepend(typeSpec.OuterArr)
 			gospec.InnerArr.Prepend(typeSpec.InnerArr)
 			if gospec.Pointers == 0 && gospec.Slices > 0 {
@@ -727,9 +734,13 @@ func (t *Translator) CGoSpec(spec CType) CGoSpec {
 	}
 	if typ, ok := spec.(*CTypeSpec); ok {
 		if typ.Base == "void" {
-			cgo.Base = "unsafe.Pointer"
-			cgo.Pointers--
-			return cgo
+			if cgo.Pointers > 0 {
+				cgo.Pointers--
+			}
+			if len(typ.Raw) == 0 {
+				cgo.Base = "unsafe.Pointer"
+				return cgo
+			}
 		}
 	}
 	if spec.Kind() == TypeKind && spec.IsOpaque() {
@@ -804,6 +815,15 @@ func (t *Translator) IsAcceptableName(target RuleTarget, name string) bool {
 				}
 				// no ignore rules found, accept the name
 				return true
+			}
+		}
+	}
+	// try to find explicit ignore rules
+	if rxs, ok := t.compiledRxs[ActionIgnore][target]; ok {
+		for _, rx := range rxs {
+			if rx.From.MatchString(name) {
+				// found an ignore rule, ignore the name
+				return false
 			}
 		}
 	}

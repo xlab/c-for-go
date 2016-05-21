@@ -519,7 +519,8 @@ func (gen *Generator) packObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CG
 		ref = "&"
 	}
 
-	fmt.Fprintf(buf, "v%s = %sNew%sRef(%sptr%d)\n", genIndices("i", level), ptr, goSpec.Raw, ref, level)
+	fmt.Fprintf(buf, "v%s = %sNew%sRef(unsafe.Pointer(%sptr%d))\n",
+		genIndices("i", level), ptr, goSpec.Raw, ref, level)
 	return nil
 }
 
@@ -819,7 +820,11 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 		fromBuf := new(bytes.Buffer)
 		toBuf := new(bytes.Buffer)
 		name := "c" + refName
-		fromProxy, nillable := gen.proxyArgFromGo(memTipRx.TipAt(i), refName, goSpec, cgoSpec)
+		argTip := memTipRx.TipAt(i)
+		if !argTip.IsValid() {
+			argTip = gen.MemTipOf(param)
+		}
+		fromProxy, nillable := gen.proxyArgFromGo(argTip, refName, goSpec, cgoSpec)
 		if nillable {
 			fmt.Fprintf(fromBuf, "var %s %s\n", name, cgoSpec)
 			fmt.Fprintf(fromBuf, "if %s != nil {\n%s, _ = %s\n}", refName, name, fromProxy)
@@ -834,7 +839,7 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 			isPlain && goSpec.Slices > 0 && len(goSpec.OuterArr) > 0, // ex: [4][]byte
 			isPlain && goSpec.Slices > 1:                             // ex: [][]byte
 			// need to re-pack values into Go memory layout
-			toProxy, nillable := gen.proxyArgToGo(memTipRx.TipAt(i), refName, name, goSpec, cgoSpec)
+			toProxy, nillable := gen.proxyArgToGo(argTip, refName, name, goSpec, cgoSpec)
 			if len(toProxy) > 0 {
 				if nillable {
 					fmt.Fprintf(toBuf, "if %s != nil {\n%s\n}", refName, toProxy)

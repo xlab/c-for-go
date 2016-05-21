@@ -126,6 +126,20 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 		}
 	}
 	for _, decl := range gen.tr.Declares() {
+		if decl.Spec.Kind() == tl.EnumKind {
+			if !decl.Spec.IsComplete() {
+				continue
+			}
+			if len(decl.Name) > 0 {
+				if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
+					continue
+				}
+			}
+			if expandEnum(decl) {
+				count++
+			}
+			continue
+		}
 		if decl.IsStatic {
 			continue
 		}

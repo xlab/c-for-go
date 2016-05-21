@@ -26,7 +26,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 		Source:      buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
+	buf.Reset()
 	fmt.Fprintf(buf, "func (x *%s) Free()", goStructName)
 	fmt.Fprintf(buf, `{
 		if x != nil && x.allocs%2x != nil {
@@ -41,19 +41,22 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 		Source: buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
-	fmt.Fprintf(buf, "func New%sRef(ref *%s) *%s", goStructName, cgoSpec, goStructName)
+	buf.Reset()
+	fmt.Fprintf(buf, "func New%sRef(ref interface{}) *%s", goStructName, goStructName)
 	fmt.Fprintf(buf, `{
 		if ref == nil {
 			return nil
 		}
+		type ifaceHeader struct {
+			_   uintptr
+			Ref uintptr
+		}
+		hdr := (*(*ifaceHeader)(unsafe.Pointer(&ref)))
 		obj := new(%s)
-		obj.ref%2x = ref
+		obj.ref%2x = (*%s)(unsafe.Pointer(hdr.Ref))
 		return obj
-	}`, goStructName, crc)
-	// runtime.SetFinalizer(obj, func(x *%s) {
-	// 	C.free(unsafe.Pointer(x.ref%2x))
-	// })
+	}`, goStructName, crc, cgoSpec)
+
 	name := fmt.Sprintf("New%sRef", goStructName)
 	helpers = append(helpers, &Helper{
 		Name:        name,
@@ -61,7 +64,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 		Source:      buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
+	buf.Reset()
 	fmt.Fprintf(buf, "func (x *%s) PassRef() (*%s, *cgoAllocMap) {\n", goStructName, cgoSpec)
 	buf.Write(gen.getPassRefSource(goStructName, cStructName, spec))
 	buf.WriteRune('}')
@@ -71,8 +74,8 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 		Source:      buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
-	fmt.Fprintf(buf, "func (x *%s) PassValue() (%s, *cgoAllocMap) {\n", goStructName, cgoSpec)
+	buf.Reset()
+	fmt.Fprintf(buf, "func (x %s) PassValue() (%s, *cgoAllocMap) {\n", goStructName, cgoSpec)
 	buf.Write(gen.getPassValueSource(goStructName, spec))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
@@ -81,7 +84,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 		Source:      buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
+	buf.Reset()
 	fmt.Fprintf(buf, "func (x *%s) Deref() {\n", goStructName)
 	buf.Write(gen.getDerefSource(goStructName, cStructName, spec))
 	buf.WriteRune('}')
@@ -94,6 +97,9 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 }
 
 func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (helpers []*Helper) {
+	if spec.GetPointers() > 0 {
+		return nil // can't addess a pointer receiver
+	}
 	cgoSpec := gen.tr.CGoSpec(spec)
 
 	buf := new(bytes.Buffer)
@@ -110,7 +116,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 		Source:      buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
+	buf.Reset()
 	fmt.Fprintf(buf, "func (x *%s) Free()", goStructName)
 	fmt.Fprint(buf, `{
 		if x != nil  {
@@ -124,7 +130,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 		Source: buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
+	buf.Reset()
 	fmt.Fprintf(buf, "func New%sRef(ref *%s) *%s", goStructName, cgoSpec, goStructName)
 	fmt.Fprintf(buf, `{
 		return (*%s)(unsafe.Pointer(ref))
@@ -136,7 +142,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 		Source:      buf.String(),
 	})
 
-	buf = new(bytes.Buffer)
+	buf.Reset()
 	fmt.Fprintf(buf, "func (x *%s) PassRef() *%s", goStructName, cgoSpec)
 	fmt.Fprintf(buf, `{
 		if x == nil {
@@ -189,17 +195,18 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 		}
 
 		memTip := memTipRx.TipAt(i)
-		if len(typeName) > 0 && !memTip.IsValid() {
-			if memTipRx, ok := gen.tr.MemTipRx(typeName); ok {
-				memTip = memTipRx.TipAt(i)
-			}
+		if !memTip.IsValid() {
+			memTip = gen.MemTipOf(m)
 		}
 		var goSpec tl.GoTypeSpec
 		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
 			goSpec = gen.tr.TranslateSpec(m.Spec, ptrTip)
+		} else if memTip == tl.TipMemRaw {
+			goSpec = gen.tr.TranslateSpec(m.Spec, tl.TipPtrSRef)
 		} else {
 			goSpec = gen.tr.TranslateSpec(m.Spec)
 		}
+
 		cgoSpec := gen.tr.CGoSpec(m.Spec)
 		const public = true
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
@@ -226,11 +233,9 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 func (gen *Generator) getPassValueSource(goStructName []byte, spec tl.CType) []byte {
 	buf := new(bytes.Buffer)
 	crc := getRefCRC(spec)
-	fmt.Fprintf(buf, `if x == nil {
-		x = New%sRef(nil)
-	} else if x.ref%2x != nil {
+	fmt.Fprintf(buf, `if x.ref%2x != nil {
 		return *x.ref%2x, nil
-	}`, goStructName, crc, crc)
+	}`, crc, crc)
 	writeSpace(buf, 1)
 	fmt.Fprintf(buf, "ref, allocs := x.PassRef()\n")
 	fmt.Fprintf(buf, "return *ref, allocs\n")
@@ -266,14 +271,14 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 		}
 
 		memTip := memTipRx.TipAt(i)
-		if len(typeName) > 0 && !memTip.IsValid() {
-			if memTipRx, ok := gen.tr.MemTipRx(typeName); ok {
-				memTip = memTipRx.TipAt(i)
-			}
+		if !memTip.IsValid() {
+			memTip = gen.MemTipOf(m)
 		}
 		var goSpec tl.GoTypeSpec
 		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
 			goSpec = gen.tr.TranslateSpec(m.Spec, ptrTip)
+		} else if memTip == tl.TipMemRaw {
+			goSpec = gen.tr.TranslateSpec(m.Spec, tl.TipPtrSRef)
 		} else {
 			goSpec = gen.tr.TranslateSpec(m.Spec)
 		}

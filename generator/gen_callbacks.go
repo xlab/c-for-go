@@ -72,6 +72,9 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x %s) PassRef() (ref *%s, allocs *cgoAllocMap)", goFuncName, cgoSpec)
 	fmt.Fprintf(buf, `{
+		if x == nil {
+			return nil, nil
+		}
 		if %sFunc == nil {
  			%sFunc = x
  		}
@@ -87,6 +90,9 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		buf = new(bytes.Buffer)
 		fmt.Fprintf(buf, "func (x %s) PassValue() (ref %s, allocs *cgoAllocMap)", goFuncName, cgoSpec)
 		fmt.Fprintf(buf, `{
+		if x == nil {
+			return nil, nil
+		}
 		if %sFunc == nil {
  			%sFunc = x
  		}

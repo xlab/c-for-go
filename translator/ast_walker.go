@@ -3,6 +3,7 @@ package translator
 import (
 	"fmt"
 	"go/token"
+	"strings"
 
 	"github.com/cznic/cc"
 	"github.com/cznic/xc"
@@ -94,7 +95,8 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
 		OuterArr: base.OuterArr,
 		InnerArr: base.InnerArr,
 	}
-	for _, en := range typ.EnumeratorList() {
+	list := typ.EnumeratorList()
+	for _, en := range list {
 		name := blessName(en.DefTok.S())
 		m := &CDecl{
 			Name: name,
@@ -106,8 +108,59 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
 		case t.constRules[ConstEnum] == ConstCGOAlias:
 			m.Expression = fmt.Sprintf("C.%s", name)
 		case t.constRules[ConstEnum] == ConstExpand:
-			// TODO(xlab): support expand
-			m.Expression = fmt.Sprintf("C.%s", name)
+			srcParts := make([]string, 0, len(en.Tokens))
+			exprParts := make([]string, 0, len(en.Tokens))
+			valid := true
+
+			// TODO: some state machine
+			needsTypecast := false
+			typecastValue := false
+			typecastValueParens := 0
+
+			for _, token := range en.Tokens {
+				src := cc.TokSrc(token)
+				srcParts = append(srcParts, src)
+				switch token.Rune {
+				case cc.IDENTIFIER:
+					exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
+				default:
+					// TODO: state machine
+					const (
+						lparen = rune(40)
+						rparen = rune(41)
+					)
+					switch {
+					case needsTypecast && token.Rune == rparen:
+						typecastValue = true
+						needsTypecast = false
+						exprParts = append(exprParts, src+"(")
+					case typecastValue && token.Rune == lparen:
+						typecastValueParens++
+					case typecastValue && token.Rune == rparen:
+						if typecastValueParens == 0 {
+							typecastValue = false
+							exprParts = append(exprParts, ")"+src)
+						} else {
+							typecastValueParens--
+						}
+					default:
+						// somewhere in the world a helpless kitten died because of this
+						if token.Rune == '~' {
+							src = "^"
+						}
+						if runes := []rune(src); len(runes) > 0 && isNumeric(runes) {
+							// TODO(xlab): better const handling
+							src = readNumeric(runes)
+						}
+						exprParts = append(exprParts, src)
+					}
+				}
+				if !valid {
+					break
+				}
+			}
+
+			m.Expression = strings.Join(exprParts, " ")
 		default:
 			m.Value = en.Value
 		}
