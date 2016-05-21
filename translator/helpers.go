@@ -273,14 +273,20 @@ func readNumeric(v []rune) string {
 		}
 	}
 
+	var isHex bool
 	for _, r := range v {
 		switch r {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			result = append(result, r)
-		case '-', '+', '.', 'x':
+		case 'x':
+			isHex = true
 			result = append(result, r)
-		case 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f':
+		case '-', '+', '.', 'e', 'b':
 			result = append(result, r)
+		case 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'c', 'd', 'f':
+			if isHex {
+				result = append(result, r)
+			}
 		// c'mon, get some roman numerals here
 		case 'L', 'l':
 			long = true
