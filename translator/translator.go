@@ -561,13 +561,16 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Pointers: typeSpec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
-			if gospec == UnsafePointerSpec && len(typeSpec.Raw) > 0 {
-				wrapper := GoTypeSpec{ // wrapper for a typedef of void*
-					Kind:     PlainTypeKind,
-					Pointers: spec.GetPointers() - 1,
-					Base:     "C." + spec.CGoName(),
+			tag := typeSpec.GetTag()
+			if gospec == UnsafePointerSpec && len(tag) > 0 {
+				if decl, ok := t.tagMap[tag]; ok && decl.Spec.GetPointers() > 0 {
+					wrapper := GoTypeSpec{ // wrapper for a typedef of void*
+						Kind:     PlainTypeKind,
+						Pointers: spec.GetPointers() - decl.Spec.GetPointers(),
+						Base:     "C." + spec.CGoName(),
+					}
+					return wrapper
 				}
-				return wrapper
 			}
 			gospec.OuterArr.Prepend(typeSpec.OuterArr)
 			gospec.InnerArr.Prepend(typeSpec.InnerArr)
