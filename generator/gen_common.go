@@ -57,7 +57,7 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 	}
 
 	crc := getRefCRC(structSpec)
-	cgoSpec := gen.tr.CGoSpec(structSpec)
+	cgoSpec := gen.tr.CGoSpec(structSpec, false)
 	if len(cgoSpec.Base) == 0 {
 		return
 	}

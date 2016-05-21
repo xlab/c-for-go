@@ -10,7 +10,7 @@ import (
 
 func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, spec tl.CType) (helpers []*Helper) {
 	crc := getRefCRC(spec)
-	cgoSpec := gen.tr.CGoSpec(spec)
+	cgoSpec := gen.tr.CGoSpec(spec, true)
 
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Ref() *%s", goStructName, cgoSpec)
@@ -100,7 +100,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 	if spec.GetPointers() > 0 {
 		return nil // can't addess a pointer receiver
 	}
-	cgoSpec := gen.tr.CGoSpec(spec)
+	cgoSpec := gen.tr.CGoSpec(spec, true)
 
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Ref() *%s", goStructName, cgoSpec)
@@ -159,7 +159,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 }
 
 func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, spec tl.CType) []byte {
-	cgoSpec := gen.tr.CGoSpec(spec)
+	cgoSpec := gen.tr.CGoSpec(spec, false)
 	structSpec := spec.(*tl.CStructSpec)
 	buf := new(bytes.Buffer)
 	crc := getRefCRC(spec)
@@ -207,7 +207,7 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 			goSpec = gen.tr.TranslateSpec(m.Spec)
 		}
 
-		cgoSpec := gen.tr.CGoSpec(m.Spec)
+		cgoSpec := gen.tr.CGoSpec(m.Spec, false)
 		const public = true
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
 		fromProxy, nillable := gen.proxyValueFromGo(memTip, goName, goSpec, cgoSpec)
@@ -285,7 +285,7 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 		const public = true
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
 		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, m.Name)
-		cgoSpec := gen.tr.CGoSpec(m.Spec)
+		cgoSpec := gen.tr.CGoSpec(m.Spec, false)
 		toProxy, _ := gen.proxyValueToGo(memTip, goName, cgoName, goSpec, cgoSpec)
 		fmt.Fprintln(buf, toProxy)
 	}

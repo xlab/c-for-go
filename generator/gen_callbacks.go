@@ -68,7 +68,7 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 
 	cgoSpec := gen.tr.CGoSpec(&tl.CTypeSpec{
 		Base: cFuncName,
-	})
+	}, true)
 	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x %s) PassRef() (ref *%s, allocs *cgoAllocMap)", goFuncName, cgoSpec)
 	fmt.Fprintf(buf, `{
@@ -127,7 +127,7 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		fmt.Fprintf(buf, "%s := %sFunc(%s)\n", ret, cbGoName, paramNamesGoList)
 		memTipRx, ptrTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, cFuncName, funcSpec)
 		retGoSpec := gen.tr.TranslateSpec(funcSpec.Return, ptrTipRx.Self())
-		retCGoSpec := gen.tr.CGoSpec(funcSpec.Return)
+		retCGoSpec := gen.tr.CGoSpec(funcSpec.Return, true) // asArg?
 		retProxy, _ := gen.proxyArgFromGo(memTipRx.Self(), ret, retGoSpec, retCGoSpec)
 		fmt.Fprintf(buf, "ret, _ := %s\n", retProxy)
 		fmt.Fprintf(buf, "return ret\n")
@@ -150,7 +150,7 @@ func (gen *Generator) writeCallbackProxyFunc(wr io.Writer, decl *tl.CDecl) {
 	var returnRef string
 	funcSpec := decl.Spec.(*tl.CFunctionSpec)
 	if funcSpec.Return != nil {
-		cgoSpec := gen.tr.CGoSpec(funcSpec.Return)
+		cgoSpec := gen.tr.CGoSpec(funcSpec.Return, true) // asArg?
 		returnRef = cgoSpec.String()
 	}
 	fmt.Fprintf(wr, "func %s", decl.Name)
@@ -170,7 +170,7 @@ func (gen *Generator) writeCallbackProxyFuncParams(wr io.Writer, spec tl.CType) 
 		if len(param.Name) == 0 {
 			declName = []byte(fmt.Sprintf("arg%d", i))
 		}
-		cgoSpec := gen.tr.CGoSpec(param.Spec)
+		cgoSpec := gen.tr.CGoSpec(param.Spec, true)
 		fmt.Fprintf(wr, "c%s %s", declName, cgoSpec.AtLevel(0))
 
 		if i < len(funcSpec.Params)-1 {
@@ -193,7 +193,7 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 		} else {
 			goSpec = gen.tr.TranslateSpec(param.Spec)
 		}
-		cgoSpec := gen.tr.CGoSpec(param.Spec)
+		cgoSpec := gen.tr.CGoSpec(param.Spec, true)
 		const public = false
 		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))
 		if len(param.Name) == 0 {

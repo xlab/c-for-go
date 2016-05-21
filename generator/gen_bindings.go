@@ -814,7 +814,7 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 		} else {
 			goSpec = gen.tr.TranslateSpec(param.Spec)
 		}
-		cgoSpec := gen.tr.CGoSpec(param.Spec)
+		cgoSpec := gen.tr.CGoSpec(param.Spec, true)
 		const public = false
 		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))
 		fromBuf := new(bytes.Buffer)
@@ -904,7 +904,7 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 			ptrTip = tl.TipPtrRef
 		}
 		goSpec := gen.tr.TranslateSpec((*spec).Return, ptrTip)
-		cgoSpec := gen.tr.CGoSpec((*spec).Return)
+		cgoSpec := gen.tr.CGoSpec((*spec).Return, true) // asArg?
 
 		retProxy, nillable := gen.proxyRetToGo(memTipRx.Self(), "__v", "__ret", goSpec, cgoSpec)
 		if nillable {
