@@ -222,11 +222,14 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 			}
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, tag) {
 				continue
+			} else if !gen.tr.IsAcceptableName(tl.TargetType, tag) {
+				continue
 			}
 			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
 				gen.writeStructTypedef(wr, decl, memTipRx.Self() == tl.TipMemRaw)
+			} else {
+				gen.writeStructTypedef(wr, decl, false)
 			}
-			gen.writeStructTypedef(wr, decl, false)
 			writeSpace(wr, 1)
 			count++
 		case tl.UnionKind:
@@ -234,6 +237,8 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 				continue
 			}
 			if !gen.tr.IsAcceptableName(tl.TargetPublic, tag) {
+				continue
+			} else if !gen.tr.IsAcceptableName(tl.TargetType, tag) {
 				continue
 			}
 			gen.writeUnionTypedef(wr, decl)

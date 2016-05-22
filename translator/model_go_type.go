@@ -146,7 +146,8 @@ func (spec *CGoSpec) PointersAtLevel(level uint8) uint8 {
 
 func (spec *CGoSpec) AtLevel(level uint8) string {
 	buf := new(bytes.Buffer)
-	for i, size := range spec.OuterArr {
+	outerArrSizes := spec.OuterArr.Sizes()
+	for i, size := range outerArrSizes {
 		if i < int(level) {
 			continue
 		} else if i == 0 {
@@ -155,8 +156,8 @@ func (spec *CGoSpec) AtLevel(level uint8) string {
 		}
 		fmt.Fprintf(buf, "[%d]", size)
 	}
-	if int(level) > len(spec.OuterArr) {
-		if delta := int(spec.Pointers) + len(spec.OuterArr.Sizes()) - int(level); delta > 0 {
+	if int(level) > len(outerArrSizes) {
+		if delta := int(spec.Pointers) + len(outerArrSizes) - int(level); delta > 0 {
 			buf.WriteString(ptrs(uint8(delta)))
 		}
 	} else {
@@ -165,6 +166,7 @@ func (spec *CGoSpec) AtLevel(level uint8) string {
 	// drop inner arrays at levels
 	// buf.WriteString(arrs(spec.InnerArr))
 	buf.WriteString(spec.Base)
+
 	return buf.String()
 }
 

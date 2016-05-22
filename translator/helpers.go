@@ -57,7 +57,7 @@ func replaceBytes(buf []byte, idx []int, piece []byte) []byte {
 	return altered
 }
 
-var srcReferenceRx = regexp.MustCompile(`(?P<path>[^;]+);(?P<file>[^;]+);(?P<line>[^;]+);(?P<name>[^;]+);`)
+var srcReferenceRx = regexp.MustCompile(`(?P<path>[^;]+);(?P<file>[^;]+);(?P<line>[^;]+);(?P<name>[^;]+);(?P<goname>[^;]+);`)
 
 func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Pos) string {
 	pos := xc.FileSet.Position(p)
@@ -91,7 +91,10 @@ func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Pos)
 		return defaultLocation()
 	}
 
-	values := fmt.Sprintf("%s;%s;%d;%s;", narrowPath(pos.Filename), filename, pos.Line, name)
+	goName := t.TransformName(TargetGlobal, name, true)
+	goName = t.TransformName(TargetPostGlobal, string(goName), true)
+	values := fmt.Sprintf("%s;%s;%d;%s;%s;", narrowPath(pos.Filename),
+		filename, pos.Line, name, string(goName))
 	location := srcReferenceRx.ReplaceAllString(values, template)
 	return location
 }
