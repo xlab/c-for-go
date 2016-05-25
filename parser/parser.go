@@ -42,6 +42,10 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 			predefined += fmt.Sprintf("\n#define %s %d", name, v)
 		case float32, float64:
 			predefined += fmt.Sprintf("\n#define %s %ff", name, v)
+		case map[interface{}]interface{}:
+			if len(v) == 0 { // the special case for override a definition beforehand
+				predefined += fmt.Sprintf("\n#define %s", name)
+			}
 		}
 	}
 	var (
@@ -64,8 +68,10 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		switch value.(type) {
 		case string, int, int16, int32, int64, uint, uint16, uint32, uint64, float32, float64:
 			continue
-		default: // a corner case: undef using an unknown value type
-			predefined += fmt.Sprintf("\n#undef %s", name)
+		default: // a corner case: undef using an the nil value
+			if value == nil {
+				predefined += fmt.Sprintf("\n#undef %s", name)
+			}
 		}
 	}
 	model := models[cfg.archBits]
