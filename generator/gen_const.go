@@ -63,7 +63,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	}
 	writeStartConst(wr)
-	for _, m := range spec.Members {
+	for i, m := range spec.Members {
 		if !gen.tr.IsAcceptableName(tl.TargetConst, m.Name) {
 			continue
 		}
@@ -82,19 +82,24 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 		switch {
 		case m.Value != nil:
 			if hasType {
-				fmt.Fprintf(wr, "%s %s = %v\n", mName, typeName, m.Value)
+				fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, iotaOnZero(i, m.Value))
 				continue
 			}
-			fmt.Fprintf(wr, "%s = %v\n", mName, m.Value)
+			fmt.Fprintf(wr, "%s = %s\n", mName, iotaOnZero(i, m.Value))
 		case len(m.Expression) != 0:
 			if hasType {
-				fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, m.Expression)
+				fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, iotaOnZero(i, m.Expression))
 				continue
 			}
-			fmt.Fprintf(wr, "%s = %s\n", mName, m.Expression)
+			fmt.Fprintf(wr, "%s = %s\n", mName, iotaOnZero(i, m.Expression))
 		default:
+			if i == 0 && hasType {
+				fmt.Fprintf(wr, "%s %s = iota\n", mName, typeName)
+				continue
+			} else if i == 0 {
+				fmt.Fprintf(wr, "%s = iota\n", mName)
+			}
 			fmt.Fprintf(wr, "%s\n", mName)
-			continue
 		}
 	}
 	writeEndConst(wr)
@@ -130,7 +135,7 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 	fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName,
 		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	writeStartConst(wr)
-	for _, m := range spec.Members {
+	for i, m := range spec.Members {
 		if !gen.tr.IsAcceptableName(tl.TargetConst, m.Name) {
 			continue
 		}
@@ -140,16 +145,29 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 		}
 		switch {
 		case m.Value != nil:
-			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, m.Value)
+			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Value))
 		case len(m.Expression) != 0:
-			fmt.Fprintf(wr, "%s %s = %s\n", mName, declName, m.Expression)
+			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Expression))
 		default:
+			if i == 0 {
+				fmt.Fprintf(wr, "%s %s = iota\n", mName, declName)
+				continue
+			}
 			fmt.Fprintf(wr, "%s\n", mName)
-			continue
 		}
 	}
 	writeEndConst(wr)
 	writeSpace(wr, 1)
+}
+
+func iotaOnZero(i int, v interface{}) string {
+	result := fmt.Sprintf("%v", v)
+	if i == 0 {
+		if result == "0" {
+			return "iota"
+		}
+	}
+	return result
 }
 
 func writeStartConst(wr io.Writer) {
