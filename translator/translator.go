@@ -561,19 +561,14 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 			Pointers: typeSpec.Pointers,
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
-			// This logic is too smart for CGO built-in safety checker
-			// BUG: panic: interface conversion: interface {} is **portaudio._Ctype_PaStream, not *unsafe.Pointer
-			//
-			// tag := typeSpec.GetTag()
-			// if gospec == UnsafePointerSpec && len(tag) > 0 {
-			// 	if decl, ok := t.tagMap[tag]; ok && decl.Spec.GetPointers() > 0 {
-			// 		wrapper := GoTypeSpec{ // wrapper for a typedef of void*
-			// 			Pointers: spec.GetPointers() - decl.Spec.GetPointers(),
-			// 			Base:     "C." + spec.CGoName(),
-			// 		}
-			// 		return wrapper
-			// 	}
-			// }
+			tag := typeSpec.CGoName()
+			if gospec == UnsafePointerSpec && len(tag) > 0 {
+				if decl, ok := t.tagMap[tag]; ok {
+					if decl.Spec.GetPointers() <= gospec.Pointers {
+						gospec.Pointers = gospec.Pointers - decl.Spec.GetPointers()
+					}
+				}
+			}
 			gospec.OuterArr.Prepend(typeSpec.OuterArr)
 			gospec.InnerArr.Prepend(typeSpec.InnerArr)
 			if gospec.Pointers == 0 && gospec.Slices > 0 {
@@ -621,6 +616,14 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 				}
 				lookupSpec.Pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {
+					tag := typeSpec.CGoName()
+					if gospec == UnsafePointerSpec && len(tag) > 0 {
+						if decl, ok := t.tagMap[tag]; ok {
+							if decl.Spec.GetPointers() <= gospec.Pointers {
+								gospec.Pointers = gospec.Pointers - decl.Spec.GetPointers()
+							}
+						}
+					}
 					gospec.Slices += wrapper.Slices
 					gospec.Pointers += wrapper.Pointers
 					gospec.OuterArr.Prepend(wrapper.OuterArr)
@@ -756,8 +759,12 @@ func (t *Translator) CGoSpec(spec CType, asArg bool) CGoSpec {
 
 func (t *Translator) registerTagsOf(decl *CDecl) {
 	switch decl.Spec.Kind() {
-	case EnumKind, StructKind, OpaqueStructKind, UnionKind:
-		if tag := decl.Spec.GetTag(); len(tag) > 0 {
+	case TypeKind, EnumKind, StructKind, OpaqueStructKind, UnionKind:
+		tag := decl.Spec.GetTag()
+		if decl.Spec.Kind() == TypeKind {
+			tag = decl.Spec.CGoName()
+		}
+		if len(tag) > 0 {
 			prev, hasPrev := t.tagMap[tag]
 			switch {
 			case !hasPrev:
@@ -782,8 +789,12 @@ func (t *Translator) registerTagsOf(decl *CDecl) {
 	case *CStructSpec:
 		for _, m := range typ.Members {
 			switch m.Spec.Kind() {
-			case StructKind, OpaqueStructKind, UnionKind:
-				if tag := m.Spec.GetTag(); len(tag) > 0 {
+			case TypeKind, StructKind, OpaqueStructKind, UnionKind:
+				tag := decl.Spec.GetTag()
+				if decl.Spec.Kind() == TypeKind {
+					tag = decl.Spec.CGoName()
+				}
+				if len(tag) > 0 {
 					if prev, ok := t.tagMap[tag]; !ok {
 						// first time seen -> store the tag
 						t.tagMap[tag] = m
