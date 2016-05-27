@@ -806,14 +806,12 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 	from = make([]proxyDecl, len(spec.Params))
 	to = make([]proxyDecl, 0, len(spec.Params))
 
-	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, funcName, funcSpec)
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeFunction, funcName, funcSpec)
 	for i, param := range spec.Params {
 		var goSpec tl.GoTypeSpec
-		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
-			goSpec = gen.tr.TranslateSpec(param.Spec, ptrTip)
-		} else {
-			goSpec = gen.tr.TranslateSpec(param.Spec)
-		}
+		ptrTip := ptrTipRx.TipAt(i)
+		typeTip := typeTipRx.TipAt(i)
+		goSpec = gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip)
 		cgoSpec := gen.tr.CGoSpec(param.Spec, true)
 		const public = false
 		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))
@@ -897,13 +895,14 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 	// wr2 being populated above
 	wr2.WriteTo(wr)
 	if spec.Return != nil {
-		ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, decl.Name, decl.Spec)
+		ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeFunction, decl.Name, decl.Spec)
 		ptrTip := ptrTipRx.Self()
+		typeTip := typeTipRx.Self()
 		if !ptrTip.IsValid() {
 			// defaults to ref for the returns
 			ptrTip = tl.TipPtrRef
 		}
-		goSpec := gen.tr.TranslateSpec((*spec).Return, ptrTip)
+		goSpec := gen.tr.TranslateSpec((*spec).Return, ptrTip, typeTip)
 		cgoSpec := gen.tr.CGoSpec((*spec).Return, true) // asArg?
 
 		retProxy, nillable := gen.proxyRetToGo(memTipRx.Self(), "__v", "__ret", goSpec, cgoSpec)

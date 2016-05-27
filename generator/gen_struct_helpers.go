@@ -179,7 +179,7 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 
 	writeSpace(buf, 1)
 
-	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeStruct, cStructName, spec)
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeStruct, cStructName, spec)
 	for i, m := range structSpec.Members {
 		if len(m.Name) == 0 {
 			continue
@@ -193,20 +193,16 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 				continue
 			}
 		}
-
 		memTip := memTipRx.TipAt(i)
 		if !memTip.IsValid() {
 			memTip = gen.MemTipOf(m)
 		}
-		var goSpec tl.GoTypeSpec
-		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
-			goSpec = gen.tr.TranslateSpec(m.Spec, ptrTip)
-		} else if memTip == tl.TipMemRaw {
-			goSpec = gen.tr.TranslateSpec(m.Spec, tl.TipPtrSRef)
-		} else {
-			goSpec = gen.tr.TranslateSpec(m.Spec)
+		ptrTip := ptrTipRx.TipAt(i)
+		if memTip == tl.TipMemRaw {
+			ptrTip = tl.TipPtrSRef
 		}
-
+		typeTip := typeTipRx.TipAt(i)
+		goSpec := gen.tr.TranslateSpec(m.Spec, ptrTip, typeTip)
 		cgoSpec := gen.tr.CGoSpec(m.Spec, false)
 		const public = true
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
@@ -255,7 +251,7 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 	}`, crc)
 	writeSpace(buf, 1)
 
-	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeStruct, cStructName, spec)
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeStruct, cStructName, spec)
 	for i, m := range structSpec.Members {
 		if len(m.Name) == 0 {
 			continue
@@ -269,19 +265,16 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 				continue
 			}
 		}
-
 		memTip := memTipRx.TipAt(i)
 		if !memTip.IsValid() {
 			memTip = gen.MemTipOf(m)
 		}
-		var goSpec tl.GoTypeSpec
-		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
-			goSpec = gen.tr.TranslateSpec(m.Spec, ptrTip)
-		} else if memTip == tl.TipMemRaw {
-			goSpec = gen.tr.TranslateSpec(m.Spec, tl.TipPtrSRef)
-		} else {
-			goSpec = gen.tr.TranslateSpec(m.Spec)
+		ptrTip := ptrTipRx.TipAt(i)
+		if memTip == tl.TipMemRaw {
+			ptrTip = tl.TipPtrSRef
 		}
+		typeTip := typeTipRx.TipAt(i)
+		goSpec := gen.tr.TranslateSpec(m.Spec, ptrTip, typeTip)
 		const public = true
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
 		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, m.Name)

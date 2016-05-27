@@ -14,17 +14,21 @@ func checkName(name []byte) []byte {
 	return skipName
 }
 
-func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
-	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip)
 	fmt.Fprintf(wr, "%s %s", goName, goSpec)
 }
 
-func (gen *Generator) writeArgType(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeArgType(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
-	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip)
 	if len(goSpec.OuterArr) > 0 {
 		fmt.Fprintf(wr, "%s *%s", goName, goSpec)
 	} else {
@@ -32,15 +36,18 @@ func (gen *Generator) writeArgType(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, 
 	}
 }
 
-func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeEnumDeclaration(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
-	typeRef := gen.tr.TranslateSpec(decl.Spec, ptrTip).String()
+	typeRef := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip).String()
 	fmt.Fprintf(wr, "%s %s", goName, typeRef)
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) writeFunctionAsArg(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeFunctionAsArg(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	var returnRef string
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetFunction, cName, public))
@@ -51,9 +58,9 @@ func (gen *Generator) writeFunctionAsArg(wr io.Writer, decl *tl.CDecl, ptrTip tl
 		return
 	}
 	if spec.Return != nil {
-		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).String()
+		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip, typeTip).String()
 	}
-	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+	goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip)
 	fmt.Fprintf(wr, "%s %s", goName, goSpec)
 	gen.writeFunctionParams(wr, cName, decl.Spec)
 	if len(returnRef) > 0 {
@@ -61,11 +68,13 @@ func (gen *Generator) writeFunctionAsArg(wr io.Writer, decl *tl.CDecl, ptrTip tl
 	}
 }
 
-func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	var returnRef string
 	spec := decl.Spec.(*tl.CFunctionSpec)
 	if spec.Return != nil {
-		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip).String()
+		returnRef = gen.tr.TranslateSpec(spec.Return, ptrTip, typeTip).String()
 	}
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetFunction, cName, public))
@@ -83,11 +92,13 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl, ptr
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) writeArgStruct(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeArgStruct(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
 	if tag := decl.Spec.GetBase(); len(tag) > 0 {
-		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip)
 		fmt.Fprintf(wr, "%s %s", goName, goSpec)
 		return
 	}
@@ -102,20 +113,24 @@ func (gen *Generator) writeArgStruct(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip
 	writeEndStruct(wr)
 }
 
-func (gen *Generator) writeArgUnion(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeArgUnion(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
 	if tag := decl.Spec.GetBase(); len(tag) > 0 {
-		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip)
 		fmt.Fprintf(wr, "%s %s", goName, goSpec)
 	}
 }
 
-func (gen *Generator) writeStructDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeStructDeclaration(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
 	if tag := decl.Spec.GetBase(); len(tag) > 0 {
-		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip)
 		if string(goName) != goSpec.String() {
 			fmt.Fprintf(wr, "var %s %s", goName, goSpec)
 		}
@@ -133,11 +148,13 @@ func (gen *Generator) writeStructDeclaration(wr io.Writer, decl *tl.CDecl, ptrTi
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) writeUnionDeclaration(wr io.Writer, decl *tl.CDecl, ptrTip tl.Tip, public bool) {
+func (gen *Generator) writeUnionDeclaration(wr io.Writer, decl *tl.CDecl,
+	ptrTip, typeTip tl.Tip, public bool) {
+
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))
 	if tag := decl.Spec.GetBase(); len(tag) > 0 {
-		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip)
+		goSpec := gen.tr.TranslateSpec(decl.Spec, ptrTip, typeTip)
 		if string(goName) != goSpec.String() {
 			fmt.Fprintf(wr, "var %s %s", goName, goSpec)
 		}

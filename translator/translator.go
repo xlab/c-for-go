@@ -12,14 +12,15 @@ import (
 )
 
 type Translator struct {
-	rules             Rules
-	prefixEnums       bool
-	compiledRxs       map[RuleAction]RxMap
-	compiledPtrTipRxs PtrTipRxMap
-	compiledMemTipRxs MemTipRxList
-	constRules        ConstRules
-	typemap           CTypeMap
-	fileScope         *cc.Bindings
+	rules              Rules
+	prefixEnums        bool
+	compiledRxs        map[RuleAction]RxMap
+	compiledPtrTipRxs  PtrTipRxMap
+	compiledTypeTipRxs TypeTipRxMap
+	compiledMemTipRxs  MemTipRxList
+	constRules         ConstRules
+	typemap            CTypeMap
+	fileScope          *cc.Bindings
 
 	valueMap map[string]Value
 	exprMap  map[string]string
@@ -33,8 +34,9 @@ type Translator struct {
 	typedefKinds   map[string]CTypeKind
 	transformCache *NameTransformCache
 
-	ptrTipCache *TipCache
-	memTipCache *TipCache
+	ptrTipCache  *TipCache
+	typeTipCache *TipCache
+	memTipCache  *TipCache
 }
 
 type RxMap map[RuleTarget][]Rx
@@ -47,6 +49,7 @@ type Rx struct {
 }
 
 type PtrTipRxMap map[TipScope][]TipSpecRx
+type TypeTipRxMap map[TipScope][]TipSpecRx
 type MemTipRxList []TipSpecRx
 
 type TipSpecRx struct {
@@ -76,6 +79,7 @@ type Config struct {
 	Rules      Rules      `yaml:"Rules"`
 	ConstRules ConstRules `yaml:"ConstRules"`
 	PtrTips    PtrTips    `yaml:"PtrTips"`
+	TypeTips   TypeTips   `yaml:"TypeTips"`
 	MemTips    MemTips    `yaml:"MemTips"`
 	Typemap    CTypeMap   `yaml:"Typemap"`
 }
@@ -85,19 +89,21 @@ func New(cfg *Config) (*Translator, error) {
 		cfg = &Config{}
 	}
 	t := &Translator{
-		rules:             cfg.Rules,
-		constRules:        cfg.ConstRules,
-		typemap:           cfg.Typemap,
-		compiledRxs:       make(map[RuleAction]RxMap),
-		compiledPtrTipRxs: make(PtrTipRxMap),
-		valueMap:          make(map[string]Value),
-		exprMap:           make(map[string]string),
-		tagMap:            make(map[string]*CDecl),
-		typedefsSet:       make(map[string]struct{}),
-		typedefKinds:      make(map[string]CTypeKind),
-		transformCache:    &NameTransformCache{},
-		ptrTipCache:       &TipCache{},
-		memTipCache:       &TipCache{},
+		rules:              cfg.Rules,
+		constRules:         cfg.ConstRules,
+		typemap:            cfg.Typemap,
+		compiledRxs:        make(map[RuleAction]RxMap),
+		compiledPtrTipRxs:  make(PtrTipRxMap),
+		compiledTypeTipRxs: make(TypeTipRxMap),
+		valueMap:           make(map[string]Value),
+		exprMap:            make(map[string]string),
+		tagMap:             make(map[string]*CDecl),
+		typedefsSet:        make(map[string]struct{}),
+		typedefKinds:       make(map[string]CTypeKind),
+		transformCache:     &NameTransformCache{},
+		ptrTipCache:        &TipCache{},
+		typeTipCache:       &TipCache{},
+		memTipCache:        &TipCache{},
 	}
 	for _, action := range ruleActions {
 		if rxMap, err := getRuleActionRxs(t.rules, action); err != nil {
@@ -110,6 +116,11 @@ func New(cfg *Config) (*Translator, error) {
 		return nil, err
 	} else {
 		t.compiledPtrTipRxs = rxMap
+	}
+	if rxMap, err := getTypeTipRxs(cfg.TypeTips); err != nil {
+		return nil, err
+	} else {
+		t.compiledTypeTipRxs = rxMap
 	}
 	if rxList, err := getMemTipRxs(cfg.MemTips); err != nil {
 		return nil, err
@@ -168,6 +179,30 @@ func getPtrTipRxs(tips PtrTips) (PtrTipRxMap, error) {
 			rx, err := regexp.Compile(spec.Target)
 			if err != nil {
 				return nil, fmt.Errorf("translator: ptr tip in %s scope: invalid regexp %s",
+					scope, spec.Target)
+			}
+			specRx := TipSpecRx{
+				Target:  rx,
+				Default: spec.Default,
+				tips:    spec.Tips,
+				self:    spec.Self,
+			}
+			rxMap[scope] = append(rxMap[scope], specRx)
+		}
+	}
+	return rxMap, nil
+}
+
+func getTypeTipRxs(tips TypeTips) (TypeTipRxMap, error) {
+	rxMap := make(TypeTipRxMap, len(tips))
+	for scope, specs := range tips {
+		for _, spec := range specs {
+			if len(spec.Target) == 0 {
+				continue
+			}
+			rx, err := regexp.Compile(spec.Target)
+			if err != nil {
+				return nil, fmt.Errorf("translator: type tip in %s scope: invalid regexp %s",
 					scope, spec.Target)
 			}
 			specRx := TipSpecRx{
@@ -512,6 +547,27 @@ func (t *Translator) PtrTipRx(scope TipScope, name string) (TipSpecRx, bool) {
 	return TipSpecRx{}, false
 }
 
+func (t *Translator) TypeTipRx(scope TipScope, name string) (TipSpecRx, bool) {
+	if rx, ok := t.typeTipCache.Get(scope, name); ok {
+		return rx, true
+	}
+	for _, rx := range t.compiledTypeTipRxs[scope] {
+		if rx.Target.MatchString(name) {
+			t.typeTipCache.Set(scope, name, rx)
+			return rx, true
+		}
+	}
+	if scope != TipScopeAny {
+		for _, rx := range t.compiledTypeTipRxs[TipScopeAny] {
+			if rx.Target.MatchString(name) {
+				t.typeTipCache.Set(scope, name, rx)
+				return rx, true
+			}
+		}
+	}
+	return TipSpecRx{}, false
+}
+
 func (t *Translator) MemTipRx(name string) (TipSpecRx, bool) {
 	if rx, ok := t.memTipCache.Get(TipScopeStruct, name); ok {
 		return rx, true
@@ -525,14 +581,19 @@ func (t *Translator) MemTipRx(name string) (TipSpecRx, bool) {
 	return TipSpecRx{}, false
 }
 
-func (t *Translator) PtrMemTipRxForSpec(scope TipScope, name string, spec CType) (ptr, mem TipSpecRx) {
-	var ptrOk, memOk bool
+func (t *Translator) TipRxsForSpec(scope TipScope,
+	name string, spec CType) (ptr, typ, mem TipSpecRx) {
+	var ptrOk, typOk, memOk bool
 	if tag := spec.GetBase(); len(tag) > 0 {
 		ptr, ptrOk = t.PtrTipRx(scope, tag)
+		typ, typOk = t.TypeTipRx(scope, tag)
 		mem, memOk = t.MemTipRx(tag)
 	}
 	if !ptrOk {
 		ptr, _ = t.PtrTipRx(scope, name)
+	}
+	if !typOk {
+		typ, _ = t.TypeTipRx(scope, name)
 	}
 	if !memOk {
 		mem, _ = t.MemTipRx(name)
@@ -540,10 +601,16 @@ func (t *Translator) PtrMemTipRxForSpec(scope TipScope, name string, spec CType)
 	return
 }
 
-func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
+func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 	var ptrTip Tip
-	if len(ptrTips) > 0 {
-		ptrTip = ptrTips[0]
+	var typeTip Tip
+	for _, tip := range tips {
+		switch tip.Kind() {
+		case TipKindPtr:
+			ptrTip = tip
+		case TipKindType:
+			typeTip = tip
+		}
 	}
 
 	switch spec.Kind() {
@@ -590,8 +657,13 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 					}
 				}
 			}
-			if t.IsAcceptableName(TargetType, typeSpec.Raw) {
-				gospec.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
+			if typeTip != TipTypePlain {
+				if t.IsAcceptableName(TargetType, typeSpec.Raw) {
+					gospec.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
+					if gospec.Base != "unsafe.Pointer" {
+						gospec.splitPointers(ptrTip, typeSpec.Pointers)
+					}
+				}
 			}
 			return gospec
 		}
@@ -639,8 +711,10 @@ func (t *Translator) TranslateSpec(spec CType, ptrTips ...Tip) GoTypeSpec {
 							gospec.Kind = wrapper.Kind
 						}
 					}
-					if t.IsAcceptableName(TargetType, typeSpec.Raw) {
-						gospec.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
+					if typeTip != TipTypePlain {
+						if t.IsAcceptableName(TargetType, typeSpec.Raw) {
+							gospec.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
+						}
 					}
 					return gospec
 				}

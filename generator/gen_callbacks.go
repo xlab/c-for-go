@@ -125,8 +125,8 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	if funcSpec.Return != nil {
 		ret := fmt.Sprintf("ret%2x", crc)
 		fmt.Fprintf(buf, "%s := %sFunc(%s)\n", ret, cbGoName, paramNamesGoList)
-		memTipRx, ptrTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, cFuncName, funcSpec)
-		retGoSpec := gen.tr.TranslateSpec(funcSpec.Return, ptrTipRx.Self())
+		ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeFunction, cFuncName, funcSpec)
+		retGoSpec := gen.tr.TranslateSpec(funcSpec.Return, ptrTipRx.Self(), typeTipRx.Self())
 		retCGoSpec := gen.tr.CGoSpec(funcSpec.Return, true) // asArg?
 		retProxy, _ := gen.proxyArgFromGo(memTipRx.Self(), ret, retGoSpec, retCGoSpec)
 		fmt.Fprintf(buf, "ret, _ := %s\n", retProxy)
@@ -185,14 +185,12 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 	to = make([]proxyDecl, 0, len(spec.Params))
 
 	crc := getRefCRC(funcSpec)
-	ptrTipRx, memTipRx := gen.tr.PtrMemTipRxForSpec(tl.TipScopeFunction, funcName, funcSpec)
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeFunction, funcName, funcSpec)
 	for i, param := range spec.Params {
 		var goSpec tl.GoTypeSpec
-		if ptrTip := ptrTipRx.TipAt(i); ptrTip.IsValid() {
-			goSpec = gen.tr.TranslateSpec(param.Spec, ptrTip)
-		} else {
-			goSpec = gen.tr.TranslateSpec(param.Spec)
-		}
+		ptrTip := ptrTipRx.TipAt(i)
+		typeTip := typeTipRx.TipAt(i)
+		goSpec = gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip)
 		cgoSpec := gen.tr.CGoSpec(param.Spec, true)
 		const public = false
 		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))

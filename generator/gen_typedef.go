@@ -44,12 +44,19 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 				ptrTip = tip
 			}
 		}
-		returnRef = gen.tr.TranslateSpec(funcSpec.Return, ptrTip).String()
+		typeTip := tl.TipTypeNamed
+		if typeTipRx, ok := gen.tr.TypeTipRx(tl.TipScopeFunction, decl.Name); ok {
+			if tip := typeTipRx.Self(); tip.IsValid() {
+				typeTip = tip
+			}
+		}
+		returnRef = gen.tr.TranslateSpec(funcSpec.Return, ptrTip, typeTip).String()
 	}
 
 	ptrTipRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name)
+	typeTipRx, _ := gen.tr.TypeTipRx(tl.TipScopeFunction, decl.Name)
 	goFuncName := gen.tr.TransformName(tl.TargetType, decl.Name)
-	goSpec := gen.tr.TranslateSpec(funcSpec, ptrTipRx.Self())
+	goSpec := gen.tr.TranslateSpec(funcSpec, ptrTipRx.Self(), typeTipRx.Self())
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goFuncName,
 		gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos))
 	fmt.Fprintf(wr, "type %s %s", goFuncName, goSpec)

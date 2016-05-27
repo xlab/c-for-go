@@ -263,20 +263,20 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 			} else if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
-			gen.writeStructDeclaration(wr, decl, tl.NoTip, public)
+			gen.writeStructDeclaration(wr, decl, tl.NoTip, tl.NoTip, public)
 		case tl.UnionKind:
 			if len(decl.Name) == 0 {
 				continue
 			} else if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
 			}
-			gen.writeUnionDeclaration(wr, decl, tl.NoTip, public)
+			gen.writeUnionDeclaration(wr, decl, tl.NoTip, tl.NoTip, public)
 		case tl.EnumKind:
 			if !decl.Spec.IsComplete() {
 				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 					continue
 				}
-				gen.writeEnumDeclaration(wr, decl, tl.NoTip, public)
+				gen.writeEnumDeclaration(wr, decl, tl.NoTip, tl.NoTip, public)
 			}
 		case tl.FunctionKind:
 			if !gen.tr.IsAcceptableName(tl.TargetFunction, decl.Name) {
@@ -289,7 +289,13 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 					ptrTip = tip
 				}
 			}
-			gen.writeFunctionDeclaration(wr, decl, ptrTip, public)
+			typeTip := tl.TipTypeNamed
+			if typeTipRx, ok := gen.tr.TypeTipRx(tl.TipScopeFunction, decl.Name); ok {
+				if tip := typeTipRx.Self(); tip.IsValid() {
+					typeTip = tip
+				}
+			}
+			gen.writeFunctionDeclaration(wr, decl, ptrTip, typeTip, public)
 		}
 		writeSpace(wr, 1)
 		count++

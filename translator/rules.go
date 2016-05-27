@@ -3,6 +3,7 @@ package translator
 type Rules map[RuleTarget][]RuleSpec
 type ConstRules map[ConstScope]ConstRule
 type PtrTips map[TipScope][]TipSpec
+type TypeTips map[TipScope][]TipSpec
 type MemTips []TipSpec
 
 type RuleSpec struct {
@@ -85,16 +86,44 @@ const (
 type Tip string
 
 const (
-	TipPtrSRef Tip = "sref"
-	TipPtrRef  Tip = "ref"
-	TipPtrArr  Tip = "arr"
-	TipMemRaw  Tip = "raw"
-	NoTip      Tip = ""
+	TipPtrSRef   Tip = "sref"
+	TipPtrRef    Tip = "ref"
+	TipPtrArr    Tip = "arr"
+	TipMemRaw    Tip = "raw"
+	TipTypeNamed Tip = "named"
+	TipTypePlain Tip = "plain"
+	NoTip        Tip = ""
 )
+
+type TipKind string
+
+const (
+	TipKindUnknown TipKind = "unknown"
+	TipKindPtr     TipKind = "ptr"
+	TipKindType    TipKind = "type"
+	TipKindMem     TipKind = "mem"
+)
+
+func (t Tip) Kind() TipKind {
+	switch t {
+	case TipPtrArr, TipPtrRef, TipPtrSRef:
+		return TipKindPtr
+	case TipTypePlain, TipTypeNamed:
+		return TipKindType
+	case TipMemRaw:
+		return TipKindMem
+	default:
+		return TipKindUnknown
+	}
+}
 
 func (t Tip) IsValid() bool {
 	switch t {
-	case TipPtrArr, TipPtrRef, TipPtrSRef, TipMemRaw:
+	case TipPtrArr, TipPtrRef, TipPtrSRef:
+		return true
+	case TipTypePlain, TipTypeNamed:
+		return true
+	case TipMemRaw:
 		return true
 	default:
 		return false
