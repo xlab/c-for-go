@@ -714,6 +714,11 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 					if typeTip != TipTypePlain {
 						if t.IsAcceptableName(TargetType, typeSpec.Raw) {
 							gospec.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
+							if gospec.Base != "unsafe.Pointer" {
+								gospec.Pointers = 0
+								gospec.Slices = 0
+								gospec.splitPointers(ptrTip, typeSpec.Pointers)
+							}
 						}
 					}
 					return gospec
