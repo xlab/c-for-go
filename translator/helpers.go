@@ -205,15 +205,19 @@ func (n *TipCache) Set(scope TipScope, name string, result TipSpecRx) {
 	n.mux.Unlock()
 }
 
-var v = struct{}{}
-
-var builtinNames = map[string]struct{}{
-	"break": v, "default": v, "func": v, "interface": v, "select": v,
-	"case": v, "defer": v, "go": v, "map": v, "struct": v,
-	"chan": v, "else": v, "goto": v, "package": v, "switch": v,
-	"const": v, "fallthrough": v, "if": v, "range": v, "type": v,
-	"continue": v, "for": v, "import": v, "return": v, "var": v,
-}
+var builtinNames = func() map[string]struct{} {
+	names := []string{
+		"break", "default", "func", "interface", "select", "case", "defer",
+		"map", "var", "chan", "else", "goto", "package", "switch", "const",
+		"fallthrough", "if", "range", "type", "continue", "for", "import",
+		"return", "go", "struct", "string",
+	}
+	set := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		set[name] = struct{}{}
+	}
+	return set
+}()
 
 // blessName transforms the name to be a valid name in Go and not a keyword.
 func blessName(name []byte) string {
