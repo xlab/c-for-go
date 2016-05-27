@@ -219,6 +219,7 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 		proxy = fmt.Sprintf("%s := %s(%s)", varName, helper.Name, ptrName)
 		return proxy, helper.Nillable
 	}
+	gen.submitHelper(cgoAllocMap)
 
 	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {

@@ -198,6 +198,7 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		h := gen.getAllocMemoryHelper(cgoSpec)
 		gen.submitHelper(h)
 		gen.submitHelper(sizeOfPtr)
+		gen.submitHelper(cgoAllocMap)
 
 		levelSpec := cgoSpec.AtLevel(0)
 		fmt.Fprintf(buf1, `allocs = new(cgoAllocMap)
@@ -221,6 +222,7 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 	h := gen.getAllocMemoryHelper(cgoSpec.SpecAtLevel(level))
 	gen.submitHelper(h)
 	gen.submitHelper(sizeOfPtr)
+	gen.submitHelper(cgoAllocMap)
 	fmt.Fprintf(buf1, "mem%d := %s(1)\n", level, h.Name)
 	fmt.Fprintf(buf1, "allocs.Add(mem%d)\n", level)
 	fmt.Fprintf(buf1, "v%d := (*%s)(mem%d)\n", level, cgoSpec.AtLevel(level), level)
@@ -246,6 +248,7 @@ func (gen *Generator) unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		h := gen.getAllocMemoryHelper(levelSpec)
 		gen.submitHelper(h)
 		gen.submitHelper(sizeOfPtr)
+		gen.submitHelper(cgoAllocMap)
 
 		fmt.Fprintf(buf1, `allocs = new(cgoAllocMap)
 		defer runtime.SetFinalizer(&unpacked, func(*%s) {
@@ -328,7 +331,7 @@ func (gen *Generator) getUnpackStringHelper(cgoSpec tl.CGoSpec) *Helper {
 			h := (*stringHeader)(unsafe.Pointer(&str))
 			return (%s)(unsafe.Pointer(h.Data)), cgoAllocsUnknown
 		}`, name, cgoSpec, cgoSpec),
-		Requires: []*Helper{stringHeader},
+		Requires: []*Helper{stringHeader, cgoAllocMap},
 	}
 }
 
@@ -410,6 +413,7 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
 		return proxy, helper.Nillable
 	}
+	gen.submitHelper(cgoAllocMap)
 
 	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
@@ -453,6 +457,7 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
 		return proxy, helper.Nillable
 	}
+	gen.submitHelper(cgoAllocMap)
 
 	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
@@ -693,6 +698,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("%s = %s(%s)", varName, helper.Name, ptrName)
 		return proxy, helper.Nillable
 	}
+	gen.submitHelper(cgoAllocMap)
 
 	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
@@ -759,6 +765,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("%s := %s(%s)", varName, helper.Name, ptrName)
 		return proxy, helper.Nillable
 	}
+	gen.submitHelper(cgoAllocMap)
 
 	isPlain := (memTip == tl.TipMemRaw) || goSpec.IsPlain() || goSpec.IsPlainKind()
 	switch {
