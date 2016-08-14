@@ -200,18 +200,17 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		gen.submitHelper(sizeOfPtr)
 		gen.submitHelper(cgoAllocMap)
 
-		levelSpec := cgoSpec.AtLevel(0)
 		fmt.Fprintf(buf1, `allocs = new(cgoAllocMap)
 		defer runtime.SetFinalizer(&unpacked, func(*%s) {
 			go allocs.Free()
-		})`, levelSpec)
+		})`, cgoSpec)
 		fmt.Fprintf(buf1, "\n\nmem0 := %s(1)\n", h.Name)
 		fmt.Fprintf(buf1, "allocs.Add(mem0)\n")
 		fmt.Fprintf(buf1, "v0 := (*%s)(mem0)\n", cgoSpec)
 		fmt.Fprintf(buf1, "for i0 := range x {\n")
 		buf2.Linef("return\n")
 		if isArg {
-			buf2.Linef("unpacked = (%s)(mem0)\n", levelSpec)
+			buf2.Linef("unpacked = (%s)(mem0)\n", cgoSpec.AtLevel(0))
 		} else {
 			buf2.Linef("unpacked = *(*%s)(mem0)\n", cgoSpec.String())
 		}
@@ -751,7 +750,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 			deref = "*"
 			ref = "&"
 		}
-		proxy = fmt.Sprintf("%s = %sNew%sRef(%s%s)", varName, deref, goSpec.Raw, ref, ptrName)
+		proxy = fmt.Sprintf("%s = %sNew%sRef(unsafe.Pointer(%s%s))", varName, deref, goSpec.Raw, ref, ptrName)
 		return
 	}
 }
@@ -803,7 +802,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 			deref = "*"
 			ref = "&"
 		}
-		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", varName, deref, goSpec.Raw, ref, ptrName)
+		proxy = fmt.Sprintf("%s := %sNew%sRef(unsafe.Pointer(%s%s))", varName, deref, goSpec.Raw, ref, ptrName)
 		return
 	}
 }

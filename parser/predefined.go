@@ -27,6 +27,13 @@ var builtinBase = `
 #define __extension__
 #define __attribute__(x)
 #define __restrict
+
+#define __builtin_inff() (0)
+#define __builtin_infl() (0)
+#define __builtin_inf() (0)
+#define __builtin_fabsf(x) (0)
+#define __builtin_fabsl(x) (0)
+#define __builtin_fabs(x) (0)
 `
 
 var basePredefines = `
@@ -35,6 +42,10 @@ var basePredefines = `
 #define __STDC__ 1
 #define __GNUC__ 4
 #define __POSIX_C_DEPRECATED(ver)
+
+#define __FLT_MIN__ 0
+#define __DBL_MIN__ 0
+#define __LDBL_MIN__ 0
 
 void __GO__(char*, ...);
 `

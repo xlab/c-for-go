@@ -42,18 +42,13 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	})
 
 	buf.Reset()
-	fmt.Fprintf(buf, "func New%sRef(ref interface{}) *%s", goStructName, goStructName)
+	fmt.Fprintf(buf, "func New%sRef(ref unsafe.Pointer) *%s", goStructName, goStructName)
 	fmt.Fprintf(buf, `{
 		if ref == nil {
 			return nil
 		}
-		type ifaceHeader struct {
-			_   uintptr
-			Ref uintptr
-		}
-		hdr := (*(*ifaceHeader)(unsafe.Pointer(&ref)))
 		obj := new(%s)
-		obj.ref%2x = (*%s)(unsafe.Pointer(hdr.Ref))
+		obj.ref%2x = (*%s)(unsafe.Pointer(ref))
 		return obj
 	}`, goStructName, crc, cgoSpec)
 
