@@ -263,7 +263,7 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 			deref = "*"
 			ref = "&"
 		}
-		proxy = fmt.Sprintf("%s := %sNew%sRef(%s%s)", varName, deref, goSpec.Raw, ref, ptrName)
+		proxy = fmt.Sprintf("%s := %sNew%sRef(unsafe.Pointer(%s%s))", varName, deref, goSpec.Raw, ref, ptrName)
 		return
 	}
 }
