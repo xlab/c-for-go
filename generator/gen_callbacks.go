@@ -133,9 +133,10 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		fmt.Fprintf(buf, "return ret\n")
 	} else {
 		fmt.Fprintf(buf, "%sFunc(%s)\n", cbGoName, paramNamesGoList)
+		fmt.Fprintln(buf, "return")
 	}
-	fmt.Fprintln(buf, "}")
 	fmt.Fprintln(buf, `panic("callback func has not been set (race?)")`)
+	fmt.Fprintln(buf, "}")
 	fmt.Fprintln(buf, "}")
 
 	fmt.Fprintf(buf, "\n\nvar %sFunc %s", cbGoName, goFuncName)
