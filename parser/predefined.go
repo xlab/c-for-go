@@ -36,6 +36,11 @@ var builtinBase = `
 #define __builtin_fabs(x) (0)
 `
 
+var builtinBaseUndef = `
+#undef __llvm__
+#undef __BLOCKS__
+`
+
 var basePredefines = `
 #define __STDC_HOSTED__ 1
 #define __STDC_VERSION__ 199901L

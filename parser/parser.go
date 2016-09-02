@@ -64,6 +64,7 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		}
 	}
 	// undefines?
+	predefined += fmt.Sprintf("\n%s", builtinBaseUndef)
 	for name, value := range cfg.Defines {
 		switch value.(type) {
 		case string, int, int16, int32, int64, uint, uint16, uint32, uint64, float32, float64:
