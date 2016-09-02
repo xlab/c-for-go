@@ -202,13 +202,13 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, deep int) *CStruct
 		return spec
 	}
 	members, _ := typ.Members()
-	for _, m := range members {
+	for i, m := range members {
 		var pos token.Pos
 		if m.Declarator != nil {
 			pos = m.Declarator.Pos()
 		}
 		spec.Members = append(spec.Members, &CDecl{
-			Name: memberName(m),
+			Name: memberName(i, m),
 			Spec: t.typeSpec(m.Type, deep+1, false),
 			Pos:  pos,
 		})
@@ -228,9 +228,9 @@ func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, deep int) *CFunc
 		spec.Return = t.typeSpec(ret, deep+1, true)
 	}
 	params, _ := typ.Parameters()
-	for _, p := range params {
+	for i, p := range params {
 		spec.Params = append(spec.Params, &CDecl{
-			Name: paramName(p),
+			Name: paramName(i, p),
 			Spec: t.typeSpec(p.Type, deep+1, false),
 			Pos:  p.Declarator.Pos(),
 		})
@@ -360,16 +360,16 @@ func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 	return spec
 }
 
-func paramName(p cc.Parameter) string {
+func paramName(n int, p cc.Parameter) string {
 	if p.Name == 0 {
-		return ""
+		return fmt.Sprintf("arg%d", n)
 	}
 	return blessName(xc.Dict.S(p.Name))
 }
 
-func memberName(m cc.Member) string {
+func memberName(n int, m cc.Member) string {
 	if m.Name == 0 {
-		return ""
+		return fmt.Sprintf("field%d", n)
 	}
 	return blessName(xc.Dict.S(m.Name))
 }
