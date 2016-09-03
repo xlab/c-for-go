@@ -71,11 +71,11 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 }
 
 func getName(decl *tl.CDecl) (string, bool) {
-	if base := decl.Spec.GetBase(); len(base) > 0 {
-		return base, true
-	}
 	if len(decl.Name) > 0 {
 		return decl.Name, true
+	}
+	if base := decl.Spec.GetBase(); len(base) > 0 {
+		return base, true
 	}
 	return "", false
 }
@@ -86,7 +86,6 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool)
 		return
 	}
 	goName := gen.tr.TransformName(tl.TargetType, cName)
-
 	if raw || !decl.Spec.IsComplete() {
 		// opaque struct
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,

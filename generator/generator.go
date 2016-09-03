@@ -187,8 +187,10 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
 			if tag := decl.Spec.GetTag(); len(tag) > 0 {
-				if seenStructTags[tag] {
-					continue
+				if len(decl.Name) == 0 || decl.Name == tag {
+					if seenStructTags[tag] {
+						continue
+					}
 				}
 				seenStructTags[tag] = true
 			}
@@ -196,8 +198,10 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw)
 		case tl.UnionKind:
 			if tag := decl.Spec.GetTag(); len(tag) > 0 {
-				if seenUnionTags[tag] {
-					continue
+				if len(decl.Name) == 0 || decl.Name == tag {
+					if seenUnionTags[tag] {
+						continue
+					}
 				}
 				seenUnionTags[tag] = true
 			}
