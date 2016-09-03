@@ -138,17 +138,19 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 	})
 
 	buf.Reset()
+	allocHelper := gen.getAllocMemoryHelper(cgoSpec)
 	fmt.Fprintf(buf, "func (x *%s) PassRef() *%s", goStructName, cgoSpec)
 	fmt.Fprintf(buf, `{
 		if x == nil {
-			x = new(%s)
+			x = (*%s)(%s(1))
 		}
 		return (*%s)(unsafe.Pointer(x))
-	}`, goStructName, cgoSpec)
+	}`, goStructName, allocHelper.Name, cgoSpec)
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.PassRef", goStructName),
 		Description: "PassRef returns a reference and creates new object if no refernce yet.",
 		Source:      buf.String(),
+		Requires:    []*Helper{allocHelper},
 	})
 	return
 }
