@@ -53,11 +53,22 @@ func (spec GoTypeSpec) IsPlain() bool {
 	return false
 }
 
-func (spec *GoTypeSpec) GetName() string {
+func (spec *GoTypeSpec) PlainType() string {
 	if len(spec.Raw) > 0 {
 		return spec.Raw
 	}
-	return spec.Base
+	buf := new(bytes.Buffer)
+	if spec.Unsigned {
+		switch spec.Base {
+		case "char", "short", "long", "int":
+			buf.WriteString("u")
+		}
+	}
+	buf.WriteString(spec.Base)
+	if spec.Bits > 0 {
+		fmt.Fprintf(buf, "%d", int(spec.Bits))
+	}
+	return buf.String()
 }
 
 func (spec GoTypeSpec) String() string {

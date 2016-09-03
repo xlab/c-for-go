@@ -67,7 +67,7 @@ func getHelperName(goSpec tl.GoTypeSpec) string {
 	if goSpec.Unsigned {
 		buf.WriteRune('U')
 	}
-	buf.WriteString(strings.Title(goSpec.GetName()))
+	buf.WriteString(strings.Title(goSpec.PlainType()))
 	return buf.String()
 }
 
@@ -621,9 +621,9 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	switch {
 	case isPlain && isSlice:
 		gen.submitHelper(sliceHeader)
-		gen.packPlainSlice(buf1, goSpec.GetName(), goSpec.Pointers, level)
+		gen.packPlainSlice(buf1, goSpec.PlainType(), goSpec.Pointers, level)
 	case isPlain:
-		packPlain(buf1, cgoSpec, goSpec.GetName(), goSpec.Pointers, level)
+		packPlain(buf1, cgoSpec, goSpec.PlainType(), goSpec.Pointers, level)
 	case isSlice:
 		packSlice(buf1, buf2, cgoSpec, getSizeSpec(level+1), level)
 		goSpec.Slices = 0
@@ -780,7 +780,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("var %s %s\n%s(%s%s, %s)", varName, goSpec, helper.Name, ref, varName, ptrName)
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
-		specStr := ptrs(goSpec.Pointers) + goSpec.GetName()
+		specStr := ptrs(goSpec.Pointers) + goSpec.PlainType()
 		proxy = fmt.Sprintf("%s := (*(*[0x7fffffff]%s)(unsafe.Pointer(%s)))[:0]",
 			varName, specStr, ptrName)
 		return
