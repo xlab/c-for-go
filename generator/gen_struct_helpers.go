@@ -22,7 +22,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	}`, crc)
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.Ref", goStructName),
-		Description: "Ref returns a reference.",
+		Description: "Ref returns the underlying reference to C object or nil if struct is nil.",
 		Source:      buf.String(),
 	})
 
@@ -36,8 +36,8 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	}`, crc, crc, crc)
 	helpers = append(helpers, &Helper{
 		Name: fmt.Sprintf("%s.Free", goStructName),
-		Description: "Free cleanups the memory using the free stdlib function on C side.\n" +
-			"Does nothing if object has no pointer.",
+		Description: "Free invokes alloc map's free mechanism that cleanups any allocated memory using C free.\n" +
+			"Does nothing if struct is nil or has no allocation map.",
 		Source: buf.String(),
 	})
 
@@ -54,9 +54,10 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 
 	name := fmt.Sprintf("New%sRef", goStructName)
 	helpers = append(helpers, &Helper{
-		Name:        name,
-		Description: name + " initialises a new struct holding the reference to the originaitng C struct.",
-		Source:      buf.String(),
+		Name: name,
+		Description: name + " creates a new wrapper struct with underlying reference set to the original C object.\n" +
+			"Returns nil if the provided pointer to C object is nil too.",
+		Source: buf.String(),
 	})
 
 	buf.Reset()
@@ -64,9 +65,10 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	buf.Write(gen.getPassRefSource(goStructName, cStructName, spec))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
-		Name:        fmt.Sprintf("%s.PassRef", goStructName),
-		Description: "PassRef returns a reference and creates new C object if no refernce yet.",
-		Source:      buf.String(),
+		Name: fmt.Sprintf("%s.PassRef", goStructName),
+		Description: "PassRef returns the underlying C object, otherwise it will allocate one and set its values\n" +
+			"from this wrapping struct, counting allocations into an allocation map.",
+		Source: buf.String(),
 	})
 
 	buf.Reset()
@@ -75,7 +77,7 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.PassValue", goStructName),
-		Description: "PassValue creates a new C object if no refernce yet and returns the dereferenced value.",
+		Description: "PassValue does the same as PassRef except that it will try to dereference the returned pointer.",
 		Source:      buf.String(),
 	})
 
@@ -84,9 +86,10 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	buf.Write(gen.getDerefSource(goStructName, cStructName, spec))
 	buf.WriteRune('}')
 	helpers = append(helpers, &Helper{
-		Name:        fmt.Sprintf("%s.Deref", goStructName),
-		Description: "Deref reads the internal fields of struct from its C pointer.",
-		Source:      buf.String(),
+		Name: fmt.Sprintf("%s.Deref", goStructName),
+		Description: "Deref uses the underlying reference to C object and fills the wrapping struct with values.\n" +
+			"Do not forget to call this method whether you get a struct for C object and want to read its values.",
+		Source: buf.String(),
 	})
 	return
 }
@@ -107,7 +110,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 	}`, cgoSpec)
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.Ref", goStructName),
-		Description: "Ref returns a reference.",
+		Description: "Ref returns a reference to C object as it is.",
 		Source:      buf.String(),
 	})
 
@@ -119,10 +122,9 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 		}
 	}`)
 	helpers = append(helpers, &Helper{
-		Name: fmt.Sprintf("%s.Free", goStructName),
-		Description: "Free cleanups the memory using the free stdlib function on C side.\n" +
-			"Does nothing if object has no pointer.",
-		Source: buf.String(),
+		Name:        fmt.Sprintf("%s.Free", goStructName),
+		Description: "Free cleanups the referenced memory using C free.",
+		Source:      buf.String(),
 	})
 
 	buf.Reset()
@@ -133,7 +135,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 	name := fmt.Sprintf("New%sRef", goStructName)
 	helpers = append(helpers, &Helper{
 		Name:        name,
-		Description: name + " initialises a new struct.",
+		Description: name + " converts the C object reference into a raw struct reference without wrapping.",
 		Source:      buf.String(),
 	})
 
@@ -145,10 +147,11 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 	}`, goStructName, allocHelper.Name)
 	name = fmt.Sprintf("New%s", goStructName)
 	helpers = append(helpers, &Helper{
-		Name:        name,
-		Description: name + " allocates a new object.",
-		Source:      buf.String(),
-		Requires:    []*Helper{allocHelper},
+		Name: name,
+		Description: name + " allocates a new C object of this type and converts the reference into\n" +
+			"a raw struct reference without wrapping.",
+		Source:   buf.String(),
+		Requires: []*Helper{allocHelper},
 	})
 
 	buf.Reset()
@@ -161,7 +164,7 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 	}`, goStructName, allocHelper.Name, cgoSpec)
 	helpers = append(helpers, &Helper{
 		Name:        fmt.Sprintf("%s.PassRef", goStructName),
-		Description: "PassRef returns a reference or creates new object if no reference yet.",
+		Description: "PassRef returns a reference to C object as it is or allocates a new C object of this type.",
 		Source:      buf.String(),
 		Requires:    []*Helper{allocHelper},
 	})

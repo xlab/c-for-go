@@ -81,9 +81,8 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		return (*%s)(C.%s), nil
 	}`, cbGoName, cbGoName, cgoSpec, cbCName)
 	helpers = append(helpers, &Helper{
-		Name:        fmt.Sprintf("%s.PassRef", goFuncName),
-		Description: "PassRef returns a reference.",
-		Source:      buf.String(),
+		Name:   fmt.Sprintf("%s.PassRef", goFuncName),
+		Source: buf.String(),
 	})
 
 	if spec.GetPointers() > 0 {
@@ -99,9 +98,8 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		return (%s)(C.%s), nil
 	}`, cbGoName, cbGoName, cgoSpec, cbCName)
 		helpers = append(helpers, &Helper{
-			Name:        fmt.Sprintf("%s.PassValue", goFuncName),
-			Description: "PassValue returns a value.",
-			Source:      buf.String(),
+			Name:   fmt.Sprintf("%s.PassValue", goFuncName),
+			Source: buf.String(),
 		})
 	}
 
