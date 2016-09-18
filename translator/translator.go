@@ -674,17 +674,22 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 		}
 		if lookupSpec.Pointers > 0 {
 			for lookupSpec.Pointers > 0 {
-				switch ptrTip {
-				case TipPtrSRef:
-					if lookupSpec.Pointers > 1 {
-						wrapper.Slices++
-					} else {
+				if len(wrapper.OuterArr) == 0 {
+					switch ptrTip {
+					case TipPtrSRef:
+						if lookupSpec.Pointers > 1 {
+							wrapper.Slices++
+						} else {
+							wrapper.Pointers++
+						}
+					case TipPtrRef:
 						wrapper.Pointers++
+					default:
+						wrapper.Slices++
 					}
-				case TipPtrRef:
+				} else { // cannot escape pointers to slices if there is a wrapping array,
+					// consider case [4]*byte
 					wrapper.Pointers++
-				default:
-					wrapper.Slices++
 				}
 				lookupSpec.Pointers--
 				if gospec, ok := t.lookupSpec(lookupSpec); ok {

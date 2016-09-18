@@ -431,7 +431,7 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
-			len(goSpec.OuterArr) == 0 && goSpec.Pointers == 0 {
+			len(goSpec.OuterArr)+len(goSpec.InnerArr) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("(%s)(%s), cgoAllocsUnknown", cgoSpec, name)
 			return
 		}
@@ -476,7 +476,7 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 	case isPlain: // ex: byte, [4]byte
 		var ref, ptr string
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
-			len(goSpec.OuterArr) == 0 && goSpec.Pointers == 0 {
+			len(goSpec.OuterArr)+len(goSpec.InnerArr) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("(%s)(%s), cgoAllocsUnknown", cgoSpec.AtLevel(0), name)
 			return
 		} else if goSpec.Pointers == 0 {
@@ -671,7 +671,7 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, varName, ptrName string,
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
-			len(goSpec.OuterArr) == 0 && goSpec.Pointers == 0 {
+			len(goSpec.OuterArr)+len(goSpec.InnerArr) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("*%s = *(%s)(%s)", varName, goSpec, ptrName)
 			return
 		}
@@ -718,12 +718,16 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		}
 		proxy = fmt.Sprintf("%s(%s%s, %s)", helper.Name, ref, varName, ptrName)
 		return proxy, helper.Nillable
-	case isPlain && goSpec.Slices != 0: // ex: []byte
+	case isPlain && goSpec.Slices != 0: // ex: []byte, [][4]byte
 		gen.submitHelper(sliceHeader)
 		buf := new(bytes.Buffer)
 		postfix := gen.randPostfix()
+		var ref string
+		if goSpec.Pointers == 0 {
+			ref = "&"
+		}
 		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
-		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
+		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s%s))\n", postfix, ref, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
 		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 		proxy = buf.String()
@@ -731,10 +735,10 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 	case isPlain: // ex: byte, [4]byte
 		var ref, ptr string
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
-			len(goSpec.OuterArr) == 0 && goSpec.Pointers == 0 {
+			len(goSpec.OuterArr)+len(goSpec.InnerArr) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s = (%s)(%s)", varName, goSpec, ptrName)
 			return
-		} else if goSpec.Pointers == 0 {
+		} else if goSpec.Pointers == 0 || len(goSpec.OuterArr) > 0 {
 			ref = "&"
 			ptr = "*"
 		}
@@ -786,7 +790,7 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
-			len(goSpec.OuterArr) == 0 && goSpec.Pointers == 0 {
+			len(goSpec.OuterArr)+len(goSpec.InnerArr) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s := (%s)(%s)", varName, goSpec, ptrName)
 			return
 		}
