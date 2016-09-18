@@ -201,7 +201,7 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 
 		typeName := m.Spec.GetBase()
 		switch m.Spec.Kind() {
-		case tl.StructKind, tl.OpaqueStructKind, tl.EnumKind:
+		case tl.StructKind, tl.OpaqueStructKind, tl.UnionKind, tl.EnumKind:
 			if !gen.tr.IsAcceptableName(tl.TargetType, typeName) {
 				continue
 			}
@@ -273,7 +273,7 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 
 		typeName := m.Spec.GetBase()
 		switch m.Spec.Kind() {
-		case tl.StructKind, tl.OpaqueStructKind, tl.EnumKind:
+		case tl.StructKind, tl.OpaqueStructKind, tl.UnionKind, tl.EnumKind:
 			if !gen.tr.IsAcceptableName(tl.TargetType, typeName) {
 				continue
 			}
