@@ -37,7 +37,7 @@ func init() {
 	flag.Usage = func() {
 		fmt.Println(logo)
 		fmt.Printf("Usage: %s package1.yml [package2.yml] ...\n", os.Args[0])
-		fmt.Println("See http://xxx for examples an documentation.\n")
+		fmt.Println("See http://cgogen.com for examples an documentation.\n")
 		fmt.Println("Options:")
 		flag.PrintDefaults()
 	}
