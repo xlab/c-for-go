@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>cgogen (golang)</title>
+    <base href="/">
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="ie=edge" http-equiv="x-ua-compatible" />
+    <link href="/static/favicon.ico" rel="icon" type="image/x-icon" />
+    <meta name="Description" content="Automatic CGo Bindings Generator for Golang." />
+    <link href="//fonts.googleapis.com/css?family=Roboto:400,300" rel="stylesheet" type="text/css">
+    <link href="//fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet" type="text/css">
+    <link href="//cdnjs.cloudflare.com/ajax/libs/octicons/3.3.0/octicons.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="navbar navbar-homepage">
+        <div class="container cf">
+            <a href="/" class="navbar-brand"></a>
+            <ul class="navbar-nav navbar-right">
+                <li><a href="/enterprise.html" class="button button-outlined">For Enterprises</a></li>
+                <li><a href="https://github.com/xlab/cgogen/wiki/Examples" class="button button-outlined-neutral">Examples</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="feature">
+        <div class="container">
+            <h1>About cgogen</h1>
+            <p>
+            Today cgogen is a full-featured bindings generator that does 95% of the work, it allows anyone who would like to use any C library in their code do so in less than one hour without writing a single line of code. Initially it has been designed to be just a helper tool, the idea was to scan the provided C header files for structs, types and function definitions and convert their names into idiomatic Go ones, preparing boilerplate code for CGo calls, and so on. But this framework evolved much since then and now it provides almost fully atomatic way to get bindings for any common C headers.
+            </p>
+            <br/>
+            <img alt="cgogen project history" src="/static/contributions.png" width="400px" />
+            <p><em class="note">Most of the work on the project has been done in summer of 2015, then a year of field experiments and demos, and now it's the time to do a public release. Enjoy!</em></p>
+            <br />
+            <p>
+                Read more on how you can benefit from using this tool: <a href="https://github.com/xlab/cgogen/wiki/Top-5-reasons-to-use-cgogen">Top-5 reasons to use cgogen</a>.
+            </p>
+        </div>
+    </div>
+    <div class="ribbon">
+        <div class="container cf">
+            <a class="button button-outlined" href="https://github.com/xlab/cgogen"><span class="octicon octicon-mark-github"></span> Source Code</a>
+            <span class="separator">and</span>
+            <a class="button button-outlined" href="https://github.com/xlab/cgogen/wiki">Documentation</a>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="container cf">
+            Copyright &copy; 2015-2016 <a href="mailto:max@kc.vc">Maxim Kupriianov</a>
+            <br />under terms of MIT License.
+        </div>
+    </div>
+</body>
+
+</html>

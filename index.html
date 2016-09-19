@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>cgogen (golang)</title>
+    <base href="/">
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="ie=edge" http-equiv="x-ua-compatible" />
+    <link href="/static/favicon.ico" rel="icon" type="image/x-icon" />
+    <meta name="Description" content="Automatic CGo Bindings Generator for Golang." />
+    <link href="//fonts.googleapis.com/css?family=Roboto:400,300" rel="stylesheet" type="text/css">
+    <link href="//fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet" type="text/css">
+    <link href="//cdnjs.cloudflare.com/ajax/libs/octicons/3.3.0/octicons.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="navbar navbar-homepage">
+        <div class="container cf">
+            <a href="/" class="navbar-brand"></a>
+            <ul class="navbar-nav navbar-right">
+                <li><a href="/enterprise.html" class="button button-outlined">For Enterprises</a></li>
+                <li><a href="https://github.com/xlab/cgogen/wiki/Examples" class="button button-outlined-neutral">Examples</a></li>
+                <li><a href="/about.html" class="button button-outlined-neutral">About</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="banner">
+        <div class="banner-text container">
+            <h1>Automatic Go Bindings Generator</h1>
+            <h3>1000+ man-hours saved<span class="note">*</span></h3>
+            <pre>$ go get github.com/xlab/cgogen</pre>
+            <p>Here comes a quick and free way to incorporate any C library into your project by leveraging the <a href="https://golang.org/cmd/cgo/">cgo mechanism</a> of Golang.</p>
+            <div class="banner-actions">
+                <a href="https://github.com/xlab/cgogen" class="button"><span class="octicon octicon-mark-github"></span>Source</a>
+                <a href="https://github.com/xlab/cgogen/wiki" class="button">Documentation</a>
+            </div>
+        </div>
+    </div>
+    <section id="demo">
+        <div class="container">
+            <h2 class="title">Demo</h2>
+            <div class="terminal window">
+                <div class="titlebar">
+                    <div class="control"></div>
+                    <div class="control"></div>
+                    <div class="control"></div>
+                </div>
+                <div class="window-body">
+                    <code>
+                        <span class="cli">
+
+<span class="t1"><span class="prompt">$</span> </span>
+<span class="t2">cloc vorbis/</span>
+<span class="t3"><br>---------------------------------------------------------</span>
+<span class="t3"><br>Language&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;code</span>
+<span class="t3"><br>---------------------------------------------------------</span>
+<span class="t3"><br>C/C++ Header&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;497&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;578</span>
+<span class="t3"><br>---------------------------------------------------------</span>
+
+<span class="t4"><br><span class="prompt">$</span> </span>
+<span class="t5">cgogen vorbis.yml</span>
+<span class="t6"><br><span class="blue">processing vorbis.yml</span>...</span>
+<span class="t7"> done in 304.657793ms</span>
+
+<span class="t8"><br><span class="prompt">$</span> </span>
+<span class="t9">cloc vorbis/</span>
+<span class="t10"><br>---------------------------------------------------------</span>
+<span class="t10"><br>Language&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;code</span>
+<span class="t10"><br>---------------------------------------------------------</span>
+
+<span class="t10"><br><span class="blue">Go&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;315&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;288&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1780</span></span>
+
+<span class="t10"><br>C/C++ Header&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;497&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;578</span>
+<span class="t10"><br>---------------------------------------------------------</span>
+
+<span class="t11"><br><span class="prompt">$</span> </span>
+                        </span>
+                        <span class="cursor"></span>
+                    </code>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="feature">
+        <div class="container">
+            <h2>Fill the <em>generator</em> preferences</h2>
+            <p>
+                Start by creating an YAML manifest file like <a href="https://github.com/xlab/vorbis-go/blob/master/vorbis.yml">vorbis.yml</a> for the C library you want to use: this includes specifying the resulting package name, description, license and options respected by cgo.
+            </p>
+            <div class="view-config">
+                <script src="https://gist.github.com/xlab/8205e84fb954239de14b3a55604c1ec9.js"></script>
+            </div>
+            <p>Read more about generator preferences in <a href="https://github.com/xlab/cgogen/wiki/Generator-config-section">generator config section docs</a>.</p>
+        </div>
+    </div>
+    <div class="feature">
+        <div class="container">
+            <h2>Add the <em>parser</em> preferences</h2>
+            <p>
+                Add a section specifying C header parsing parameters, usually you won’t need too much here, just write down the list of import paths and the list of header files, all the includes will be resolved automatically.
+            </p>
+            <div class="view-config">
+                <script src="https://gist.github.com/xlab/33add37c4ae01c72fa26124f0a1fd466.js"></script>
+            </div>
+            <p>Read more about parser preferences in <a href="https://github.com/xlab/cgogen/wiki/Parser-config-section">parser config section docs</a>.</p>
+        </div>
+    </div>
+    <div class="feature">
+        <div class="container">
+            <h2>Add the <em>translator</em> preferences.. at last</h2>
+            <p>
+                This is the section where all the magic happens. In short, here go all the name translation options, type hints for structs and functions, matching rules based on regular expressions. Despite looking simple for small libraries, this section assembles a powerful binding engine for large projects like <a href="https://github.com/xlab/pocketsphinx-go/blob/master/pocketsphinx.yml">CMU PocketSphinx</a> or <a href="https://github.com/vulkan-go/vulkan/blob/master/vulkan.yml">Vulkan Graphics API</a>.
+            </p>
+            <div class="view-config">
+                <script src="https://gist.github.com/xlab/2d94734aec371787e92ef7182b899c63.js"></script>
+            </div>
+            <p>Read more about translator preferences in <a href="https://github.com/xlab/cgogen/wiki/Translator-config-section">translator config section docs</a>.</p>
+        </div>
+    </div>
+    <div class="feature">
+        <div class="container">
+            <h2>Done! 🎉</h2>
+            <pre>$ cgogen vorbis.yml</pre>
+            <br />
+            <p>
+                We just automatically created <a href="https://github.com/xlab/vorbis-go/tree/master/vorbis">vorbis</a> package with cross-referenced
+                <a href="https://godoc.org/github.com/xlab/vorbis-go/vorbis">GoDoc</a>. See how it’s being used in a high-level Ogg/Vorbis <a href="https://github.com/xlab/vorbis-go/blob/master/decoder/decoder.go">decoder</a> package for Go and check out a demo <a href="https://github.com/xlab/vorbis-go#demo">vorbis-player</a>. Neat, isn’t it?
+            </p>
+        </div>
+    </div>
+    <!--     <div class="container cf">
+        <div class='grid-flex-container pricing'>
+            <div class='grid-flex-cell'>
+                <h2>Free</h2>
+                <p>0</p>
+            </div>
+            <div class='grid-flex-cell'>
+                <h2>Team</h2>
+                <p>15</p>
+            </div>
+            <div class='grid-flex-cell'>
+                <h2>Enterprise</h2>
+                <p>Contact Us</p>
+            </div>
+        </div>
+    </div> -->
+    <div class="container">
+        <h6 class="banner-text note">
+            * calculated as sum of Golang LOC in <a class="silent" href="https://github.com/xlab/cgogen/wiki/Examples">any known generated package</a>, divided into bug-free chunks of 300 LOC, a normal developer would write in a single working day (10 hours). This metric will be replaced soon with something more sophisticated. Suggestions are welcome.
+        </h6>
+    </div>
+    <div class="ribbon">
+        <div class="container cf">
+            <a class="button button-outlined" href="https://github.com/xlab/cgogen"><span class="octicon octicon-mark-github"></span> Source Code</a>
+            <span class="separator">and</span>
+            <a class="button button-outlined" href="https://github.com/xlab/cgogen/wiki">Documentation</a>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="container cf">
+            Copyright &copy; 2015-2016 <a href="mailto:max@kc.vc">Maxim Kupriianov</a>
+            <br />under terms of MIT License.
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+        <!-- my Go skills are far better than this lol -->
+        <script src="static/animate.js"></script>
+        <script type="text/javascript">
+        hide()
+        var animating = false
+        $(window).on('scroll', function() {
+            var winBottom = $(window).scrollTop() + window.innerHeight
+            var demoVisiblePart = $('#demo').offset().top + 2 * $('#demo').outerHeight() / 3
+            if (winBottom >= demoVisiblePart) {
+                // start animating only when >= 2/3 of demo terminal is visible
+                animate()
+                    // unbind event of scroll
+                $(window).off('scroll')
+            }
+        });
+        </script>
+    </div>
+</body>
+
+</html>
