@@ -2296,6 +2296,12 @@ body {
     margin-left: 12px
 }
 
+.navbar-slogan {
+    display: inline-block;
+    float: left;
+    margin-left: 16px
+}
+
 .navbar img {
     width: 32px;
     min-width: 32px;
