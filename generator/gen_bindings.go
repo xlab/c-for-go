@@ -722,8 +722,12 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		gen.submitHelper(sliceHeader)
 		buf := new(bytes.Buffer)
 		postfix := gen.randPostfix()
+		var ref string
+		if goSpec.Pointers == 0 {
+			ref = "&"
+		}
 		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
-		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
+		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s%s))\n", postfix, ref, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
 		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 		proxy = buf.String()
