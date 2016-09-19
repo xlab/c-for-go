@@ -129,6 +129,7 @@ func findFile(path string, includePaths []string) (string, error) {
 }
 
 func stealDefinesFromCC() (defs string, ok bool) {
+	// TODO: use cc.HostCppConfig
 	cc, ok := os.LookupEnv("CC")
 	if !ok { // second chance for CPP
 		cc, ok = os.LookupEnv("CPP")

@@ -15,7 +15,7 @@ import (
 var (
 	outputPath = flag.String("out", "", "Specify a `dir` for the output.")
 	noCGO      = flag.Bool("nocgo", false, "Do not include a cgo-specific header in resulting files.")
-	ccDefs     = flag.Bool("ccdefs", false, "Try to steal built-in defines from a hosted C-compile, CC env variable must be set.")
+	ccDefs     = flag.Bool("ccdefs", false, "Try to steal built-in defines from a hosted C-compiler, CC env variable must be set.")
 	fancy      = flag.Bool("fancy", true, "Enable fancy output in the term.")
 	debug      = flag.Bool("debug", false, "Enable some debug info.")
 )

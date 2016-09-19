@@ -106,7 +106,7 @@ var arches = map[string]TargetArch{
 var model32 = &cc.Model{
 	Items: map[cc.Kind]cc.ModelItem{
 		cc.Ptr:               {4, 4, 4, "__TODO_PTR"},
-		cc.UintPtr:           {4, 4, 4, "__TODO_UINTPTR"},
+		cc.UintPtr:           {4, 4, 4, "uintptr"},
 		cc.Void:              {0, 1, 1, "__TODO_VOID"},
 		cc.Char:              {1, 1, 1, "int8"},
 		cc.SChar:             {1, 1, 1, "int8"},
@@ -120,8 +120,8 @@ var model32 = &cc.Model{
 		cc.LongLong:          {8, 8, 8, "int64"},
 		cc.ULongLong:         {8, 8, 8, "uint64"},
 		cc.Float:             {4, 4, 4, "float32"},
-		cc.Double:            {8, 8, 8, "float64"},
-		cc.LongDouble:        {8, 8, 8, "float64"},
+		cc.Double:            {8, 8, 4, "float64"},
+		cc.LongDouble:        {8, 8, 4, "float64"},
 		cc.Bool:              {1, 1, 1, "bool"},
 		cc.FloatComplex:      {8, 8, 8, "complex64"},
 		cc.DoubleComplex:     {16, 16, 16, "complex128"},
@@ -132,7 +132,7 @@ var model32 = &cc.Model{
 var model48 = &cc.Model{
 	Items: map[cc.Kind]cc.ModelItem{
 		cc.Ptr:               {4, 4, 4, "__TODO_PTR"},
-		cc.UintPtr:           {4, 4, 4, "__TODO_UINTPTR"},
+		cc.UintPtr:           {4, 4, 4, "uintptr"},
 		cc.Void:              {0, 1, 1, "__TODO_VOID"},
 		cc.Char:              {1, 1, 1, "int8"},
 		cc.SChar:             {1, 1, 1, "int8"},
@@ -146,8 +146,8 @@ var model48 = &cc.Model{
 		cc.LongLong:          {8, 8, 8, "int64"},
 		cc.ULongLong:         {8, 8, 8, "uint64"},
 		cc.Float:             {4, 4, 4, "float32"},
-		cc.Double:            {8, 8, 8, "float64"},
-		cc.LongDouble:        {8, 8, 8, "float64"},
+		cc.Double:            {8, 8, 4, "float64"},
+		cc.LongDouble:        {8, 8, 4, "float64"},
 		cc.Bool:              {1, 1, 1, "bool"},
 		cc.FloatComplex:      {8, 8, 8, "complex64"},
 		cc.DoubleComplex:     {16, 16, 16, "complex128"},
@@ -158,7 +158,7 @@ var model48 = &cc.Model{
 var model64 = &cc.Model{
 	Items: map[cc.Kind]cc.ModelItem{
 		cc.Ptr:               {8, 8, 8, "__TODO_PTR"},
-		cc.UintPtr:           {8, 8, 8, "__TODO_UINTPTR"},
+		cc.UintPtr:           {8, 8, 8, "uintptr"},
 		cc.Void:              {0, 1, 1, "__TODO_VOID"},
 		cc.Char:              {1, 1, 1, "int8"},
 		cc.SChar:             {1, 1, 1, "int8"},
@@ -172,8 +172,8 @@ var model64 = &cc.Model{
 		cc.LongLong:          {8, 8, 8, "int64"},
 		cc.ULongLong:         {8, 8, 8, "uint64"},
 		cc.Float:             {4, 4, 4, "float32"},
-		cc.Double:            {8, 8, 8, "float64"},
-		cc.LongDouble:        {8, 8, 8, "float64"},
+		cc.Double:            {8, 8, 4, "float64"},
+		cc.LongDouble:        {8, 8, 4, "float64"},
 		cc.Bool:              {1, 1, 1, "bool"},
 		cc.FloatComplex:      {8, 8, 8, "complex64"},
 		cc.DoubleComplex:     {16, 16, 16, "complex128"},
