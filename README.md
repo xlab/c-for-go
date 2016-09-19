@@ -3,6 +3,8 @@
 
 See [cgogen.com](http://cgogen.com) and the [documentation](https://github.com/xlab/cgogen/wiki).
 
+The [list of projects](https://github.com/xlab/cgogen/wiki/Examples) that used cgogen to generate bindings.
+
 #### Installation
 
 ```
