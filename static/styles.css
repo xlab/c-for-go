@@ -2293,13 +2293,8 @@ body {
     display: inline-block;
     float: left;
     border-radius: 3px;
-    margin-left: 12px
-}
-
-.navbar-slogan {
-    display: inline-block;
-    float: left;
-    margin-left: 16px
+    margin-left: 12px;
+    margin-bottom: 10px;
 }
 
 .navbar img {
@@ -2323,6 +2318,7 @@ body {
     line-height: 32px;
     max-height: 32px;
     padding: 0;
+    margin-bottom: 10px;
     display: inline-block;
     vertical-align: middle
 }
@@ -2470,7 +2466,6 @@ a.silent:hover {
     border-color: #FFF;
     text-transform: uppercase;
     border-radius: 20px;
-    padding: 5px 40px;
     padding: 5px 20px;
     border-radius: 3px
 }
