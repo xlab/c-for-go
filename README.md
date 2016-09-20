@@ -1,4 +1,4 @@
-<img alt="cgogen-logo" src="internal/cgogen.png" width="200"/>
+<a href="https://cgogen.com"><img alt="cgogen-logo" src="internal/cgogen.png" width="200"/></a>
 ## Automatic CGo Bindings Generator for Golang
 
 See [cgogen.com](https://cgogen.com) and the [documentation](https://github.com/xlab/cgogen/wiki).
