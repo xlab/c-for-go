@@ -264,6 +264,7 @@ func includePathsFromPkgConfig(opts []string) []string {
 	pc, err := pkg.NewConfig(nil)
 	if err != nil {
 		log.Println("[WARN]", err)
+		return nil
 	}
 	for _, opt := range opts {
 		if strings.HasPrefix(opt, "-") || strings.HasPrefix(opt, "--") {
