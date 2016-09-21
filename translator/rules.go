@@ -142,6 +142,7 @@ type TipScope string
 const (
 	TipScopeAny      TipScope = "any"
 	TipScopeStruct   TipScope = "struct"
+	TipScopeType     TipScope = "type"
 	TipScopeFunction TipScope = "function"
 )
 

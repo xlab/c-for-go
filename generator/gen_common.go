@@ -15,7 +15,7 @@ var (
 
 func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec tl.CType) {
 	structSpec := spec.(*tl.CStructSpec)
-	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeStruct, structName, structSpec)
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeType, structName, structSpec)
 	const public = true
 	for i, member := range structSpec.Members {
 		ptrTip := ptrTipRx.TipAt(i)

@@ -188,6 +188,9 @@ func getPtrTipRxs(tips PtrTips) (PtrTipRxMap, error) {
 				self:    spec.Self,
 			}
 			rxMap[scope] = append(rxMap[scope], specRx)
+			if scope == TipScopeStruct {
+				rxMap[TipScopeType] = append(rxMap[TipScopeType], specRx)
+			}
 		}
 	}
 	return rxMap, nil
@@ -212,6 +215,9 @@ func getTypeTipRxs(tips TypeTips) (TypeTipRxMap, error) {
 				self:    spec.Self,
 			}
 			rxMap[scope] = append(rxMap[scope], specRx)
+			if scope == TipScopeStruct {
+				rxMap[TipScopeType] = append(rxMap[TipScopeType], specRx)
+			}
 		}
 	}
 	return rxMap, nil
@@ -569,11 +575,15 @@ func (t *Translator) TypeTipRx(scope TipScope, name string) (TipSpecRx, bool) {
 }
 
 func (t *Translator) MemTipRx(name string) (TipSpecRx, bool) {
+	if rx, ok := t.memTipCache.Get(TipScopeType, name); ok {
+		return rx, true
+	}
 	if rx, ok := t.memTipCache.Get(TipScopeStruct, name); ok {
 		return rx, true
 	}
 	for _, rx := range t.compiledMemTipRxs {
 		if rx.Target.MatchString(name) {
+			t.memTipCache.Set(TipScopeType, name, rx)
 			t.memTipCache.Set(TipScopeStruct, name, rx)
 			return rx, true
 		}

@@ -242,7 +242,7 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 			ref = "&"
 		}
 		fmt.Fprintf(buf, "var %s %s\n", varName, goSpec)
-		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(%s))\n", postfix, varName)
+		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
 		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s%s))\n", postfix, ref, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
 		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
@@ -254,6 +254,9 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 			len(goSpec.OuterArr)+len(goSpec.InnerArr) == 0 && goSpec.Pointers == 0 {
 			proxy = fmt.Sprintf("%s := (%s)(%s)", varName, goSpec, ptrName)
 			return
+		} else if goSpec.Kind == tl.FunctionKind {
+			proxy = fmt.Sprintf("// %s is a callback func", varName)
+			return
 		} else if goSpec.Pointers == 0 {
 			ref = "&"
 			ptr = "*"
@@ -261,6 +264,10 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 		proxy = fmt.Sprintf("%s := %s(%s%s)(unsafe.Pointer(%s%s))", varName, ptr, ptr, goSpec, ref, ptrName)
 		return
 	default: // ex: *SomeType
+		if goSpec.Kind == tl.FunctionKind {
+			proxy = fmt.Sprintf("// %s is a callback func", varName)
+			return
+		}
 		var ref, deref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"

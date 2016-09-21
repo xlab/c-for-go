@@ -210,7 +210,7 @@ var builtinNames = func() map[string]struct{} {
 		"break", "default", "func", "interface", "select", "case", "defer",
 		"map", "var", "chan", "else", "goto", "package", "switch", "const",
 		"fallthrough", "if", "range", "type", "continue", "for", "import",
-		"return", "go", "struct", "string",
+		"return", "go", "struct",
 	}
 	set := make(map[string]struct{}, len(names))
 	for _, name := range names {

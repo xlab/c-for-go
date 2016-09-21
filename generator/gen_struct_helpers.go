@@ -192,7 +192,7 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 
 	writeSpace(buf, 1)
 
-	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeStruct, cStructName, spec)
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeType, cStructName, spec)
 	for i, m := range structSpec.Members {
 		if len(m.Name) == 0 {
 			continue
@@ -264,7 +264,7 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 	}`, crc)
 	writeSpace(buf, 1)
 
-	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeStruct, cStructName, spec)
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeType, cStructName, spec)
 	for i, m := range structSpec.Members {
 		if len(m.Name) == 0 {
 			continue
