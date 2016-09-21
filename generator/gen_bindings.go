@@ -711,10 +711,10 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 			ptrName = fmt.Sprintf("(*%s)(unsafe.Pointer(&%s))", cgoSpec, ptrName)
 		}
 		var ref string
-		if goSpec.Pointers == 0 {
-			if len(goSpec.OuterArr) > 0 || goSpec.Slices == 0 {
-				ref = "&"
-			}
+		switch {
+		case len(goSpec.OuterArr) > 0,
+			goSpec.Pointers == 0 && goSpec.Slices == 0:
+			ref = "&"
 		}
 		proxy = fmt.Sprintf("%s(%s%s, %s)", helper.Name, ref, varName, ptrName)
 		return proxy, helper.Nillable
