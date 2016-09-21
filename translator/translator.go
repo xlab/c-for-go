@@ -686,54 +686,56 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 			InnerArr: typeSpec.InnerArr,
 		}
 		if lookupSpec.Pointers > 0 {
-			switch ptrTip {
-			case TipPtrSRef:
-				if lookupSpec.Pointers > 1 {
-					wrapper.Slices++
-				} else {
-					wrapper.Pointers++
-				}
-			case TipPtrRef:
-				wrapper.Pointers++
-			default:
-				wrapper.Slices++
-			}
-			lookupSpec.Pointers--
-			if gospec, ok := t.lookupSpec(lookupSpec); ok {
-				tag := typeSpec.CGoName()
-				if gospec == UnsafePointerSpec && len(tag) > 0 {
-					if decl, ok := t.tagMap[tag]; ok {
-						if decl.Spec.GetPointers() <= gospec.Pointers {
-							gospec.Pointers = gospec.Pointers - decl.Spec.GetPointers()
-						}
-					}
-				}
-				gospec.Slices += wrapper.Slices
-				gospec.Pointers += wrapper.Pointers
-				gospec.OuterArr.Prepend(wrapper.OuterArr)
-				gospec.InnerArr.Prepend(wrapper.InnerArr)
-				if gospec.Kind == TypeKind {
-					if gospec.IsPlain() {
-						gospec.Kind = PlainTypeKind
-					} else if wrapper.Kind == TypeKind || wrapper.Kind == PlainTypeKind {
-						if kind := t.typedefKinds[lookupSpec.Base]; kind != PlainTypeKind {
-							gospec.Kind = kind
-						}
+			for lookupSpec.Pointers > 0 {
+				switch ptrTip {
+				case TipPtrSRef:
+					if lookupSpec.Pointers > 1 {
+						wrapper.Slices++
 					} else {
-						gospec.Kind = wrapper.Kind
+						wrapper.Pointers++
 					}
+				case TipPtrRef:
+					wrapper.Pointers++
+				default:
+					wrapper.Slices++
 				}
-				if typeTip != TipTypePlain {
-					if t.IsAcceptableName(TargetType, typeSpec.Raw) {
-						gospec.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
-						if gospec.Base != "unsafe.Pointer" {
-							gospec.Pointers = 0
-							gospec.Slices = 0
-							gospec.splitPointers(ptrTip, typeSpec.Pointers)
+				lookupSpec.Pointers--
+				if gospec, ok := t.lookupSpec(lookupSpec); ok {
+					tag := typeSpec.CGoName()
+					if gospec == UnsafePointerSpec && len(tag) > 0 {
+						if decl, ok := t.tagMap[tag]; ok {
+							if decl.Spec.GetPointers() <= gospec.Pointers {
+								gospec.Pointers = gospec.Pointers - decl.Spec.GetPointers()
+							}
 						}
 					}
+					gospec.Slices += wrapper.Slices
+					gospec.Pointers += wrapper.Pointers
+					gospec.OuterArr.Prepend(wrapper.OuterArr)
+					gospec.InnerArr.Prepend(wrapper.InnerArr)
+					if gospec.Kind == TypeKind {
+						if gospec.IsPlain() {
+							gospec.Kind = PlainTypeKind
+						} else if wrapper.Kind == TypeKind || wrapper.Kind == PlainTypeKind {
+							if kind := t.typedefKinds[lookupSpec.Base]; kind != PlainTypeKind {
+								gospec.Kind = kind
+							}
+						} else {
+							gospec.Kind = wrapper.Kind
+						}
+					}
+					if typeTip != TipTypePlain {
+						if t.IsAcceptableName(TargetType, typeSpec.Raw) {
+							gospec.Raw = string(t.TransformName(TargetType, typeSpec.Raw))
+							if gospec.Base != "unsafe.Pointer" {
+								gospec.Pointers = 0
+								gospec.Slices = 0
+								gospec.splitPointers(ptrTip, typeSpec.Pointers)
+							}
+						}
+					}
+					return gospec
 				}
-				return gospec
 			}
 		}
 		if t.IsAcceptableName(TargetType, typeSpec.Raw) {
