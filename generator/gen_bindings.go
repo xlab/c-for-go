@@ -435,7 +435,11 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 			proxy = fmt.Sprintf("(%s)(%s), cgoAllocsUnknown", cgoSpec, name)
 			return
 		} else if goSpec.Kind == tl.FunctionKind {
-			proxy = fmt.Sprintf("(*[0]byte)(unsafe.Pointer(%s)), cgoAllocsUnknown", name)
+			var ref string
+			if goSpec.Pointers == 0 {
+				ref = "&"
+			}
+			proxy = fmt.Sprintf("(*[0]byte)(unsafe.Pointer(%s%s)), cgoAllocsUnknown", ref, name)
 			return
 		}
 		proxy = fmt.Sprintf("*(*%s)(unsafe.Pointer(&%s)), cgoAllocsUnknown", cgoSpec, name)
@@ -483,7 +487,11 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 			proxy = fmt.Sprintf("(%s)(%s), cgoAllocsUnknown", cgoSpec.AtLevel(0), name)
 			return
 		} else if goSpec.Kind == tl.FunctionKind {
-			proxy = fmt.Sprintf("(*[0]byte)(unsafe.Pointer(%s)), cgoAllocsUnknown", name)
+			var ref string
+			if goSpec.Pointers == 0 {
+				ref = "&"
+			}
+			proxy = fmt.Sprintf("(*[0]byte)(unsafe.Pointer(%s%s)), cgoAllocsUnknown", ref, name)
 			return
 		} else if goSpec.Pointers == 0 {
 			ref = "&"
@@ -691,7 +699,7 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, varName, ptrName string,
 			proxy = fmt.Sprintf("// %s is a callback func", varName)
 			return
 		}
-		proxy = fmt.Sprintf("*%s = *(New%sRef(%s))", varName, goSpec.Raw, ptrName)
+		proxy = fmt.Sprintf("*%s = *(New%sRef(unsafe.Pointer(%s)))", varName, goSpec.Raw, ptrName)
 		return
 	}
 }

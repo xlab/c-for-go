@@ -128,9 +128,9 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 	})
 
 	buf.Reset()
-	fmt.Fprintf(buf, "func New%sRef(ref *%s) *%s", goStructName, cgoSpec, goStructName)
+	fmt.Fprintf(buf, "func New%sRef(ref unsafe.Pointer) *%s", goStructName, goStructName)
 	fmt.Fprintf(buf, `{
-		return (*%s)(unsafe.Pointer(ref))
+		return (*%s)(ref)
 	}`, goStructName)
 	name := fmt.Sprintf("New%sRef", goStructName)
 	helpers = append(helpers, &Helper{
