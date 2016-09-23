@@ -615,6 +615,7 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	}
 	goSpec.OuterArr = ""
 
+	gen.submitHelper(sizeOfPtr)
 	getSizeSpec := func(level uint8) string {
 		sizeConst := "sizeOfPtr"
 		ptrs := cgoSpec.PointersAtLevel(level)
