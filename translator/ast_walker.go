@@ -346,8 +346,10 @@ func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 		s := t.functionSpec(spec, typ, deep+1)
 		if !isRet && !typ.Specifier().IsTypedef() {
 			s.Typedef = typedefNameOf(typ)
+			retTyp := typ.Result().RawDeclarator().Type
+			retTypedef := typedefNameOf(retTyp)
 			if s.Return != nil {
-				s.Return.SetRaw(s.Typedef)
+				s.Return.SetRaw(retTypedef)
 			}
 		}
 		return s
