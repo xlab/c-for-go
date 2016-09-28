@@ -57,6 +57,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 	typeTipRx, _ := gen.tr.TypeTipRx(tl.TipScopeFunction, decl.Name)
 	goFuncName := gen.tr.TransformName(tl.TargetType, decl.Name)
 	goSpec := gen.tr.TranslateSpec(funcSpec, ptrTipRx.Self(), typeTipRx.Self())
+	goSpec.Raw = "" // not used in func typedef
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goFuncName,
 		gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos))
 	fmt.Fprintf(wr, "type %s %s", goFuncName, goSpec)

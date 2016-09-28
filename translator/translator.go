@@ -770,6 +770,9 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 				wrapper.Pointers = wrapper.Pointers - decl.Spec.GetPointers()
 			}
 		}
+		if t.IsAcceptableName(TargetType, fspec.Raw) {
+			wrapper.Raw = string(t.TransformName(TargetType, fspec.Raw))
+		}
 		wrapper.Base = "func"
 		return wrapper
 	default:

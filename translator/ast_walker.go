@@ -218,8 +218,12 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, deep int) *CStruct
 
 func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, deep int) *CFunctionSpec {
 	spec := &CFunctionSpec{
-		Raw:      identifierOf(typ.Declarator().DirectDeclarator),
 		Pointers: base.Pointers,
+	}
+	if deep > 2 { // a function inside params of another function
+		spec.Raw = typedefNameOf(typ)
+	} else {
+		spec.Raw = identifierOf(typ.Declarator().DirectDeclarator)
 	}
 	if deep > maxDeepLevel {
 		return spec

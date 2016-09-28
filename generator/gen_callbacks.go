@@ -104,6 +104,16 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	}
 
 	buf = new(bytes.Buffer)
+	fmt.Fprintf(buf, "func New%sRef(ref unsafe.Pointer) *%s", goFuncName, goFuncName)
+	fmt.Fprintf(buf, `{
+		return (*%s)(ref)
+	}`, goFuncName)
+	helpers = append(helpers, &Helper{
+		Name:   fmt.Sprintf("New%sRef", goFuncName),
+		Source: buf.String(),
+	})
+
+	buf = new(bytes.Buffer)
 	fmt.Fprintf(buf, "//export %s\n", cbGoName)
 	cbGoDecl := &tl.CDecl{
 		Name: cbGoName,
@@ -260,10 +270,6 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 		proxy = fmt.Sprintf("%s := %s(%s%s)(unsafe.Pointer(%s%s))", varName, ptr, ptr, goSpec, ref, ptrName)
 		return
 	default: // ex: *SomeType
-		if goSpec.Kind == tl.FunctionKind {
-			proxy = fmt.Sprintf("// %s is a callback func", varName)
-			return
-		}
 		var ref, deref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"

@@ -696,10 +696,6 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("*%s = *(*%s)(unsafe.Pointer(&%s))", varName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
-		if goSpec.Kind == tl.FunctionKind {
-			proxy = fmt.Sprintf("// %s is a callback func", varName)
-			return
-		}
 		proxy = fmt.Sprintf("*%s = *(New%sRef(unsafe.Pointer(%s)))", varName, goSpec.Raw, ptrName)
 		return
 	}
@@ -762,10 +758,6 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("%s = %s(%s%s)(unsafe.Pointer(%s%s))", varName, ptr, ptr, goSpec, ref, ptrName)
 		return
 	default: // ex: *SomeType
-		if goSpec.Kind == tl.FunctionKind {
-			proxy = fmt.Sprintf("// %s is a callback func", varName)
-			return
-		}
 		var ref, deref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"
@@ -817,10 +809,6 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		proxy = fmt.Sprintf("%s := *(*%s)(unsafe.Pointer(&%s))", varName, goSpec, ptrName)
 		return
 	default: // ex: *SomeType
-		if goSpec.Kind == tl.FunctionKind {
-			proxy = fmt.Sprintf("// %s is a callback func", varName)
-			return
-		}
 		var deref, ref string
 		if cgoSpec.Pointers == 0 {
 			deref = "*"
