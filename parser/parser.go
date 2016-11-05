@@ -97,11 +97,14 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		}
 	}
 	model := models[cfg.archBits]
-	return cc.Parse(predefined, cfg.SourcesPaths, model, cc.SysIncludePaths(cfg.IncludePaths),
+	return cc.Parse(predefined, cfg.SourcesPaths, model,
+		cc.SysIncludePaths(cfg.IncludePaths),
 		cc.EnableAnonymousStructFields(),
 		cc.EnableAsm(),
 		cc.EnableAlternateKeywords(),
-		cc.EnableIncludeNext())
+		cc.EnableIncludeNext(),
+		cc.EnableNoreturn(),
+	)
 }
 
 func checkConfig(cfg *Config) (*Config, error) {
