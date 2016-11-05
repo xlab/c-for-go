@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -52,15 +53,18 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		ccDefsOK bool
 	)
 	if cfg.CCDefs {
-		CPP := "cpp"
+		cppPath := "cpp"
 		if v, ok := os.LookupEnv("CPP"); ok {
-			CPP = v
+			cppPath = v
 		} else if v, ok = os.LookupEnv("CC"); ok {
-			CPP = v
+			cppPath = v
 		}
-		predefined, _, sysIncludePaths, err := cc.HostCppConfig(CPP)
+		if expanded, err := exec.LookPath(cppPath); err == nil {
+			cppPath = expanded
+		}
+		predefined, _, sysIncludePaths, err := cc.HostCppConfig(cppPath)
 		if err != nil {
-			log.Println("[WARN]:", err)
+			log.Println("[WARN] HostCppConfig (`cpp -dM`):", err)
 		} else {
 			if len(sysIncludePaths) > 0 {
 				// add on top of sysIncludePaths
