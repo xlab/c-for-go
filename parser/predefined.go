@@ -18,7 +18,6 @@ const (
 
 var builtinBase = `
 #define __builtin_va_list void *
-#define __asm__(x)
 #define __asm(x)
 #define __inline inline
 #define __inline__ inline
@@ -27,6 +26,7 @@ var builtinBase = `
 #define __extension__
 #define __attribute__(x)
 #define __restrict
+#define __volatile__
 
 #define __builtin_inff() (0)
 #define __builtin_infl() (0)
@@ -34,6 +34,8 @@ var builtinBase = `
 #define __builtin_fabsf(x) (0)
 #define __builtin_fabsl(x) (0)
 #define __builtin_fabs(x) (0)
+
+#define __INTRINSIC_PROLOG(name)
 `
 
 var builtinBaseUndef = `
