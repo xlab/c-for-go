@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -53,7 +52,23 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		ccDefsOK bool
 	)
 	if cfg.CCDefs {
-		ccDefs, ccDefsOK = stealDefinesFromCC()
+		CPP := "cpp"
+		if v, ok := os.LookupEnv("CPP"); ok {
+			CPP = v
+		} else if v, ok = os.LookupEnv("CC"); ok {
+			CPP = v
+		}
+		predefined, _, sysIncludePaths, err := cc.HostCppConfig(CPP)
+		if err != nil {
+			log.Println("[WARN]:", err)
+		} else {
+			if len(sysIncludePaths) > 0 {
+				// add on top of sysIncludePaths
+				cfg.IncludePaths = append(sysIncludePaths, cfg.IncludePaths...)
+			}
+			ccDefs = predefined
+			ccDefsOK = true
+		}
 	}
 	if ccDefsOK {
 		predefined += fmt.Sprintf("\n%s", ccDefs)
@@ -126,23 +141,4 @@ func findFile(path string, includePaths []string) (string, error) {
 		}
 	}
 	return "", errors.New("not found")
-}
-
-func stealDefinesFromCC() (defs string, ok bool) {
-	// TODO: use cc.HostCppConfig
-	cc, ok := os.LookupEnv("CC")
-	if !ok { // second chance for CPP
-		cc, ok = os.LookupEnv("CPP")
-		if !ok {
-			return
-		}
-	}
-	cmd := exec.Command(cc, "-dM", "-E", "-x", "c", "/dev/null")
-	buf, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Println("[WARN]:", err)
-		return
-	}
-	defs = string(buf)
-	return defs, true
 }
