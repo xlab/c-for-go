@@ -23,6 +23,7 @@ var builtinBase = `
 #define __inline__ inline
 #define __signed
 #define __signed__
+#define __const const
 #define __extension__
 #define __attribute__(x)
 #define __restrict
