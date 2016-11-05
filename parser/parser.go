@@ -159,23 +159,25 @@ func findFile(path string, includePaths []string) (string, error) {
 // Execution of HostConfig is not free, so caching the results is recommended
 // whenever possible.
 func hostCppConfig(cpp string, opts ...string) (predefined string, includePaths, sysIncludePaths []string, err error) {
-	NULL := "/dev/null"
+	nullPath := "/dev/null"
+	newLine := "\n"
 	if runtime.GOOS == "windows" {
-		NULL = "nul"
+		nullPath = "nul"
+		newLine = "\r\n"
 	}
-	args := append(append([]string{"-dM"}, opts...), NULL)
+	args := append(append([]string{"-dM"}, opts...), nullPath)
 	pre, err := exec.Command(cpp, args...).CombinedOutput()
 	if err != nil {
 		return "", nil, nil, err
 	}
 
-	args = append(append([]string{"-v"}, opts...), NULL)
+	args = append(append([]string{"-v"}, opts...), nullPath)
 	out, err := exec.Command(cpp, args...).CombinedOutput()
 	if err != nil {
 		return "", nil, nil, err
 	}
 
-	a := strings.Split(string(out), "\n")
+	a := strings.Split(string(out), newLine)
 	for i := 0; i < len(a); {
 		switch a[i] {
 		case "#include \"...\" search starts here:":
