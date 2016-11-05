@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/cznic/cc"
@@ -59,12 +60,12 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		} else if v, ok = os.LookupEnv("CC"); ok {
 			cppPath = v
 		}
-		if expanded, err := exec.LookPath(cppPath); err == nil {
-			cppPath = expanded
-		}
-		predefined, _, sysIncludePaths, err := cc.HostCppConfig(cppPath)
+		// if expanded, err := exec.LookPath(cppPath); err == nil {
+		// 	cppPath = expanded
+		// }
+		predefined, _, sysIncludePaths, err := hostCppConfig(cppPath)
 		if err != nil {
-			log.Println("[WARN] HostCppConfig (`cpp -dM`):", err)
+			log.Println("[WARN] `cpp -dM` failed:", err)
 		} else {
 			if len(sysIncludePaths) > 0 {
 				// add on top of sysIncludePaths
@@ -145,4 +146,62 @@ func findFile(path string, includePaths []string) (string, error) {
 		}
 	}
 	return "", errors.New("not found")
+}
+
+// hostCppConfig returns the system C preprocessor configuration, or an error,
+// if any.  The configuration is obtained by running the cpp command. For the
+// predefined macros list the '-dM' options is added. For the include paths
+// lists, the option '-v' is added and the output is parsed to extract the
+// "..." include and <...> include paths. To add any other options to cpp, list
+// them in opts.
+//
+// The function relies on a POSIX compatible C preprocessor installed.
+// Execution of HostConfig is not free, so caching the results is recommended
+// whenever possible.
+func hostCppConfig(cpp string, opts ...string) (predefined string, includePaths, sysIncludePaths []string, err error) {
+	NULL := "/dev/null"
+	if runtime.GOOS == "windows" {
+		NULL = "nul"
+	}
+	args := append(append([]string{"-dM"}, opts...), NULL)
+	pre, err := exec.Command(cpp, args...).CombinedOutput()
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	args = append(append([]string{"-v"}, opts...), NULL)
+	out, err := exec.Command(cpp, args...).CombinedOutput()
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	a := strings.Split(string(out), "\n")
+	for i := 0; i < len(a); {
+		switch a[i] {
+		case "#include \"...\" search starts here:":
+		loop:
+			for i = i + 1; i < len(a); {
+				switch v := a[i]; {
+				case strings.HasPrefix(v, "#") || v == "End of search list.":
+					break loop
+				default:
+					includePaths = append(includePaths, strings.TrimSpace(v))
+					i++
+				}
+			}
+		case "#include <...> search starts here:":
+			for i = i + 1; i < len(a); {
+				switch v := a[i]; {
+				case strings.HasPrefix(v, "#") || v == "End of search list.":
+					return string(pre), includePaths, sysIncludePaths, nil
+				default:
+					sysIncludePaths = append(sysIncludePaths, strings.TrimSpace(v))
+					i++
+				}
+			}
+		default:
+			i++
+		}
+	}
+	return "", nil, nil, fmt.Errorf("failed parsing %s -v output", cpp)
 }
