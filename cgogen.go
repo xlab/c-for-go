@@ -69,6 +69,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 			cfg.Parser = &parser.Config{}
 		}
 		cfg.Parser.CCDefs = *ccDefs
+		cfg.Parser.CCIncl = *ccIncl
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, paths...)
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, filepath.Dir(configPath))
 	} else {

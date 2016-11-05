@@ -21,6 +21,7 @@ type Config struct {
 	Defines map[string]interface{} `yaml:"Defines"`
 
 	CCDefs   bool `yaml:"-"`
+	CCIncl   bool `yaml:"-"`
 	archBits TargetArch
 }
 
@@ -53,7 +54,7 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		ccDefs   string
 		ccDefsOK bool
 	)
-	if cfg.CCDefs {
+	if cfg.CCDefs || cfg.CCIncl {
 		cppPath := "cpp"
 		if v, ok := os.LookupEnv("CPP"); ok {
 			cppPath = v
@@ -67,15 +68,15 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		if err != nil {
 			log.Println("[WARN] `cpp -dM` failed:", err)
 		} else {
-			if len(sysIncludePaths) > 0 {
-				// add on top of sysIncludePaths
+			if cfg.CCIncl && len(sysIncludePaths) > 0 {
+				// add on top of sysIncludePaths if allowed by config
 				cfg.IncludePaths = append(sysIncludePaths, cfg.IncludePaths...)
 			}
 			ccDefs = predefined
 			ccDefsOK = true
 		}
 	}
-	if ccDefsOK {
+	if cfg.CCDefs && ccDefsOK {
 		predefined += fmt.Sprintf("\n%s", ccDefs)
 	} else {
 		predefined += basePredefines
