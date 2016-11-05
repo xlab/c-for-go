@@ -21,8 +21,8 @@ var builtinBase = `
 #define __asm(x)
 #define __inline inline
 #define __inline__ inline
-#define __signed signed
-#define __signed__ signed
+#define __signed
+#define __signed__
 #define __extension__
 #define __attribute__(x)
 #define __restrict
