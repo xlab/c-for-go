@@ -104,6 +104,7 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		cc.EnableAlternateKeywords(),
 		cc.EnableIncludeNext(),
 		cc.EnableNoreturn(),
+		cc.EnableEmptyDeclarations(),
 	)
 }
 
