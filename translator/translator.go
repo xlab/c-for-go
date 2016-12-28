@@ -296,11 +296,12 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 	// so we need to collect a map of valid references beforehand
 	for _, decl := range declares {
 		if decl.Spec.Kind() == EnumKind {
-			if len(decl.Name) > 0 {
-				seen[decl.Name] = struct{}{}
-			}
-			if tag := decl.Spec.GetTag(); len(tag) > 0 {
-				seen[tag] = struct{}{}
+			enumMembers := decl.Spec.(*CEnumSpec).Members
+			for _, member := range enumMembers {
+				if !t.IsAcceptableName(TargetConst, member.Name) {
+					continue
+				}
+				seen[member.Name] = struct{}{}
 			}
 		}
 	}
