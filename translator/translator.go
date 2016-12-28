@@ -261,7 +261,7 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) {
 	t.resolveTypedefs(t.typedefs)
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
-	t.collectDefines(unit.Macros)
+	t.collectDefines(t.declares, unit.Macros)
 	sort.Sort(declList(t.defines))
 }
 
@@ -289,8 +289,21 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) {
 // 	fmt.Printf("\n)\n\n")
 // }
 
-func (t *Translator) collectDefines(defines map[int]*cc.Macro) {
-	seen := make(map[string]struct{}, len(defines))
+func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro) {
+	seen := make(map[string]struct{}, len(defines)+len(declares))
+
+	// traverse declared constants because macro can reference them,
+	// so we need to collect a map of valid references beforehand
+	for _, decl := range declares {
+		if decl.Spec.Kind() == EnumKind {
+			if len(decl.Name) > 0 {
+				seen[decl.Name] = struct{}{}
+			}
+			if tag := decl.Spec.GetTag(); len(tag) > 0 {
+				seen[tag] = struct{}{}
+			}
+		}
+	}
 
 	// double traverse because macros can depend on each other and the map
 	// brings a randomized order of them.
