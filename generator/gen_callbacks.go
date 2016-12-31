@@ -193,6 +193,13 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 	spec := funcSpec.(*tl.CFunctionSpec)
 	to = make([]proxyDecl, 0, len(spec.Params))
 
+	cNamesSeen := make(map[string]struct{}, len(spec.Params))
+	for _, param := range spec.Params {
+		if len(param.Name) > 0 {
+			cNamesSeen[param.Name] = struct{}{}
+		}
+	}
+
 	crc := getRefCRC(funcSpec)
 	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeFunction, funcName, funcSpec)
 	for i, param := range spec.Params {
@@ -207,7 +214,15 @@ func (gen *Generator) createCallbackProxies(funcName string, funcSpec tl.CType) 
 			refName = fmt.Sprintf("arg%d", i)
 		}
 		toBuf := new(bytes.Buffer)
+
 		cname := "c" + refName
+		_, seen := cNamesSeen[cname]
+		for seen {
+			cname = "c" + cname
+			_, seen = cNamesSeen[cname]
+		}
+		cNamesSeen[cname] = struct{}{}
+
 		refName = fmt.Sprintf("%s%2x", refName, crc)
 		toProxy, _ := gen.proxyCallbackArgToGo(memTipRx.TipAt(i), refName, cname, goSpec, cgoSpec)
 		if len(toProxy) > 0 {

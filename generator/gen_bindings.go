@@ -824,6 +824,13 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 	from = make([]proxyDecl, len(spec.Params))
 	to = make([]proxyDecl, 0, len(spec.Params))
 
+	cNamesSeen := make(map[string]struct{}, len(spec.Params))
+	for _, param := range spec.Params {
+		if len(param.Name) > 0 {
+			cNamesSeen[param.Name] = struct{}{}
+		}
+	}
+
 	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeFunction, funcName, funcSpec)
 	for i, param := range spec.Params {
 		var goSpec tl.GoTypeSpec
@@ -835,7 +842,15 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 		refName := string(gen.tr.TransformName(tl.TargetType, param.Name, public))
 		fromBuf := new(bytes.Buffer)
 		toBuf := new(bytes.Buffer)
+
 		name := "c" + refName
+		_, seen := cNamesSeen[name]
+		for seen {
+			name = "c" + name
+			_, seen = cNamesSeen[name]
+		}
+		cNamesSeen[name] = struct{}{}
+
 		argTip := memTipRx.TipAt(i)
 		if !argTip.IsValid() {
 			argTip = gen.MemTipOf(param)
