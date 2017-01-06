@@ -82,6 +82,14 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 			ptrTip = tl.TipPtrArr
 		}
 		typeTip := typeTipSpecRx.TipAt(i)
+		if !typeTip.IsValid() {
+			// try to use type tip for the type itself
+			if tip, ok := gen.tr.TypeTipRx(tl.TipScopeType, param.Spec.CGoName()); ok {
+				if tip := tip.Self(); tip.IsValid() {
+					typeTip = tip
+				}
+			}
+		}
 		declName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, public))
 		switch param.Spec.Kind() {
 		case tl.TypeKind:
