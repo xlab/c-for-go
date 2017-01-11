@@ -457,7 +457,12 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
 
-	if getHelper, ok := fromGoHelperMap[goSpec]; ok {
+	if memTip == tl.TipMemStr {
+		helper := gen.getUnpackStringHelper(cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
+		return proxy, helper.Nillable
+	} else if getHelper, ok := fromGoHelperMap[goSpec]; ok {
 		helper := getHelper(gen, cgoSpec)
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
@@ -662,7 +667,12 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, varName, ptrName string,
 	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
 	nillable = true
 
-	if getHelper, ok := toGoHelperMap[goSpec]; ok {
+	if memTip == tl.TipMemStr {
+		helper := gen.getPackStringHelper(cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s = %s(%s)", varName, helper.Name, ptrName)
+		return proxy, helper.Nillable
+	} else if getHelper, ok := toGoHelperMap[goSpec]; ok {
 		helper := getHelper(gen, cgoSpec)
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s = %s(%s)", varName, helper.Name, ptrName)
@@ -705,7 +715,12 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
 	nillable = true
 
-	if getHelper, ok := toGoHelperMap[goSpec]; ok {
+	if memTip == tl.TipMemStr {
+		helper := gen.getPackStringHelper(cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s = %s(%s)", varName, helper.Name, ptrName)
+		return proxy, helper.Nillable
+	} else if getHelper, ok := toGoHelperMap[goSpec]; ok {
 		helper := getHelper(gen, cgoSpec)
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s = %s(%s)", varName, helper.Name, ptrName)
@@ -771,7 +786,12 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
 
-	if getHelper, ok := toGoHelperMap[goSpec]; ok {
+	if memTip == tl.TipMemStr {
+		helper := gen.getPackStringHelper(cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s := %s(%s)", varName, helper.Name, ptrName)
+		return proxy, helper.Nillable
+	} else if getHelper, ok := toGoHelperMap[goSpec]; ok {
 		helper := getHelper(gen, cgoSpec)
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s := %s(%s)", varName, helper.Name, ptrName)

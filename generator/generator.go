@@ -163,13 +163,8 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 
 func (gen *Generator) MemTipOf(decl *tl.CDecl) tl.Tip {
 	var memTip tl.Tip
-	if tag := decl.Spec.GetBase(); len(tag) > 0 {
-		if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
-			memTip = memTipRx.Self()
-		}
-	}
-	if !memTip.IsValid() {
-		if memTipRx, ok := gen.tr.MemTipRx(decl.Name); ok {
+	if name := decl.Spec.CGoName(); len(name) > 0 {
+		if memTipRx, ok := gen.tr.MemTipRx(name); ok {
 			memTip = memTipRx.Self()
 		}
 	}
