@@ -90,7 +90,6 @@ const (
 	TipPtrRef    Tip = "ref"
 	TipPtrArr    Tip = "arr"
 	TipMemRaw    Tip = "raw"
-	TipMemStr    Tip = "str"
 	TipTypeNamed Tip = "named"
 	TipTypePlain Tip = "plain"
 	NoTip        Tip = ""
@@ -111,7 +110,7 @@ func (t Tip) Kind() TipKind {
 		return TipKindPtr
 	case TipTypePlain, TipTypeNamed:
 		return TipKindType
-	case TipMemRaw, TipMemStr:
+	case TipMemRaw:
 		return TipKindMem
 	default:
 		return TipKindUnknown
@@ -124,7 +123,7 @@ func (t Tip) IsValid() bool {
 		return true
 	case TipTypePlain, TipTypeNamed:
 		return true
-	case TipMemRaw, TipMemStr:
+	case TipMemRaw:
 		return true
 	default:
 		return false

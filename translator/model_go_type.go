@@ -53,6 +53,16 @@ func (spec GoTypeSpec) IsPlain() bool {
 	return false
 }
 
+func (spec GoTypeSpec) IsGoString() bool {
+	if spec.Base == "string" &&
+		spec.Slices == 0 &&
+		len(spec.InnerArr) == 0 &&
+		len(spec.OuterArr) == 0 {
+		return true
+	}
+	return false
+}
+
 func (spec *GoTypeSpec) PlainType() string {
 	if len(spec.Raw) > 0 {
 		return spec.Raw

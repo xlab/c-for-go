@@ -237,7 +237,7 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
 	nillable = true
 
-	if memTip == tl.TipMemStr {
+	if goSpec.IsGoString() {
 		helper := gen.getPackStringHelper(cgoSpec)
 		gen.submitHelper(helper)
 		proxy = fmt.Sprintf("%s = %s(%s)", varName, helper.Name, ptrName)
