@@ -20,8 +20,10 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 
 		if decl.Value != nil {
 			fmt.Fprintf(wr, "%s = %v", name, decl.Value)
-		} else {
+		} else if len(decl.Expression) > 0 {
 			fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
+		} else {
+			fmt.Printf(wr, name)
 		}
 		writeSpace(wr, 1)
 		n++
@@ -39,8 +41,11 @@ func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 	if decl.Value != nil {
 		fmt.Fprintf(wr, "const %s %s = %v", declName, goSpec, decl.Value)
 		return
+	} else if len(decl.Expression) > 0 {
+		fmt.Fprintf(wr, "const %s %s = %s", declName, goSpec, decl.Expression)
+		return
 	}
-	fmt.Fprintf(wr, "const %s %s = %s", declName, goSpec, decl.Expression)
+	fmt.Fprintf(wr, "const %s %s", declName, goSpec)
 }
 
 func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool) {
@@ -86,7 +91,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 				continue
 			}
 			fmt.Fprintf(wr, "%s = %s\n", mName, iotaOnZero(i, m.Value))
-		case len(m.Expression) != 0:
+		case len(m.Expression) > 0:
 			if hasType {
 				fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, iotaOnZero(i, m.Expression))
 				continue
@@ -146,7 +151,7 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 		switch {
 		case m.Value != nil:
 			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Value))
-		case len(m.Expression) != 0:
+		case len(m.Expression) > 0:
 			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Expression))
 		default:
 			if i == 0 {
