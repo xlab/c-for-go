@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab/cgogen/parser"
-	tl "github.com/xlab/cgogen/translator"
+	"github.com/xlab/c-for-go/parser"
+	tl "github.com/xlab/c-for-go/translator"
 	"golang.org/x/tools/imports"
 )
 

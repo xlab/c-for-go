@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	tl "github.com/xlab/cgogen/translator"
+	tl "github.com/xlab/c-for-go/translator"
 )
 
 func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n int) {
@@ -23,7 +23,7 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 		} else if len(decl.Expression) > 0 {
 			fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
 		} else {
-			fmt.Printf(wr, name)
+			fmt.Fprint(wr, name)
 		}
 		writeSpace(wr, 1)
 		n++
@@ -45,7 +45,8 @@ func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 		fmt.Fprintf(wr, "const %s %s = %s", declName, goSpec, decl.Expression)
 		return
 	}
-	fmt.Fprintf(wr, "const %s %s", declName, goSpec)
+	// const must have values, otherwise variable
+	fmt.Fprintf(wr, "var %s %s", declName, goSpec)
 }
 
 func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool) {

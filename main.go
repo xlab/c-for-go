@@ -21,12 +21,8 @@ var (
 	debug      = flag.Bool("debug", false, "Enable some debug info.")
 )
 
-const logo = `Copyright (c) 2015-2016 Maxim Kupriianov <max@kc.vc>
+const logo = `Copyright (c) 2015-2017 Maxim Kupriianov <max@kc.vc>
 Based on a C99 compiler front end by Jan Mercl <0xjnml@gmail.com>
-
-╔═╗╔═╗╔═╗┌─┐┌─┐┌┐┌
-║  ║ ╦║ ║│ ┬├┤ │││
-╚═╝╚═╝╚═╝└─┘└─┘┘└┘
 `
 
 func init() {
@@ -38,7 +34,7 @@ func init() {
 	flag.Usage = func() {
 		fmt.Println(logo)
 		fmt.Printf("Usage: %s package1.yml [package2.yml] ...\n", os.Args[0])
-		fmt.Println("See https://cgogen.com for examples and documentation.\n")
+		fmt.Println("See https://github.com/xlab/c-for-go for examples and documentation.\n")
 		fmt.Println("Options:")
 		flag.PrintDefaults()
 	}
@@ -78,12 +74,12 @@ func main() {
 		if *debug {
 			t0 = time.Now()
 		}
-		cgogen, err := NewCGOGen(cfgPath, *outputPath)
+		process, err := NewProcess(cfgPath, *outputPath)
 		if err != nil {
 			log.Fatalln("[ERR]", err)
 		}
-		cgogen.Generate(*noCGO)
-		if err := cgogen.Flush(*noCGO); err != nil {
+		process.Generate(*noCGO)
+		if err := process.Flush(*noCGO); err != nil {
 			log.Fatalln("[ERR]", err)
 		}
 		if *debug {
@@ -113,7 +109,7 @@ func getConfigPaths() (paths []string) {
 }
 
 func configFromDir(path string) (string, bool) {
-	possibleNames := []string{"cgogen.yaml", "cgogen.yml"}
+	possibleNames := []string{"c-for-go.yaml", "c-for-go.yml"}
 	if base := filepath.Base(path); len(base) > 0 {
 		possibleNames = append(possibleNames,
 			fmt.Sprintf("%s.yaml", base), fmt.Sprintf("%s.yml", base))

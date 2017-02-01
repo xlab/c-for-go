@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"hash/crc32"
 
-	tl "github.com/xlab/cgogen/translator"
+	tl "github.com/xlab/c-for-go/translator"
 )
 
 func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, spec tl.CType) (helpers []*Helper) {

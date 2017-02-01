@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	tl "github.com/xlab/cgogen/translator"
+	tl "github.com/xlab/c-for-go/translator"
 )
 
 var (

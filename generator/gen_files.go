@@ -8,7 +8,7 @@ import (
 )
 
 func genLabel() string {
-	tpl := "WARNING: This file has automatically been generated on %s.\nBy https://git.io/cgogen. DO NOT EDIT."
+	tpl := "WARNING: This file has automatically been generated on %s.\nBy https://git.io/c-for-go. DO NOT EDIT."
 	return fmt.Sprintf(tpl, time.Now().Format(time.RFC1123))
 }
 

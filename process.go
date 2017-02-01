@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/xlab/cgogen/generator"
-	"github.com/xlab/cgogen/parser"
-	"github.com/xlab/cgogen/translator"
+	"github.com/xlab/c-for-go/generator"
+	"github.com/xlab/c-for-go/parser"
+	"github.com/xlab/c-for-go/translator"
 	"github.com/xlab/pkgconfig/pkg"
 	"golang.org/x/tools/imports"
 	"gopkg.in/yaml.v2"
@@ -38,8 +38,8 @@ var goBufferNames = map[Buf]string{
 	BufHelpers: "cgo_helpers",
 }
 
-type CGOGen struct {
-	cfg          CGOGenConfig
+type Process struct {
+	cfg          ProcessConfig
 	gen          *generator.Generator
 	genSync      sync.WaitGroup
 	goBuffers    map[Buf]*bytes.Buffer
@@ -48,18 +48,18 @@ type CGOGen struct {
 	outputPath   string
 }
 
-type CGOGenConfig struct {
+type ProcessConfig struct {
 	Generator  *generator.Config  `yaml:"GENERATOR"`
 	Translator *translator.Config `yaml:"TRANSLATOR"`
 	Parser     *parser.Config     `yaml:"PARSER"`
 }
 
-func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
+func NewProcess(configPath, outputPath string) (*Process, error) {
 	cfgData, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
-	var cfg CGOGenConfig
+	var cfg ProcessConfig
 	if err := yaml.Unmarshal(cfgData, &cfg); err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, paths...)
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, filepath.Dir(configPath))
 	} else {
-		return nil, errors.New("cgogen: generator config was not specified")
+		return nil, errors.New("process: generator config was not specified")
 	}
 
 	// parse the headers
@@ -95,7 +95,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := &CGOGen{
+	c := &Process{
 		cfg:          cfg,
 		gen:          gen,
 		goBuffers:    make(map[Buf]*bytes.Buffer),
@@ -116,7 +116,7 @@ func NewCGOGen(configPath, outputPath string) (*CGOGen, error) {
 	return c, nil
 }
 
-func (c *CGOGen) Generate(noCGO bool) {
+func (c *Process) Generate(noCGO bool) {
 	main := c.goBuffers[BufMain]
 	if wr, ok := c.goBuffers[BufDoc]; ok {
 		if !c.gen.WriteDoc(wr) {
@@ -165,7 +165,7 @@ func (c *CGOGen) Generate(noCGO bool) {
 	}
 }
 
-func (c *CGOGen) Flush(noCGO bool) error {
+func (c *Process) Flush(noCGO bool) error {
 	c.gen.Close()
 	c.genSync.Wait()
 	filePrefix := filepath.Join(c.outputPath, c.cfg.Generator.PackageName)

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab/cgogen/parser"
+	"github.com/xlab/c-for-go/parser"
 )
 
 func init() {
