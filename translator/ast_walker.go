@@ -159,6 +159,11 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
 					break
 				}
 			}
+			if typecastValue {
+				// still in typecast value, need to close paren
+				exprParts = append(exprParts, ")")
+				typecastValue = false
+			}
 
 			if len(exprParts) > 0 {
 				m.Expression = strings.Join(exprParts, " ")

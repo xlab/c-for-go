@@ -414,6 +414,11 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 				break
 			}
 		}
+		if typecastValue {
+			// still in typecast value, need to close paren
+			exprParts = append(exprParts, ")")
+			typecastValue = false
+		}
 		if !valid {
 			if macro.Value != nil {
 				// fallback to the evaluated value
