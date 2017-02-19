@@ -20,13 +20,23 @@ func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
 func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
 	switch d.Case {
 	case 0: // FunctionDefinition
-		// (not an API definition)
+		var decl *CDecl
+		if declr := d.FunctionDefinition.Declarator; declr != nil {
+			decl = t.declarator(declr)
+			t.registerTagsOf(decl)
+		} else {
+			return
+		}
+		if decl.IsTypedef {
+			t.typedefs = append(t.typedefs, decl)
+			t.typedefsSet[decl.Name] = struct{}{}
+			return
+		}
+		t.declares = append(t.declares, decl)
 	case 1: // Declaration
 		declares := t.walkDeclaration(d.Declaration)
 		for _, decl := range declares {
-			if decl.IsStatic {
-				continue
-			} else if decl.IsTypedef {
+			if decl.IsTypedef {
 				t.typedefs = append(t.typedefs, decl)
 				t.typedefsSet[decl.Name] = struct{}{}
 				continue

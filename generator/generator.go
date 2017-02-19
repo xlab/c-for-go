@@ -251,9 +251,6 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 func (gen *Generator) WriteDeclares(wr io.Writer) int {
 	var count int
 	for _, decl := range gen.tr.Declares() {
-		if decl.IsStatic {
-			continue
-		}
 		const public = true
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
