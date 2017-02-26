@@ -323,6 +323,18 @@ func (gen *Generator) getUnpackStringHelper(cgoSpec tl.CGoSpec) *Helper {
 		Base:     cgoSpec.Base,
 	}
 	name := "unpack" + gen.getTypedHelperName("string", cgoSpec)
+	if gen.cfg.Options.SafeStrings {
+		return &Helper{
+			Name:        name,
+			Description: fmt.Sprintf("%s represents the data from Go string as %s and avoids copying.", name, cgoSpec),
+			Source: fmt.Sprintf(`func %s(str string) (%s, *cgoAllocMap) {
+			str = safeString(str)
+			h := (*stringHeader)(unsafe.Pointer(&str))
+			return (%s)(unsafe.Pointer(h.Data)), cgoAllocsUnknown
+		}`, name, cgoSpec, cgoSpec),
+			Requires: []*Helper{stringHeader, cgoAllocMap, safeString},
+		}
+	}
 	return &Helper{
 		Name:        name,
 		Description: fmt.Sprintf("%s represents the data from Go string as %s and avoids copying.", name, cgoSpec),
@@ -875,6 +887,12 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 		if !argTip.IsValid() {
 			argTip = gen.MemTipOf(param)
 		}
+		var needKeepalive bool
+		if gen.cfg.Options.SafeStrings && goSpec.IsGoString() {
+			needKeepalive = true
+			gen.submitHelper(safeString)
+			fmt.Fprintf(fromBuf, "%s = safeString(%s)\n", refName, refName)
+		}
 		fromProxy, nillable := gen.proxyArgFromGo(argTip, refName, goSpec, cgoSpec)
 		if nillable {
 			fmt.Fprintf(fromBuf, "var %s %s\n", name, cgoSpec)
@@ -883,6 +901,10 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 			fmt.Fprintf(fromBuf, "%s, _ := %s", name, fromProxy)
 		}
 		from[i] = proxyDecl{Name: name, Decl: fromBuf.String()}
+		if needKeepalive {
+			keepaliveDecl := fmt.Sprintf("runtime.KeepAlive(%s)\n", refName)
+			to = append(to, proxyDecl{Name: refName, Decl: keepaliveDecl})
+		}
 
 		isPlain := goSpec.IsPlain() || goSpec.IsPlainKind()
 		switch {
@@ -1010,6 +1032,18 @@ var (
 			return C.GoStringN((*C.char)(unsafe.Pointer(h.Data)), C.int(h.Len))
 		}`,
 		Requires: []*Helper{stringHeader},
+	}
+	safeString = &Helper{
+		Name:        "safeString",
+		Description: `safeString ensures that the string is NULL-terminated, a NULL-terminated copy is created otherwise.`,
+		Source: `func safeString(str string) string {
+			if len(str) > 0 && str[len(str)-1] != '\x00' {
+				str = str + "\x00"
+			} else if len(str) == 0 {
+				str = "\x00"
+			}
+			return str
+		}`,
 	}
 	cgoAllocMap = &Helper{
 		Name:        "cgoAllocMap",

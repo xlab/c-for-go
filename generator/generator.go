@@ -34,6 +34,12 @@ type Config struct {
 	FlagGroups         []TraitFlagGroup `yaml:"FlagGroups"`
 	SysIncludes        []string         `yaml:"SysIncludes"`
 	Includes           []string         `yaml:"Includes"`
+	Options            GenOptions       `yaml:"Options"`
+}
+
+type GenOptions struct {
+	SafeStrings bool `yaml:"SafeStrings"`
+	KeepAlive   bool `yaml:"KeepAlive"`
 }
 
 func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
