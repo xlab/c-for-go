@@ -16,11 +16,11 @@ import (
 func TestProxies(t *testing.T) {
 	assert := assert.New(t)
 	var (
-		originFile    = "test/foo.h"
-		goHelpersFile = "test/cgo_helpers.go"
-		chHelpersFile = "test/cgo_helpers.h"
-		ccHelpersFile = "test/cgo_helpers.c"
-		resultFile    = "test/foo.go"
+		originFile    = "testdata/foo.h"
+		goHelpersFile = "testdata/cgo_helpers.go"
+		chHelpersFile = "testdata/cgo_helpers.h"
+		ccHelpersFile = "testdata/cgo_helpers.c"
+		resultFile    = "testdata/foo.go"
 		//
 		goHelpersBuf = new(bytes.Buffer)
 		chHelpersBuf = new(bytes.Buffer)

@@ -9,7 +9,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	unit, err := ParseWith(NewConfig("test/parser_test.h"))
+	unit, err := ParseWith(NewConfig("testdata/parser_test.h"))
 	if err != nil {
 		t.Fatal(err)
 	} else if len(defines["LOL"]) == 0 {
@@ -19,7 +19,7 @@ func TestParse(t *testing.T) {
 }
 
 func testUnit(t *testing.T, u *cc.TranslationUnit) {
-	buf, err := ioutil.ReadFile("test/parser_test.out")
+	buf, err := ioutil.ReadFile("testdata/parser_test.out")
 	if err != nil {
 		t.Fatal(err)
 	} else if len(buf) == 0 {

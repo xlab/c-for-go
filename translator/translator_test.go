@@ -16,7 +16,7 @@ func init() {
 }
 
 func TestLearn(t *testing.T) {
-	cfg := parser.NewConfig("test/translator_test.h")
+	cfg := parser.NewConfig("testdata/translator_test.h")
 	cfg.IncludePaths = []string{"/usr/local/include", "/usr/include"}
 
 	unit, err := parser.ParseWith(cfg)
