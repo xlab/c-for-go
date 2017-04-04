@@ -95,6 +95,9 @@ func NewProcess(configPath, outputPath string) (*Process, error) {
 	if err != nil {
 		return nil, err
 	}
+	if *nostamp {
+		gen.DisableTimestamps()
+	}
 	c := &Process{
 		cfg:          cfg,
 		gen:          gen,

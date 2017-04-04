@@ -18,6 +18,11 @@ type Generator struct {
 	closeC, doneC chan struct{}
 	helpersChan   chan *Helper
 	rand          *rand.Rand
+	noTimestamps  bool
+}
+
+func (g *Generator) DisableTimestamps() {
+	g.noTimestamps = true
 }
 
 type TraitFlagGroup struct {

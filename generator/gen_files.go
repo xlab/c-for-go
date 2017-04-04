@@ -7,7 +7,11 @@ import (
 	"time"
 )
 
-func genLabel() string {
+func genLabel(noTimestamps bool) string {
+	if noTimestamps {
+		tpl := "WARNING: This file has automatically been generated \nby https://git.io/c-for-go. DO NOT EDIT."
+		return tpl
+	}
 	tpl := "WARNING: This file has automatically been generated on %s.\nBy https://git.io/c-for-go. DO NOT EDIT."
 	return fmt.Sprintf(tpl, time.Now().Format(time.RFC1123))
 }
@@ -19,7 +23,7 @@ func (gen *Generator) WriteDoc(wr io.Writer) bool {
 		writeSpace(wr, 1)
 		hasDoc = true
 	}
-	writeTextBlock(wr, genLabel())
+	writeTextBlock(wr, genLabel(gen.noTimestamps))
 	writeSpace(wr, 1)
 	if len(gen.cfg.PackageDescription) > 0 {
 		writeLongTextBlock(wr, gen.cfg.PackageDescription)
@@ -61,7 +65,7 @@ func hasLib(paths []string, lib string) bool {
 func (gen *Generator) writeGoHelpersHeader(wr io.Writer) {
 	writeTextBlock(wr, gen.cfg.PackageLicense)
 	writeSpace(wr, 1)
-	writeTextBlock(wr, genLabel())
+	writeTextBlock(wr, genLabel(gen.noTimestamps))
 	writeSpace(wr, 1)
 	writePackageName(wr, gen.pkg)
 	writeSpace(wr, 1)
@@ -73,7 +77,7 @@ func (gen *Generator) writeCHHelpersHeader(wr io.Writer) {
 		writeTextBlock(wr, gen.cfg.PackageLicense)
 		writeSpace(wr, 1)
 	}
-	writeTextBlock(wr, genLabel())
+	writeTextBlock(wr, genLabel(gen.noTimestamps))
 	writeSpace(wr, 1)
 	for _, path := range gen.cfg.SysIncludes {
 		writeSysInclude(wr, path)
@@ -91,7 +95,7 @@ func (gen *Generator) writeCCHelpersHeader(wr io.Writer) {
 		writeTextBlock(wr, gen.cfg.PackageLicense)
 		writeSpace(wr, 1)
 	}
-	writeTextBlock(wr, genLabel())
+	writeTextBlock(wr, genLabel(gen.noTimestamps))
 	writeSpace(wr, 1)
 	writeCGOIncludes(wr)
 	writeSpace(wr, 1)
@@ -118,7 +122,7 @@ func writeCStdIncludes(wr io.Writer, sysIncludes []string) {
 func (gen *Generator) WritePackageHeader(wr io.Writer) {
 	writeTextBlock(wr, gen.cfg.PackageLicense)
 	writeSpace(wr, 1)
-	writeTextBlock(wr, genLabel())
+	writeTextBlock(wr, genLabel(gen.noTimestamps))
 	writeSpace(wr, 1)
 	writePackageName(wr, gen.pkg)
 	writeSpace(wr, 1)
