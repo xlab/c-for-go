@@ -859,9 +859,7 @@ func (t *Translator) CGoSpec(spec CType, asArg bool) CGoSpec {
 			if cgo.Pointers > 0 {
 				cgo.Pointers--
 			}
-			// the latter case is a workaround for CGO bug (cannot handle void** typedefs)
-			// https://github.com/golang/go/issues/13830 :<
-			if len(typ.Raw) == 0 || asArg {
+			if len(typ.Raw) == 0 {
 				cgo.Base = "unsafe.Pointer"
 				return cgo
 			}
