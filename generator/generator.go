@@ -219,7 +219,17 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		writeSpace(wr, 1)
 		count++
 	}
-	for tag, decl := range gen.tr.TagMap() {
+
+	decls := []*tl.CDecl{}
+	for _, decl := range gen.tr.TagMap() {
+		decls = append(decls, decl)
+	}
+	sort.Slice(decls, func(i int, j int) bool {
+		return decls[i].Name < decls[j].Name
+	})
+
+	for _, decl := range decls {
+		tag := decl.Name
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
 			if seenStructTags[tag] {
