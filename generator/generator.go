@@ -225,16 +225,10 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		count++
 	}
 
-	decls := []*tl.CDecl{}
-	for _, decl := range gen.tr.TagMap() {
-		decls = append(decls, decl)
-	}
-	sort.Slice(decls, func(i int, j int) bool {
-		return decls[i].Name < decls[j].Name
-	})
-
-	for _, decl := range decls {
-		tag := decl.Name
+	tagDefs := sortedTagDefs(gen.tr.TagMap())
+	for _, def := range tagDefs {
+		decl := def.tagDecl
+		tag := def.tagName
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
 			if seenStructTags[tag] {
@@ -408,4 +402,23 @@ func (gen *Generator) MonitorAndWriteHelpers(goWr, chWr io.Writer, ccWr io.Write
 // randPostfix generates a simply random 4-byte postfix. Doesn't require a crypto package.
 func (gen *Generator) randPostfix() int32 {
 	return 0x0f000000 + gen.rand.Int31n(0x00ffffff)
+}
+
+type tagDef struct {
+	tagName string
+	tagDecl *tl.CDecl
+}
+
+func sortedTagDefs(m map[string]*tl.CDecl) []tagDef {
+	tagDefs := make([]tagDef, 0, len(m))
+	for tag, decl := range m {
+		tagDefs = append(tagDefs, tagDef{
+			tagName: tag,
+			tagDecl: decl,
+		})
+	}
+	sort.Slice(tagDefs, func(i, j int) bool {
+		return tagDefs[i].tagName < tagDefs[j].tagName
+	})
+	return tagDefs
 }
