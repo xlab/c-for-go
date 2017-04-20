@@ -508,7 +508,7 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 			if goSpec.Pointers == 0 {
 				ref = "&"
 			}
-			proxy = fmt.Sprintf("(*[0]byte)(unsafe.Pointer(%s%s)), cgoAllocsUnknown", ref, name)
+			proxy = fmt.Sprintf("*(**[0]byte)(unsafe.Pointer(%s%s)), cgoAllocsUnknown", ref, name)
 			return
 		} else if goSpec.Pointers == 0 {
 			ref = "&"
