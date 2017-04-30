@@ -84,7 +84,10 @@ func (spec *GoTypeSpec) PlainType() string {
 func (spec GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
 	buf.WriteString(slcs(spec.Slices))
-	buf.WriteString(arrs(spec.OuterArr))
+
+	if len(spec.Raw) == 0 {
+		buf.WriteString(arrs(spec.OuterArr))
+	}
 
 	var unsafePointer uint8
 	if spec.Base == "unsafe.Pointer" && len(spec.Raw) == 0 {
@@ -175,7 +178,11 @@ func (spec *CGoSpec) AtLevel(level uint8) string {
 			buf.WriteRune('*')
 			continue
 		}
-		fmt.Fprintf(buf, "[%d]", size)
+		if len(size.Str) > 0 {
+			fmt.Fprintf(buf, "[%s]", size.Str)
+		} else {
+			fmt.Fprintf(buf, "[%d]", size.N)
+		}
 	}
 	if int(level) > len(outerArrSizes) {
 		if delta := int(spec.Pointers) + len(outerArrSizes) - int(level); delta > 0 {
