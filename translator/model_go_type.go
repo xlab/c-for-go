@@ -84,10 +84,7 @@ func (spec *GoTypeSpec) PlainType() string {
 func (spec GoTypeSpec) String() string {
 	buf := new(bytes.Buffer)
 	buf.WriteString(slcs(spec.Slices))
-
-	if len(spec.Raw) == 0 {
-		buf.WriteString(arrs(spec.OuterArr))
-	}
+	buf.WriteString(arrs(spec.OuterArr))
 
 	var unsafePointer uint8
 	if spec.Base == "unsafe.Pointer" && len(spec.Raw) == 0 {

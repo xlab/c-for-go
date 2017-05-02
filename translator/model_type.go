@@ -81,11 +81,8 @@ func (c *CTypeSpec) SetRaw(x string) {
 }
 
 func (c *CTypeSpec) CGoName() (name string) {
-	if len(c.OuterArrays().Sizes()) == 0 {
-		// TODO: proper typedef chain resolve
-		if len(c.Raw) > 0 {
-			return c.Raw
-		}
+	if len(c.Raw) > 0 {
+		return c.Raw
 	}
 	switch c.Base {
 	case "int", "short", "long", "char":
