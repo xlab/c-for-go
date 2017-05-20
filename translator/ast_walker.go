@@ -398,6 +398,15 @@ func memberName(n int, m cc.Member) string {
 }
 
 func typedefNameOf(typ cc.Type) string {
+	// There is a bug in cc's parser that causes it to misidentify the type of
+	// a function pointer as its return type.
+	// (See https://github.com/cznic/cc/issues/100)
+	// To work around this bug, we first check if the type is a function and if
+	// so, verify it's declared via a typedef before proceeding to get the
+	// typedef's name.
+	if typ.Kind() == cc.Function && typ.Declarator().DirectDeclarator.Case != 0 {
+		return ""
+	}
 	rawSpec := typ.Declarator().RawSpecifier()
 	if name := rawSpec.TypedefName(); name > 0 {
 		return blessName(xc.Dict.S(name))
