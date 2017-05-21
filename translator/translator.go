@@ -863,6 +863,10 @@ func (t *Translator) CGoSpec(spec CType, asArg bool) CGoSpec {
 	if decl, ok := t.tagMap[spec.GetTag()]; ok {
 		// count in the pointers of the base type under typedef
 		cgo.Pointers = spec.GetPointers() - decl.Spec.GetPointers()
+		// all types with the same tag need to use the same spec for name
+		// generation or they can end up needing types or values that won't be
+		// generated
+		spec = decl.Spec
 	}
 	if typ, ok := spec.(*CTypeSpec); ok {
 		if typ.Base == "void" {
