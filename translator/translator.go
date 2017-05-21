@@ -820,6 +820,16 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 			} else {
 				wrapper.splitPointers(ptrTip, spec.GetPointers())
 			}
+
+			// use the tag's name since that's the type that will be generated
+			if len(decl.Name) > 0 {
+				wrapper.Raw = string(t.TransformName(TargetType, decl.Name))
+				return wrapper
+			}
+			if base := decl.Spec.GetBase(); len(base) > 0 {
+				wrapper.Raw = string(t.TransformName(TargetType, base))
+				return wrapper
+			}
 		default:
 			wrapper.splitPointers(ptrTip, spec.GetPointers())
 		}
