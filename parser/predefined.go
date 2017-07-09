@@ -19,8 +19,8 @@ const (
 var builtinBase = `
 #define __builtin_va_list void *
 #define __asm(x)
-#define __inline inline
-#define __inline__ inline
+#define __inline
+#define __inline__
 #define __signed
 #define __signed__
 #define __const const
