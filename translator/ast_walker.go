@@ -52,7 +52,7 @@ func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
 		for list != nil {
 			decl := t.declarator(list.InitDeclarator.Declarator)
 			init := list.InitDeclarator.Initializer
-			if init != nil {
+			if init != nil && init.Expression != nil {
 				decl.Value = init.Expression.Value
 				decl.Expression = blessName(init.Expression.Token.S())
 			}
