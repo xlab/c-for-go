@@ -26,6 +26,7 @@ var builtinBase = `
 #define __const const
 #define __extension__
 #define __attribute__(x)
+#define __attribute(x)
 #define __restrict
 #define __volatile__
 
