@@ -547,7 +547,7 @@ func (gen *Generator) packPlainSlice(buf io.Writer, base string, pointers uint8,
 	postfix := gen.randPostfix()
 	fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&v%s))\n", postfix, genIndices("i", level))
 	fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(ptr%d))\n", postfix, level)
-	fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
+	fmt.Fprintf(buf, "hx%2x.Cap = %s\n", postfix, gen.maxMem)
 	fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 }
 
@@ -581,10 +581,10 @@ func packArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, level ui
 	buf2.Linef("}\n")
 }
 
-func packSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, sizeConst string, level uint8) {
+func (gen *Generator) packSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec tl.CGoSpec, sizeConst string, level uint8) {
 	cgoSpecLevel := cgoSpec.AtLevel(level + 1)
 	if level == 0 {
-		fmt.Fprintln(buf1, "const m = 0x7fffffff")
+		fmt.Fprintf(buf1, "const m = %s\n", gen.maxMem)
 		fmt.Fprintln(buf1, "for i0 := range v {")
 		fmt.Fprintf(buf1, "ptr1 := (*(*[m/%s]%s)(unsafe.Pointer(ptr0)))[i0]\n", sizeConst, cgoSpecLevel)
 		buf2.Linef("}\n")
@@ -654,7 +654,7 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	}
 	for goSpec.Slices > 1 {
 		goSpec.Slices--
-		packSlice(buf1, buf2, cgoSpec, getSizeSpec(level+1), level)
+		gen.packSlice(buf1, buf2, cgoSpec, getSizeSpec(level+1), level)
 		level++
 	}
 	isSlice := goSpec.Slices > 0
@@ -667,7 +667,7 @@ func (gen *Generator) getPackHelper(memTip tl.Tip, goSpec tl.GoTypeSpec, cgoSpec
 	case isPlain:
 		packPlain(buf1, cgoSpec, goSpec.PlainType(), goSpec.Pointers, level)
 	case isSlice:
-		packSlice(buf1, buf2, cgoSpec, getSizeSpec(level+1), level)
+		gen.packSlice(buf1, buf2, cgoSpec, getSizeSpec(level+1), level)
 		goSpec.Slices = 0
 		if helper := gen.packObj(buf1, goSpec, cgoSpec, level+1); helper != nil {
 			h.Requires = append(h.Requires, helper)
@@ -775,7 +775,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		postfix := gen.randPostfix()
 		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
 		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
-		fmt.Fprintf(buf, "hx%2x.Cap = 0x7fffffff\n", postfix)
+		fmt.Fprintf(buf, "hx%2x.Cap = %s\n", postfix, gen.maxMem)
 		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 		proxy = buf.String()
 		return
@@ -836,8 +836,8 @@ func (gen *Generator) proxyRetToGo(memTip tl.Tip, varName, ptrName string,
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
 		specStr := ptrs(goSpec.Pointers) + goSpec.PlainType()
-		proxy = fmt.Sprintf("%s := (*(*[0x7fffffff]%s)(unsafe.Pointer(%s)))[:0]",
-			varName, specStr, ptrName)
+		proxy = fmt.Sprintf("%s := (*(*[%s]%s)(unsafe.Pointer(%s)))[:0]",
+			varName, gen.maxMem, specStr, ptrName)
 		return
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&

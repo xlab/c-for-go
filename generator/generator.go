@@ -19,6 +19,7 @@ type Generator struct {
 	helpersChan   chan *Helper
 	rand          *rand.Rand
 	noTimestamps  bool
+	maxMem        MemSpec
 }
 
 func (g *Generator) DisableTimestamps() {
@@ -62,6 +63,7 @@ func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
 		closeC:      make(chan struct{}),
 		doneC:       make(chan struct{}),
 		rand:        rand.New(rand.NewSource(+79269965690)),
+		maxMem:      MemSpecDefault,
 	}
 	return gen, nil
 }
@@ -421,4 +423,53 @@ func sortedTagDefs(m map[string]*tl.CDecl) []tagDef {
 		return tagDefs[i].tagName < tagDefs[j].tagName
 	})
 	return tagDefs
+}
+
+func NewMemSpec(spec string) MemSpec {
+	switch s := MemSpec(spec); s {
+	case MemSpec1,
+		MemSpec2,
+		MemSpec3,
+		MemSpec4,
+		MemSpec5,
+		MemSpec6,
+		MemSpec7,
+		MemSpec8,
+		MemSpec9,
+		MemSpecA,
+		MemSpecB,
+		MemSpecC,
+		MemSpecD,
+		MemSpecE,
+		MemSpecF:
+		return s
+	default:
+		return MemSpecDefault
+	}
+}
+
+type MemSpec string
+
+const (
+	MemSpec1 MemSpec = "0x1fffffff"
+	MemSpec2 MemSpec = "0x2fffffff"
+	MemSpec3 MemSpec = "0x3fffffff"
+	MemSpec4 MemSpec = "0x4fffffff"
+	MemSpec5 MemSpec = "0x5fffffff"
+	MemSpec6 MemSpec = "0x6fffffff"
+	MemSpec7 MemSpec = "0x7fffffff"
+	MemSpec8 MemSpec = "0x8fffffff"
+	MemSpec9 MemSpec = "0x9fffffff"
+	MemSpecA MemSpec = "0xafffffff"
+	MemSpecB MemSpec = "0xbfffffff"
+	MemSpecC MemSpec = "0xcfffffff"
+	MemSpecD MemSpec = "0xdfffffff"
+	MemSpecE MemSpec = "0xefffffff"
+	MemSpecF MemSpec = "0xffffffff"
+
+	MemSpecDefault MemSpec = "0x7fffffff"
+)
+
+func (g *Generator) SetMaxMemory(spec MemSpec) {
+	g.maxMem = spec
 }
