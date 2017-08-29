@@ -254,7 +254,7 @@ p {
 }
 
 a {
-    color: #dc2430;
+    color: #3085B8;
     text-decoration: none;
     cursor: pointer
 }
@@ -776,11 +776,11 @@ select:focus:-moz-focusring {
 
 .button-unstyled {
     padding: 0;
-    color: #dc2430
+    color: #3085B8
 }
 
 .button-unstyled:hover {
-    color: #dc2430
+    color: #3085B8
 }
 
 .button-neutral {
@@ -872,13 +872,13 @@ select:focus:-moz-focusring {
 }
 
 .button-outlined {
-    border-color: #dc2430;
-    color: #dc2430
+    border-color: #3085B8;
+    color: #3085B8
 }
 
 .button-outlined:hover {
-    border-color: #dc2430;
-    color: #dc2430
+    border-color: #3085B8;
+    color: #3085B8
 }
 
 .button-outlined:disabled {
@@ -1207,13 +1207,13 @@ figure figcaption {
 .message {
     position: relative;
     
-    background: #dc2430;
-    background: -moz-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -webkit-gradient(left bottom, right top, color-stop(0%, #dc2430), color-stop(100%, #7b4397));
-    background: -webkit-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -o-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -ms-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
+    background: #3085B8;
+    background: -moz-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -webkit-gradient(left bottom, right top, color-stop(0%, #3085B8), color-stop(100%, #7b4397));
+    background: -webkit-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -o-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -ms-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
 
     color: white;
     margin: 20px 0 0 0;
@@ -2352,7 +2352,7 @@ body {
 }
 
 h1.fancy {
-     color: #dc2430;
+     color: #3085B8;
 }
 
 a.silent {
@@ -2366,8 +2366,8 @@ a.silent:hover {
 }
 
 .banner-text .button {
-    color: #dc2430;
-    border: 2px solid #dc2430;
+    color: #3085B8;
+    border: 2px solid #3085B8;
     background: #FFF
 }
 
@@ -2396,13 +2396,13 @@ a.silent:hover {
 }
 
 .ribbon {
-    background: #dc2430;
-    background: -moz-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -webkit-gradient(left bottom, right top, color-stop(0%, #dc2430), color-stop(100%, #7b4397));
-    background: -webkit-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -o-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -ms-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
+    background: #3085B8;
+    background: -moz-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -webkit-gradient(left bottom, right top, color-stop(0%, #3085B8), color-stop(100%, #7b4397));
+    background: -webkit-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -o-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -ms-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
 
     padding: 60px 0;
     margin-top: 120px
@@ -2733,13 +2733,13 @@ a.silent:hover {
 
 
 #demo {
-    background: #dc2430;
-    background: -moz-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -webkit-gradient(left bottom, right top, color-stop(0%, #dc2430), color-stop(100%, #7b4397));
-    background: -webkit-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -o-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: -ms-linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
-    background: linear-gradient(45deg, #dc2430 0%, #7b4397 100%);
+    background: #3085B8;
+    background: -moz-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -webkit-gradient(left bottom, right top, color-stop(0%, #3085B8), color-stop(100%, #7b4397));
+    background: -webkit-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -o-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: -ms-linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
+    background: linear-gradient(45deg, #3085B8 0%, #7b4397 100%);
 
     color: white;
     margin: 20px 0 0 0;
