@@ -1934,30 +1934,6 @@ header .button {
     margin: 30px 0
 }
 
-footer[role='contentinfo'] {
-    padding: 30px 0;
-    border-top: 1px solid #f2f4f6;
-    color: #828c8f;
-    text-align: center
-}
-
-footer[role='contentinfo'] li:not(:last-of-type):after {
-    content: '\2219';
-    margin: 0 5px 0 10px
-}
-
-footer[role='contentinfo'] p {
-    margin-bottom: 0
-}
-
-footer[role='contentinfo'] .logo {
-    margin-top: 30px;
-    display: inline-block;
-    width: 17px;
-    height: 20px;
-    background: url("logo.png") no-repeat 0 0
-}
-
 section {
     padding: 30px 0
 }
@@ -2279,12 +2255,12 @@ body {
 
 .navbar-brand {
     background-image: url("logo.png");
-    width: 133px;
-    min-width: 133px;
-    max-width: 133px;
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
+    width: 13rem;
+    min-width: 13rem;
+    max-width: 13rem;
+    height: 2.4rem;
+    min-height: 2.4rem;
+    max-height: 2.4rem;
     background-size: 133px;
     background-repeat: no-repeat;
     background-position: center center;
@@ -2329,6 +2305,7 @@ body {
 }
 
 .navbar.navbar-homepage .button {
+    margin-top: 0.6rem;
     padding: 0 10px;
     text-transform: uppercase;
     font-size: 14px;
@@ -2815,7 +2792,7 @@ a.silent:hover {
 }
 
 #demo .terminal .window-body {
-    height: 400px;
+    height: 340px;
     max-width: 600px;
     margin: 0 auto;
     overflow: hidden
@@ -2830,6 +2807,10 @@ a.silent:hover {
 
 #demo .terminal code .blue {
     color: #268bd2
+}
+
+#demo .terminal code .red {
+    color: #D0021B
 }
 
 #demo .terminal code .cyan {

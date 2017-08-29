@@ -2,17 +2,17 @@
 <html lang="en">
 
 <head>
-    <title>cgogen (golang)</title>
+    <title>c-for-go (golang)</title>
     <base href="/">
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     <meta content="ie=edge" http-equiv="x-ua-compatible" />
-    <link href="/static/favicon.ico" rel="icon" type="image/x-icon" />
+    <link href="static/favicon.ico" rel="icon" type="image/x-icon" />
     <meta name="Description" content="Automatic CGo Bindings Generator for Golang." />
     <link href="//fonts.googleapis.com/css?family=Roboto:400,300" rel="stylesheet" type="text/css">
     <link href="//fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet" type="text/css">
     <link href="//cdnjs.cloudflare.com/ajax/libs/octicons/3.3.0/octicons.css" rel="stylesheet">
-    <link href="/static/styles.css" rel="stylesheet">
+    <link href="static/styles.css" rel="stylesheet">
 </head>
 
 <body>
@@ -21,20 +21,20 @@
             <a href="/" class="navbar-brand"></a>
             <ul class="navbar-nav navbar-right">
                 <li><a href="/enterprise" class="button button-outlined">For Enterprise</a></li>
-                <li><a href="https://github.com/xlab/cgogen/wiki/Examples" class="button button-outlined-neutral">Examples</a></li>
+                <li><a href="https://github.com/xlab/c-for-go/wiki/Examples" class="button button-outlined-neutral">Examples</a></li>
                 <li><a href="/about" class="button button-outlined-neutral">About</a></li>
             </ul>
         </div>
     </div>
     <div class="banner">
         <div class="banner-text container">
-            <img src="/static/gophersengine.png" width="250"/>
+            <img src="static/gophersengine.png" width="250"/>
             <h6>1000+ gopher-hours saved<span class="note">*</span></h6>
             <h1>Automatic Go Bindings Generator</h1>
             <p>Here comes a quick and free way to incorporate any C library into your project by leveraging the <a href="https://golang.org/cmd/cgo/">cgo mechanism</a> of Golang.</p>
             <div class="banner-actions">
-                <a href="https://github.com/xlab/cgogen" class="button"><span class="octicon octicon-mark-github"></span>Source</a>
-                <a href="https://github.com/xlab/cgogen/wiki" class="button">Documentation</a>
+                <a href="https://github.com/xlab/c-for-go" class="button"><span class="octicon octicon-mark-github"></span>Source</a>
+                <a href="https://github.com/xlab/c-for-go/wiki" class="button">Documentation</a>
             </div>
             
         </div>
@@ -54,27 +54,24 @@
 
 <span class="t1"><span class="prompt">$</span> </span>
 <span class="t2">cloc vorbis/</span>
-<span class="t3"><br>---------------------------------------------------------</span>
-<span class="t3"><br>Language&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;code</span>
-<span class="t3"><br>---------------------------------------------------------</span>
-<span class="t3"><br>C/C++ Header&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;497&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;578</span>
-<span class="t3"><br>---------------------------------------------------------</span>
+<span class="t3"><br>Language&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blank&nbsp;&nbsp;&nbsp;&nbsp;comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;code</span>
+<span class="t3"><br>C/C++ Header&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;497&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;578</span>
+<span class="t3"><br></span>
 
 <span class="t4"><br><span class="prompt">$</span> </span>
-<span class="t5">cgogen vorbis.yml</span>
-<span class="t6"><br><span class="blue">processing vorbis.yml</span>...</span>
+<span class="t5">c-for-go vorbis.yml</span>
+<span class="t6"><br><span class="red">processing vorbis.yml</span>...</span>
 <span class="t7"> done in 304.657793ms</span>
+<span class="t7"><br></span>
 
 <span class="t8"><br><span class="prompt">$</span> </span>
 <span class="t9">cloc vorbis/</span>
-<span class="t10"><br>---------------------------------------------------------</span>
-<span class="t10"><br>Language&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;code</span>
-<span class="t10"><br>---------------------------------------------------------</span>
+<span class="t10"><br>Language&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;blank&nbsp;&nbsp;&nbsp;&nbsp;comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;code</span>
 
-<span class="t10"><br><span class="blue">Go&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;315&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;288&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1780</span></span>
+<span class="t10"><br><span class="red">Go&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;315&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;288&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1780</span></span>
 
-<span class="t10"><br>C/C++ Header&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;497&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;578</span>
-<span class="t10"><br>---------------------------------------------------------</span>
+<span class="t10"><br>C/C++ Header&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;497&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;578</span>
+<span class="t10"><br></span>
 
 <span class="t11"><br><span class="prompt">$</span> </span>
                         </span>
@@ -93,7 +90,7 @@
             <div class="view-config">
                 <script src="https://gist.github.com/xlab/8205e84fb954239de14b3a55604c1ec9.js"></script>
             </div>
-            <p>Read more about generator preferences in <a href="https://github.com/xlab/cgogen/wiki/Generator-config-section">generator config section docs</a>.</p>
+            <p>Read more about generator preferences in <a href="https://github.com/xlab/c-for-go/wiki/Generator-config-section">generator config section docs</a>.</p>
         </div>
     </div>
     <div class="feature">
@@ -105,7 +102,7 @@
             <div class="view-config">
                 <script src="https://gist.github.com/xlab/33add37c4ae01c72fa26124f0a1fd466.js"></script>
             </div>
-            <p>Read more about parser preferences in <a href="https://github.com/xlab/cgogen/wiki/Parser-config-section">parser config section docs</a>.</p>
+            <p>Read more about parser preferences in <a href="https://github.com/xlab/c-for-go/wiki/Parser-config-section">parser config section docs</a>.</p>
         </div>
     </div>
     <div class="feature">
@@ -117,13 +114,13 @@
             <div class="view-config">
                 <script src="https://gist.github.com/xlab/2d94734aec371787e92ef7182b899c63.js"></script>
             </div>
-            <p>Read more about translator preferences in <a href="https://github.com/xlab/cgogen/wiki/Translator-config-section">translator config section docs</a>.</p>
+            <p>Read more about translator preferences in <a href="https://github.com/xlab/c-for-go/wiki/Translator-config-section">translator config section docs</a>.</p>
         </div>
     </div>
     <div class="feature">
         <div class="container">
             <h2>Done! 🎉</h2>
-            <pre>$ cgogen vorbis.yml</pre>
+            <pre>$ c-for-go vorbis.yml</pre>
             <br />
             <p>
                 We just automatically created <a href="https://github.com/xlab/vorbis-go/tree/master/vorbis">vorbis</a> package with cross-referenced
@@ -133,14 +130,14 @@
     </div>
     <div class="container">
         <h6 class="banner-text note">
-            * calculated as sum of Golang LOC in <a class="silent" href="https://github.com/xlab/cgogen/wiki/Examples">any known generated package</a>, divided into bug-free chunks of 300 LOC, a normal developer would write in a single working day (10 hours). This metric will be replaced soon with something more sophisticated. Suggestions are welcome.
+            * calculated as sum of Golang LOC in <a class="silent" href="https://github.com/xlab/c-for-go/wiki/Examples">any known generated package</a>, divided into bug-free chunks of 300 LOC, a normal developer would write in a single working day (10 hours). This metric will be replaced soon with something more sophisticated. Suggestions are welcome.
         </h6>
     </div>
     <div class="ribbon">
         <div class="container cf">
-            <a class="button button-outlined" href="https://github.com/xlab/cgogen"><span class="octicon octicon-mark-github"></span> Source Code</a>
+            <a class="button button-outlined" href="https://github.com/xlab/c-for-go"><span class="octicon octicon-mark-github"></span> Source Code</a>
             <span class="separator">and</span>
-            <a class="button button-outlined" href="https://github.com/xlab/cgogen/wiki">Documentation</a>
+            <a class="button button-outlined" href="https://github.com/xlab/c-for-go/wiki">Documentation</a>
         </div>
     </div>
     <div class="footer">

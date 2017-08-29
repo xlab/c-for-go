@@ -1,4 +1,5 @@
-# cgogen
-Automatic CGo Bindings Generator for Golang
+# c-for-go
 
-https://cgogen.com
+Project Webpage:
+
+https://sphere.software/c-for-go
