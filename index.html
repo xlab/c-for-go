@@ -81,7 +81,7 @@
     </section>
     <div class="feature">
         <div class="container">
-            <h2>Fill the <em>generator</em> preferences</h2>
+            <h2>Fill the <strong>generator</strong> preferences</h2>
             <p>
                 Start by creating an YAML manifest file like <a href="https://github.com/xlab/vorbis-go/blob/master/vorbis.yml">vorbis.yml</a> for the C library you want to use: this includes specifying the resulting package name, description, license and options respected by cgo.
             </p>
@@ -93,7 +93,7 @@
     </div>
     <div class="feature">
         <div class="container">
-            <h2>Add the <em>parser</em> preferences</h2>
+            <h2>Add the <strong>parser</strong> preferences</h2>
             <p>
                 Add a section specifying C header parsing parameters, usually you won’t need too much here, just write down the list of import paths and the list of header files, all the includes will be resolved automatically.
             </p>
@@ -105,7 +105,7 @@
     </div>
     <div class="feature">
         <div class="container">
-            <h2>Add the <em>translator</em> preferences.. at last</h2>
+            <h2>Add the <strong>translator</strong> preferences.. at last</h2>
             <p>
                 This is the section where all the magic happens. In short, here go all the name translation options, type hints for structs and functions, matching rules based on regular expressions. Despite looking simple for small libraries, this section assembles a powerful binding engine for large projects like <a href="https://github.com/xlab/pocketsphinx-go/blob/master/pocketsphinx.yml">CMU PocketSphinx</a> or <a href="https://github.com/vulkan-go/vulkan/blob/master/vulkan.yml">Vulkan Graphics API</a>.
             </p>
