@@ -41,7 +41,6 @@ A simple [Makefile template](https://github.com/xlab/c-for-go/wiki/Makefile-temp
 * https://github.com/zenhotels/lmdb-go
 * https://github.com/zenhotels/libpostal-go
 * https://github.com/xlab/hamlib-go
-* https://github.com/golang-ui/yoga
 * ...
 * [Request yours](https://sphere.software/c-for-go/enterprise.html)
 
