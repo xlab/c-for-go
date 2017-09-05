@@ -188,7 +188,8 @@ func (gen *Generator) getPassRefSource(goStructName []byte, cStructName string, 
 
 	fmt.Fprintf(buf, "mem%2x := %s(1)\n", crc, h.Name)
 	fmt.Fprintf(buf, "ref%2x := (*%s)(mem%2x)\n", crc, cgoSpec.Base, crc)
-	fmt.Fprintf(buf, "allocs%2x := new(cgoAllocMap)", crc)
+	fmt.Fprintf(buf, "allocs%2x := new(cgoAllocMap)\n", crc)
+	fmt.Fprintf(buf, "allocs%2x.Add(mem%2x)\n", crc, crc)
 
 	writeSpace(buf, 1)
 

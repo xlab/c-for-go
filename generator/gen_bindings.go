@@ -176,7 +176,9 @@ func (gen *Generator) unpackObj(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.
 		return helper
 	}
 	if goSpec.Pointers == 0 {
-		fmt.Fprintf(buf, "v%d[i%d], _ = x%s.PassValue()\n", uplevel, uplevel, indices)
+		fmt.Fprintf(buf, "allocs%d := new(cgoAllocMap)\n", uplevel)
+		fmt.Fprintf(buf, "v%d[i%d], allocs%d = x%s.PassValue()\n", uplevel, uplevel, uplevel, indices)
+		fmt.Fprintf(buf, "allocs.Borrow(allocs%d)\n", uplevel)
 		return nil
 	}
 	fmt.Fprintf(buf, "v%d[i%d], _ = x%s.PassRef()\n", uplevel, uplevel, indices)
