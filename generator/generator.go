@@ -267,7 +267,12 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 
 func (gen *Generator) WriteDeclares(wr io.Writer) int {
 	var count int
-	for _, decl := range gen.tr.Declares() {
+	declares := gen.tr.Declares()
+	seenStructs := make(map[string]bool, len(declares))
+	seenUnions := make(map[string]bool, len(declares))
+	seenEnums := make(map[string]bool, len(declares))
+	seenFunctions := make(map[string]bool, len(declares))
+	for _, decl := range declares {
 		const public = true
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
@@ -275,6 +280,10 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 				continue
 			} else if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
+			} else if seenStructs[decl.Name] {
+				continue
+			} else {
+				seenStructs[decl.Name] = true
 			}
 			gen.writeStructDeclaration(wr, decl, tl.NoTip, tl.NoTip, public)
 		case tl.UnionKind:
@@ -282,18 +291,30 @@ func (gen *Generator) WriteDeclares(wr io.Writer) int {
 				continue
 			} else if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 				continue
+			} else if seenUnions[decl.Name] {
+				continue
+			} else {
+				seenUnions[decl.Name] = true
 			}
 			gen.writeUnionDeclaration(wr, decl, tl.NoTip, tl.NoTip, public)
 		case tl.EnumKind:
 			if !decl.Spec.IsComplete() {
 				if !gen.tr.IsAcceptableName(tl.TargetPublic, decl.Name) {
 					continue
+				} else if seenEnums[decl.Name] {
+					continue
+				} else {
+					seenEnums[decl.Name] = true
 				}
 				gen.writeEnumDeclaration(wr, decl, tl.NoTip, tl.NoTip, public)
 			}
 		case tl.FunctionKind:
 			if !gen.tr.IsAcceptableName(tl.TargetFunction, decl.Name) {
 				continue
+			} else if seenFunctions[decl.Name] {
+				continue
+			} else {
+				seenFunctions[decl.Name] = true
 			}
 			// defaults to ref for the returns
 			ptrTip := tl.TipPtrRef
