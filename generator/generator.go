@@ -186,14 +186,25 @@ func (gen *Generator) MemTipOf(decl *tl.CDecl) tl.Tip {
 
 func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 	var count int
-	seenStructTags := make(map[string]bool)
-	seenUnionTags := make(map[string]bool)
-	for _, decl := range gen.tr.Typedefs() {
+	typedefs := gen.tr.Typedefs()
+	seenStructTags := make(map[string]bool, len(typedefs))
+	seenUnionTags := make(map[string]bool, len(typedefs))
+	seenTypeNames := make(map[string]bool, len(typedefs))
+	seenStructNames := make(map[string]bool, len(typedefs))
+	seenUnionNames := make(map[string]bool, len(typedefs))
+	seenFunctionNames := make(map[string]bool, len(typedefs))
+	for _, decl := range typedefs {
 		if !gen.tr.IsAcceptableName(tl.TargetType, decl.Name) {
 			continue
 		}
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
+			if len(decl.Name) > 0 {
+				if seenStructNames[decl.Name] {
+					continue
+				}
+				seenStructNames[decl.Name] = true
+			}
 			if tag := decl.Spec.GetTag(); len(tag) > 0 {
 				if len(decl.Name) == 0 || decl.Name == tag {
 					if seenStructTags[tag] {
@@ -205,6 +216,12 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 			memTip := gen.MemTipOf(decl)
 			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw)
 		case tl.UnionKind:
+			if len(decl.Name) > 0 {
+				if seenUnionNames[decl.Name] {
+					continue
+				}
+				seenUnionNames[decl.Name] = true
+			}
 			if tag := decl.Spec.GetTag(); len(tag) > 0 {
 				if len(decl.Name) == 0 || decl.Name == tag {
 					if seenUnionTags[tag] {
@@ -219,8 +236,16 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 				gen.writeEnumTypedef(wr, decl)
 			}
 		case tl.TypeKind:
+			if seenTypeNames[decl.Name] {
+				continue
+			}
+			seenTypeNames[decl.Name] = true
 			gen.writeTypeTypedef(wr, decl)
 		case tl.FunctionKind:
+			if seenFunctionNames[decl.Name] {
+				continue
+			}
+			seenFunctionNames[decl.Name] = true
 			gen.writeFunctionTypedef(wr, decl)
 		}
 		writeSpace(wr, 1)
