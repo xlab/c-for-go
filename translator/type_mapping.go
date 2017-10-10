@@ -17,6 +17,7 @@ var (
 	Uint64Spec        = GoTypeSpec{Base: "int", Bits: 64, Unsigned: true}
 	RuneSpec          = GoTypeSpec{Base: "rune"}
 	ByteSpec          = GoTypeSpec{Base: "byte"}
+	UByteSpec         = GoTypeSpec{Base: "byte", Unsigned: true}
 	StringSpec        = GoTypeSpec{Base: "string"}
 	UStringSpec       = GoTypeSpec{Base: "string", Unsigned: true}
 	Float32Spec       = GoTypeSpec{Base: "float", Bits: 32}
@@ -35,8 +36,8 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "char"}: ByteSpec,
 	// const char* -> string
 	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
-	// unsigned char -> byte
-	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
+	// unsigned char -> unsigned byte
+	CTypeSpec{Base: "char", Unsigned: true}: UByteSpec,
 	// const unsigned char* -> string
 	CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}: UStringSpec,
 	// short -> int16
