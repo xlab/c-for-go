@@ -37,7 +37,7 @@ var builtinCTypeMap = CTypeMap{
 	// const char* -> string
 	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
 	// unsigned char -> unsigned byte
-	CTypeSpec{Base: "char", Unsigned: true}: UByteSpec,
+	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
 	// const unsigned char* -> string
 	CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}: UStringSpec,
 	// short -> int16
