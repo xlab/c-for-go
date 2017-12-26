@@ -15,6 +15,9 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 			continue
 		}
 		name := gen.tr.TransformName(tl.TargetConst, decl.Name)
+		if decl.Value == nil && string(name) == decl.Expression {
+			continue
+		}
 		fmt.Fprintf(wr, "// %s as defined in %s\n", name,
 			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 
@@ -34,6 +37,9 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 
 func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 	declName := gen.tr.TransformName(tl.TargetConst, decl.Name)
+	if decl.Value == nil && string(declName) == decl.Expression {
+		return
+	}
 	fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
 		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
