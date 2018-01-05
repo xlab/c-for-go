@@ -276,7 +276,13 @@ func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 			spec.AddOuterArr(uint64(size))
 		}
 	}
+	var isVoidPtr bool
 	for typ.Kind() == cc.Ptr {
+		if next := typ.Element(); next.Kind() == cc.Void {
+			isVoidPtr = true
+			spec.Base = "void*"
+			break
+		}
 		typ = typ.Element()
 		spec.Pointers++
 	}
@@ -286,6 +292,9 @@ func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 		if size >= 0 {
 			spec.AddInnerArr(uint64(size))
 		}
+	}
+	if isVoidPtr {
+		return spec
 	}
 
 	switch typ.Kind() {

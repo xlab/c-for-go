@@ -87,6 +87,8 @@ var builtinCTypeMap = CTypeMap{
 	// long complex double -> complex128
 	CTypeSpec{Base: "double", Long: true, Complex: true}: Complex128Spec,
 	// void* -> unsafe.Pointer
+	CTypeSpec{Base: "void*"}: UnsafePointerSpec,
+	// void* -> unsafe.Pointer
 	CTypeSpec{Base: "void", Pointers: 1}: UnsafePointerSpec,
 	// void -> [0]byte
 	CTypeSpec{Base: "void"}: VoidSpec,

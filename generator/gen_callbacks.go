@@ -159,7 +159,7 @@ func (gen *Generator) writeCallbackProxyFunc(wr io.Writer, decl *tl.CDecl) {
 	var returnRef string
 	funcSpec := decl.Spec.(*tl.CFunctionSpec)
 	if funcSpec.Return != nil {
-		cgoSpec := gen.tr.CGoSpec(funcSpec.Return, true) // asArg?
+		cgoSpec := gen.tr.CGoSpec(funcSpec.Return, false)
 		returnRef = cgoSpec.String()
 	}
 	fmt.Fprintf(wr, "func %s", decl.Name)

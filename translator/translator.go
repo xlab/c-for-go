@@ -855,13 +855,12 @@ func (t *Translator) CGoSpec(spec CType, asArg bool) CGoSpec {
 		cgo.Pointers = spec.GetPointers() - decl.Spec.GetPointers()
 	}
 	if typ, ok := spec.(*CTypeSpec); ok {
-		if typ.Base == "void" {
-			if cgo.Pointers > 0 {
-				cgo.Pointers--
-			}
+		if typ.Base == "void*" {
 			if len(typ.Raw) == 0 {
 				cgo.Base = "unsafe.Pointer"
 				return cgo
+			} else if !asArg {
+				cgo.Pointers++
 			}
 		}
 	}

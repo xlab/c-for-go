@@ -990,7 +990,7 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 			ptrTip = tl.TipPtrRef
 		}
 		goSpec := gen.tr.TranslateSpec((*spec).Return, ptrTip, typeTip)
-		cgoSpec := gen.tr.CGoSpec((*spec).Return, true) // asArg?
+		cgoSpec := gen.tr.CGoSpec((*spec).Return, false)
 
 		retProxy, nillable := gen.proxyRetToGo(memTipRx.Self(), "__v", "__ret", goSpec, cgoSpec)
 		if nillable {
