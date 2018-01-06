@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/cznic/xc"
@@ -58,6 +59,19 @@ func replaceBytes(buf []byte, idx []int, piece []byte) []byte {
 }
 
 var srcReferenceRx = regexp.MustCompile(`(?P<path>[^;]+);(?P<file>[^;]+);(?P<line>[^;]+);(?P<name>[^;]+);(?P<goname>[^;]+);`)
+
+func (t *Translator) IsTokenIgnored(p token.Pos) bool {
+	if len(t.ignoredFiles) == 0 {
+		return false
+	}
+	pos := xc.FileSet.Position(p)
+	for suffix := range t.ignoredFiles {
+		if strings.HasSuffix(pos.Filename, suffix) {
+			return true
+		}
+	}
+	return false
+}
 
 func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Pos) string {
 	pos := xc.FileSet.Position(p)

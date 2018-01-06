@@ -17,6 +17,7 @@ type Config struct {
 	Arch         string   `yaml:"Arch"`
 	IncludePaths []string `yaml:"IncludePaths"`
 	SourcesPaths []string `yaml:"SourcesPaths"`
+	IgnoredPaths []string `yaml:"IgnoredPaths"`
 
 	Defines map[string]interface{} `yaml:"Defines"`
 

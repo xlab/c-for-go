@@ -21,6 +21,7 @@ type Translator struct {
 	constRules         ConstRules
 	typemap            CTypeMap
 	fileScope          *cc.Bindings
+	ignoredFiles       map[string]struct{}
 
 	valueMap map[string]Value
 	exprMap  map[string]string
@@ -82,6 +83,8 @@ type Config struct {
 	TypeTips   TypeTips   `yaml:"TypeTips"`
 	MemTips    MemTips    `yaml:"MemTips"`
 	Typemap    CTypeMap   `yaml:"Typemap"`
+
+	IgnoredFiles []string `yaml:"-"`
 }
 
 func New(cfg *Config) (*Translator, error) {
@@ -100,10 +103,14 @@ func New(cfg *Config) (*Translator, error) {
 		tagMap:             make(map[string]*CDecl),
 		typedefsSet:        make(map[string]struct{}),
 		typedefKinds:       make(map[string]CTypeKind),
+		ignoredFiles:       make(map[string]struct{}),
 		transformCache:     &NameTransformCache{},
 		ptrTipCache:        &TipCache{},
 		typeTipCache:       &TipCache{},
 		memTipCache:        &TipCache{},
+	}
+	for _, p := range cfg.IgnoredFiles {
+		t.ignoredFiles[p] = struct{}{}
 	}
 	for _, action := range ruleActions {
 		if rxMap, err := getRuleActionRxs(t.rules, action); err != nil {
@@ -295,6 +302,9 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 	// traverse declared constants because macro can reference them,
 	// so we need to collect a map of valid references beforehand
 	for _, decl := range declares {
+		if t.IsTokenIgnored(decl.Pos) {
+			continue
+		}
 		if decl.Spec.Kind() == EnumKind {
 			enumMembers := decl.Spec.(*CEnumSpec).Members
 			for _, member := range enumMembers {
@@ -309,7 +319,9 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 	// double traverse because macros can depend on each other and the map
 	// brings a randomized order of them.
 	for _, macro := range defines {
-		if macro.IsFnLike {
+		if t.IsTokenIgnored(macro.DefTok.Pos()) {
+			continue
+		} else if macro.IsFnLike {
 			continue
 		}
 		name := string(macro.DefTok.S())
@@ -320,6 +332,9 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 	}
 
 	for _, macro := range defines {
+		if t.IsTokenIgnored(macro.DefTok.Pos()) {
+			continue
+		}
 		name := string(macro.DefTok.S())
 		if _, ok := seen[name]; !ok {
 			continue
@@ -443,6 +458,9 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 
 func (t *Translator) resolveTypedefs(typedefs []*CDecl) {
 	for _, decl := range typedefs {
+		if t.IsTokenIgnored(decl.Pos) {
+			continue
+		}
 		if decl.Spec.Kind() != TypeKind {
 			t.typedefKinds[decl.Name] = decl.Spec.Kind()
 			continue

@@ -82,6 +82,10 @@ func NewProcess(configPath, outputPath string) (*Process, error) {
 		return nil, err
 	}
 
+	if cfg.Translator == nil {
+		cfg.Translator = &translator.Config{}
+	}
+	cfg.Translator.IgnoredFiles = cfg.Parser.IgnoredPaths
 	// learn the model
 	tl, err := translator.New(cfg.Translator)
 	if err != nil {

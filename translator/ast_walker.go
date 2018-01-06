@@ -18,6 +18,9 @@ func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
 }
 
 func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
+	if t.IsTokenIgnored(d.Pos()) {
+		return
+	}
 	switch d.Case {
 	case 0: // FunctionDefinition
 		var decl *CDecl
@@ -47,6 +50,9 @@ func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
 }
 
 func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
+	if t.IsTokenIgnored(d.Pos()) {
+		return
+	}
 	if d.InitDeclaratorListOpt != nil {
 		list := d.InitDeclaratorListOpt.InitDeclaratorList
 		for list != nil {
