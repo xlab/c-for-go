@@ -50,7 +50,7 @@ var basePredefines = `
 #define __STDC_VERSION__ 199901L
 #define __STDC__ 1
 #define __GNUC__ 4
-#define __GNUC_PREREQ(x,y) 0
+#define __GNUC_PREREQ(maj,min) 0
 #define __POSIX_C_DEPRECATED(ver)
 
 #define __FLT_MIN__ 0
