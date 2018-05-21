@@ -42,7 +42,7 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 	buf := new(bytes.Buffer)
 	retSpec := "void"
 	if funcSpec.Return != nil {
-		retSpec = funcSpec.Return.String()
+		retSpec = gen.tr.NormalizeSpecPointers(funcSpec.Return).String()
 	}
 	fmt.Fprintf(buf, "%s %s(%s);", retSpec, cbCName, paramList)
 	helpers = append(helpers, &Helper{
