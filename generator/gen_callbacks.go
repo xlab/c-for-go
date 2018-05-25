@@ -269,7 +269,7 @@ func (gen *Generator) proxyCallbackArgToGo(memTip tl.Tip, varName, ptrName strin
 		postfix := gen.randPostfix()
 		fmt.Fprintf(buf, "var %s %s\n", varName, goSpec)
 		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
-		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
+		fmt.Fprintf(buf, "hx%2x.Data = unsafe.Pointer(%s)\n", postfix, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = %s\n", postfix, gen.maxMem)
 		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 		proxy = buf.String()
