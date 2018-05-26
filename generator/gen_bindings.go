@@ -162,7 +162,7 @@ func unpackPlain(buf io.Writer, goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec, level 
 func unpackPlainSlice(buf io.Writer, cgoSpec tl.CGoSpec, level uint8) {
 	uplevel := level - 1
 	fmt.Fprintf(buf, "h := (*sliceHeader)(unsafe.Pointer(&x%s))\n", genIndices("i", level))
-	fmt.Fprintf(buf, "v%d[i%d] = (%s)(unsafe.Pointer(h.Data))\n",
+	fmt.Fprintf(buf, "v%d[i%d] = (%s)(h.Data)\n",
 		uplevel, uplevel, cgoSpec.AtLevel(level))
 }
 
@@ -259,7 +259,7 @@ func (gen *Generator) unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		fmt.Fprintf(buf1, "mem0 := %s(len0)\n", h.Name)
 		fmt.Fprintf(buf1, "allocs.Add(mem0)\n")
 		fmt.Fprintf(buf1, `h0 := &sliceHeader{
-			Data: uintptr(mem0),
+			Data: mem0,
 			Cap: len0,
 			Len: len0,
 		}`)
@@ -267,7 +267,7 @@ func (gen *Generator) unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		fmt.Fprintf(buf1, "for i0 := range x {\n")
 
 		buf2.Linef("return\n")
-		buf2.Linef("unpacked = (%s)(unsafe.Pointer(h.Data))\n", cgoSpecArg(cgoSpec, 0, isArg))
+		buf2.Linef("unpacked = (%s)(h.Data)\n", cgoSpecArg(cgoSpec, 0, isArg))
 		buf2.Linef("h := (*sliceHeader)(unsafe.Pointer(&v0))\n")
 		buf2.Linef("}\n")
 		return
@@ -282,14 +282,14 @@ func (gen *Generator) unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 	fmt.Fprintf(buf1, "mem%d := %s(len%d)\n", level, h.Name, level)
 	fmt.Fprintf(buf1, "allocs.Add(mem%d)\n", level)
 	fmt.Fprintf(buf1, `h%d := &sliceHeader{
-			Data: uintptr(mem%d),
+			Data: mem%d,
 			Cap: len%d,
 			Len: len%d,
 		}`, level, level, level, level)
 	fmt.Fprintf(buf1, "\nv%d := *(*[]%s)(unsafe.Pointer(h%d))\n", level, levelSpec, level)
 
 	fmt.Fprintf(buf1, "for i%d := range x%s {\n", level, indices)
-	buf2.Linef("v%d[i%d] = (%s)(unsafe.Pointer(h.Data))\n", uplevel, uplevel, cgoSpec.AtLevel(level))
+	buf2.Linef("v%d[i%d] = (%s)(h.Data)\n", uplevel, uplevel, cgoSpec.AtLevel(level))
 	buf2.Linef("h := (*sliceHeader)(unsafe.Pointer(&v%d))\n", level)
 	buf2.Linef("}\n")
 }
@@ -332,7 +332,7 @@ func (gen *Generator) getUnpackStringHelper(cgoSpec tl.CGoSpec) *Helper {
 			Source: fmt.Sprintf(`func %s(str string) (%s, *cgoAllocMap) {
 			str = safeString(str)
 			h := (*stringHeader)(unsafe.Pointer(&str))
-			return (%s)(unsafe.Pointer(h.Data)), cgoAllocsUnknown
+			return (%s)(h.Data), cgoAllocsUnknown
 		}`, name, cgoSpec, cgoSpec),
 			Requires: []*Helper{stringHeader, cgoAllocMap, safeString},
 		}
@@ -342,7 +342,7 @@ func (gen *Generator) getUnpackStringHelper(cgoSpec tl.CGoSpec) *Helper {
 		Description: fmt.Sprintf("%s represents the data from Go string as %s and avoids copying.", name, cgoSpec),
 		Source: fmt.Sprintf(`func %s(str string) (%s, *cgoAllocMap) {
 			h := (*stringHeader)(unsafe.Pointer(&str))
-			return (%s)(unsafe.Pointer(h.Data)), cgoAllocsUnknown
+			return (%s)(h.Data), cgoAllocsUnknown
 		}`, name, cgoSpec, cgoSpec),
 		Requires: []*Helper{stringHeader, cgoAllocMap},
 	}
@@ -610,11 +610,11 @@ func (gen *Generator) getPackStringHelper(cgoSpec tl.CGoSpec) *Helper {
 		Source: fmt.Sprintf(`func %s(p %s) (raw string) {
 			if p != nil && *p != 0 {
 				h := (*stringHeader)(unsafe.Pointer(&raw))
-				h.Data = uintptr(unsafe.Pointer(p))
+				h.Data = unsafe.Pointer(p)
 				for *p != 0 {
 					p = (%s)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + 1)) // p++
 				}
-				h.Len = int(uintptr(unsafe.Pointer(p)) - h.Data)
+				h.Len = int(uintptr(unsafe.Pointer(p)) - uintptr(h.Data))
 			}
 			return
 		}`, name, cgoSpec, cgoSpec),
@@ -776,7 +776,7 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		buf := new(bytes.Buffer)
 		postfix := gen.randPostfix()
 		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
-		fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(%s))\n", postfix, ptrName)
+		fmt.Fprintf(buf, "hx%2x.Data = unsafe.Pointer(%s)\n", postfix, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = %s\n", postfix, gen.maxMem)
 		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 		proxy = buf.String()
@@ -1015,7 +1015,7 @@ var (
 	sliceHeader = &Helper{
 		Name: "sliceHeader",
 		Source: `type sliceHeader struct {
-	        Data uintptr
+	        Data unsafe.Pointer
 	        Len  int
 	        Cap  int
 		}`,
@@ -1023,7 +1023,7 @@ var (
 	stringHeader = &Helper{
 		Name: "stringHeader",
 		Source: `type stringHeader struct {
-        	Data uintptr
+	        Data unsafe.Pointer
         	Len  int
 		}`,
 	}
@@ -1041,7 +1041,7 @@ var (
 				return ""
 			}
 			h := (*stringHeader)(unsafe.Pointer(&raw))
-			return C.GoStringN((*C.char)(unsafe.Pointer(h.Data)), C.int(h.Len))
+			return C.GoStringN((*C.char)(h.Data), C.int(h.Len))
 		}`,
 		Requires: []*Helper{stringHeader},
 	}
