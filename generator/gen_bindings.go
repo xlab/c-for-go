@@ -548,7 +548,7 @@ func packPlain(buf io.Writer, cgoSpec tl.CGoSpec, base string, pointers uint8, l
 func (gen *Generator) packPlainSlice(buf io.Writer, base string, pointers uint8, level uint8) {
 	postfix := gen.randPostfix()
 	fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&v%s))\n", postfix, genIndices("i", level))
-	fmt.Fprintf(buf, "hx%2x.Data = uintptr(unsafe.Pointer(ptr%d))\n", postfix, level)
+	fmt.Fprintf(buf, "hx%2x.Data = unsafe.Pointer(ptr%d)\n", postfix, level)
 	fmt.Fprintf(buf, "hx%2x.Cap = %s\n", postfix, gen.maxMem)
 	fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
 }
