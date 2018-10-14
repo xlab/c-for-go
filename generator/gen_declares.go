@@ -15,7 +15,7 @@ func checkName(name []byte) []byte {
 }
 
 func (gen *Generator) writeTypeDeclaration(wr io.Writer, decl *tl.CDecl,
-	ptrTip, typeTip tl.Tip, public bool) {
+	ptrTip, typeTip tl.Tip, public bool, seenNames map[string]bool) {
 
 	cName, _ := getName(decl)
 	goName := checkName(gen.tr.TransformName(tl.TargetType, cName, public))

@@ -7,9 +7,14 @@ import (
 	tl "github.com/xlab/c-for-go/translator"
 )
 
-func (gen *Generator) writeTypeTypedef(wr io.Writer, decl *tl.CDecl) {
+func (gen *Generator) writeTypeTypedef(wr io.Writer, decl *tl.CDecl, seenNames map[string]bool) {
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
 	goTypeName := gen.tr.TransformName(tl.TargetType, decl.Name)
+	if seenNames[string(goTypeName)] {
+		return
+	} else {
+		seenNames[string(goTypeName)] = true
+	}
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goTypeName,
 		gen.tr.SrcLocation(tl.TargetType, decl.Name, decl.Pos))
 	fmt.Fprintf(wr, "type %s %s", goTypeName, goSpec.UnderlyingString())
@@ -31,7 +36,7 @@ func (gen *Generator) writeEnumTypedef(wr io.Writer, decl *tl.CDecl) {
 	}
 }
 
-func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
+func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl, seenNames map[string]bool) {
 	var returnRef string
 	funcSpec := decl.Spec.Copy().(*tl.CFunctionSpec)
 	funcSpec.Pointers = 0 // function pointers not supported here
@@ -56,6 +61,11 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl) {
 	ptrTipRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, decl.Name)
 	typeTipRx, _ := gen.tr.TypeTipRx(tl.TipScopeFunction, decl.Name)
 	goFuncName := gen.tr.TransformName(tl.TargetType, decl.Name)
+	if seenNames[string(goFuncName)] {
+		return
+	} else {
+		seenNames[string(goFuncName)] = true
+	}
 	goSpec := gen.tr.TranslateSpec(funcSpec, ptrTipRx.Self(), typeTipRx.Self())
 	goSpec.Raw = "" // not used in func typedef
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goFuncName,
@@ -81,12 +91,17 @@ func getName(decl *tl.CDecl) (string, bool) {
 	return "", false
 }
 
-func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool) {
+func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool, seenNames map[string]bool) {
 	cName, ok := getName(decl)
 	if !ok {
 		return
 	}
 	goName := gen.tr.TransformName(tl.TargetType, cName)
+	if seenNames[string(goName)] {
+		return
+	} else {
+		seenNames[string(goName)] = true
+	}
 	if raw || !decl.Spec.IsComplete() {
 		// opaque struct
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
