@@ -98,7 +98,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 		} else if tagsSeen[tag] {
 			return false
 		} else {
-			gen.expandEnum(wr, decl)
+			gen.expandEnum(wr, decl, namesSeen)
 			if decl.Spec.IsComplete() {
 				tagsSeen[tag] = true
 			}
