@@ -93,7 +93,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool)
 			gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos))
 		fmt.Fprintf(wr, "type %s C.%s", goName, decl.Spec.CGoName())
 		writeSpace(wr, 1)
-		for _, helper := range gen.getRawStructHelpers(goName, decl.Spec) {
+		for _, helper := range gen.getRawStructHelpers(goName, cName, decl.Spec) {
 			gen.submitHelper(helper)
 		}
 		return
