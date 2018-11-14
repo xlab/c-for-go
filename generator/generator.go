@@ -98,7 +98,7 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 		} else if tagsSeen[tag] {
 			return false
 		} else {
-			gen.expandEnum(wr, decl)
+			gen.expandEnum(wr, decl, namesSeen)
 			if decl.Spec.IsComplete() {
 				tagsSeen[tag] = true
 			}
@@ -199,12 +199,6 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 		}
 		switch decl.Spec.Kind() {
 		case tl.StructKind, tl.OpaqueStructKind:
-			if len(decl.Name) > 0 {
-				if seenStructNames[decl.Name] {
-					continue
-				}
-				seenStructNames[decl.Name] = true
-			}
 			if tag := decl.Spec.GetTag(); len(tag) > 0 {
 				if len(decl.Name) == 0 || decl.Name == tag {
 					if seenStructTags[tag] {
@@ -214,7 +208,7 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 				seenStructTags[tag] = true
 			}
 			memTip := gen.MemTipOf(decl)
-			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw)
+			gen.writeStructTypedef(wr, decl, memTip == tl.TipMemRaw, seenStructNames)
 		case tl.UnionKind:
 			if len(decl.Name) > 0 {
 				if seenUnionNames[decl.Name] {
@@ -236,17 +230,9 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 				gen.writeEnumTypedef(wr, decl)
 			}
 		case tl.TypeKind:
-			if seenTypeNames[decl.Name] {
-				continue
-			}
-			seenTypeNames[decl.Name] = true
-			gen.writeTypeTypedef(wr, decl)
+			gen.writeTypeTypedef(wr, decl, seenTypeNames)
 		case tl.FunctionKind:
-			if seenFunctionNames[decl.Name] {
-				continue
-			}
-			seenFunctionNames[decl.Name] = true
-			gen.writeFunctionTypedef(wr, decl)
+			gen.writeFunctionTypedef(wr, decl, seenFunctionNames)
 		}
 		writeSpace(wr, 1)
 		count++
@@ -267,9 +253,9 @@ func (gen *Generator) WriteTypedefs(wr io.Writer) int {
 				continue
 			}
 			if memTipRx, ok := gen.tr.MemTipRx(tag); ok {
-				gen.writeStructTypedef(wr, decl, memTipRx.Self() == tl.TipMemRaw)
+				gen.writeStructTypedef(wr, decl, memTipRx.Self() == tl.TipMemRaw, seenStructNames)
 			} else {
-				gen.writeStructTypedef(wr, decl, false)
+				gen.writeStructTypedef(wr, decl, false, seenStructNames)
 			}
 			writeSpace(wr, 1)
 			count++

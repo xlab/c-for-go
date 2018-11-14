@@ -118,7 +118,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
+func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool) {
 	var declName []byte
 	var isTypedef bool
 	if decl.IsTypedef {
@@ -154,6 +154,10 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl) {
 		mName := gen.tr.TransformName(tl.TargetConst, m.Name)
 		if len(mName) == 0 {
 			continue
+		} else if namesSeen[string(mName)] {
+			continue
+		} else {
+			namesSeen[string(mName)] = true
 		}
 		switch {
 		case m.Value != nil:
