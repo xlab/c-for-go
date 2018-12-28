@@ -170,6 +170,9 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, cStructName strin
 		Requires:    []*Helper{allocHelper},
 	})
 
+	if !gen.cfg.Options.StructAccessors {
+		return
+	}
 	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeType, cStructName, spec)
 	for i, m := range structSpec.Members {
 		if len(m.Name) == 0 {
