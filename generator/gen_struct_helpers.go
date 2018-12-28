@@ -94,11 +94,12 @@ func (gen *Generator) getStructHelpers(goStructName []byte, cStructName string, 
 	return
 }
 
-func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (helpers []*Helper) {
+func (gen *Generator) getRawStructHelpers(goStructName []byte, cStructName string, spec tl.CType) (helpers []*Helper) {
 	if spec.GetPointers() > 0 {
 		return nil // can't addess a pointer receiver
 	}
 	cgoSpec := gen.tr.CGoSpec(spec, true)
+	structSpec := spec.(*tl.CStructSpec)
 
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "func (x *%s) Ref() *%s", goStructName, cgoSpec)
@@ -168,6 +169,57 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, spec tl.CType) (h
 		Source:      buf.String(),
 		Requires:    []*Helper{allocHelper},
 	})
+
+	if !gen.cfg.Options.StructAccessors {
+		return
+	}
+	ptrTipRx, typeTipRx, memTipRx := gen.tr.TipRxsForSpec(tl.TipScopeType, cStructName, spec)
+	for i, m := range structSpec.Members {
+		if len(m.Name) == 0 {
+			continue
+		}
+		buf.Reset()
+		typeName := m.Spec.GetBase()
+		switch m.Spec.Kind() {
+		case tl.StructKind, tl.OpaqueStructKind, tl.UnionKind, tl.EnumKind:
+			if !gen.tr.IsAcceptableName(tl.TargetType, typeName) {
+				continue
+			}
+		}
+		memTip := memTipRx.TipAt(i)
+		if !memTip.IsValid() {
+			memTip = gen.MemTipOf(m)
+		}
+		ptrTip := ptrTipRx.TipAt(i)
+		if memTip == tl.TipMemRaw {
+			ptrTip = tl.TipPtrSRef
+		}
+		typeTip := typeTipRx.TipAt(i)
+		goSpec := gen.tr.TranslateSpec(m.Spec, ptrTip, typeTip)
+		cgoSpec := gen.tr.CGoSpec(m.Spec, false)
+		// does not work for function pointers
+		if goSpec.Pointers > 0 && goSpec.Base == "func" {
+			continue
+		}
+		const public = true
+		goName := string(gen.tr.TransformName(tl.TargetType, m.Name, public))
+		arr := len(goSpec.OuterArr.Sizes()) > 0 || len(goSpec.InnerArr.Sizes()) > 0
+		if !arr {
+			goSpec.Pointers += 1
+			cgoSpec.Pointers += 1
+		}
+		fmt.Fprintf(buf,"func (s *%s) Get%s() %s {\n", goStructName, goName, goSpec)
+		toProxy, _ := gen.proxyValueToGo(memTip, "ret", "&s." + m.Name, goSpec, cgoSpec)
+		fmt.Fprintf(buf,"\tvar ret %s\n", goSpec)
+		fmt.Fprintf(buf,"\t%s\n",toProxy)
+		fmt.Fprintf(buf, "\treturn ret\n")
+		fmt.Fprintf(buf, "}\n")
+		helpers = append(helpers, &Helper{
+			Name:	fmt.Sprintf("%s.Get%s", goStructName, goName),
+			Description: fmt.Sprintf("Get%s returns a reference to C object within a struct",goName),
+			Source:      buf.String(),
+		})
+	}
 	return
 }
 

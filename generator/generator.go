@@ -45,6 +45,7 @@ type Config struct {
 
 type GenOptions struct {
 	SafeStrings bool `yaml:"SafeStrings"`
+	StructAccessors bool `yaml:"StructAccessors"`
 	KeepAlive   bool `yaml:"KeepAlive"`
 }
 

@@ -791,7 +791,9 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 			proxy = fmt.Sprintf("// %s is a callback func", varName)
 			return
 		} else if goSpec.Pointers == 0 || len(goSpec.OuterArr) > 0 {
-			ref = "&"
+			if ptrName[0] != '&' {
+				ref = "&"
+			}
 			ptr = "*"
 		}
 		proxy = fmt.Sprintf("%s = %s(%s%s)(unsafe.Pointer(%s%s))", varName, ptr, ptr, goSpec, ref, ptrName)
