@@ -13,8 +13,6 @@ The only component required to produce a Go package that will wrap the source C/
 
 The resulting bindings are as low-level as C code, i.e. it would require knowledge of memory management to carefully use the resulting code, however no more C code is needed to make things done. Eventually some functions can be replaced manually with pure-Go analogs. Also usually a high-level wrapper is created by hand, to introduce Object Oriented Design into API, manage inner state and memory, thus making things safe and lifting the mental overhead.
 
-A simple demo case can be seen on the project homepage http://sphere.software/c-for-go.
-
 Full documentation is available at https://github.com/xlab/c-for-go/wiki
 
 ### Installation
@@ -44,11 +42,7 @@ A simple [Makefile template](https://github.com/xlab/c-for-go/wiki/Makefile-temp
 * https://github.com/5k3105/nidaq
 * https://github.com/SphereSoftware/pdf-go
 * ...
-* [Request yours](https://sphere.software/c-for-go/enterprise.html)
-
-### Sponsors
-
-<a href="https://sphereinc.com"><img src="docs/sphere.png" width="200px" alt="sphere software sponsor" /></a>
+* [Request yours](max@kc.vc)
 
 ### Credits
 
