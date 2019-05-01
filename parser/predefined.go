@@ -3,7 +3,7 @@ package parser
 import (
 	"strings"
 
-	"github.com/cznic/cc"
+	"modernc.org/cc"
 )
 
 type TargetArch string

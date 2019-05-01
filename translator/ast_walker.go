@@ -5,8 +5,8 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/cznic/cc"
-	"github.com/cznic/xc"
+	"modernc.org/cc"
+	"modernc.org/xc"
 )
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {

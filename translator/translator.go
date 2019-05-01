@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cznic/cc"
-	"github.com/cznic/xc"
+	"modernc.org/cc"
+	"modernc.org/xc"
 )
 
 type Translator struct {
@@ -676,6 +676,10 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 			// Arrays skip
 			// VarArrays skip
 			Pointers: typeSpec.Pointers,
+		}
+		if typeSpec.Base == "char" {
+			lookupSpec.Unsigned = typeSpec.Unsigned
+			lookupSpec.Signed = typeSpec.Signed
 		}
 		if gospec, ok := t.lookupSpec(lookupSpec); ok {
 			tag := typeSpec.CGoName()

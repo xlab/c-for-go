@@ -46,7 +46,7 @@ A simple [Makefile template](https://github.com/xlab/c-for-go/wiki/Makefile-temp
 
 ### Credits
 
-* [Jan Mercl](https://github.com/cznic) for his [cznic/cc](https://github.com/cznic/cc) C99 compiler front end package.
+* [Jan Mercl](https://github.com/cznic) for his [cznic/cc](https://gitlab.com/cznic/cc) C99 compiler front end package.
 
 ### License
 

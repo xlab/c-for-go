@@ -36,6 +36,8 @@ var builtinCTypeMap = CTypeMap{
 	CTypeSpec{Base: "char"}: ByteSpec,
 	// const char* -> string
 	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
+	// signed char -> int8
+	CTypeSpec{Base: "char", Signed: true}: Int8Spec,
 	// unsigned char -> unsigned byte
 	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
 	// const unsigned char* -> string

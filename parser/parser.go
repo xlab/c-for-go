@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/cznic/cc"
+	"modernc.org/cc"
 )
 
 type Config struct {
