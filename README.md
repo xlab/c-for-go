@@ -2,7 +2,7 @@
 
 ### Project Homepage:
 
-https://sphere.software/c-for-go
+https://c.for-go.com
 
 ### Project Source:
 
