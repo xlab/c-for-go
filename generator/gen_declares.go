@@ -83,7 +83,9 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl,
 	}
 	fmt.Fprintf(wr, "// %s function as declared in %s\n", goName,
 		gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos))
-	fmt.Fprintf(wr, "func %s", goName)
+	fmt.Fprintf(wr, "func")
+	gen.writeInstanceObjectParam(wr, cName, decl.Spec)
+	fmt.Fprintf(wr, " %s", goName)
 	gen.writeFunctionParams(wr, cName, decl.Spec)
 	if len(returnRef) > 0 {
 		fmt.Fprintf(wr, " %s", returnRef)

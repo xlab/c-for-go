@@ -26,7 +26,7 @@ func (spec *GoTypeSpec) splitPointers(ptrTip Tip, n uint8) {
 	case TipPtrRef:
 		spec.Slices = spec.Slices + n - 1
 		spec.Pointers++
-	case TipPtrSRef:
+	case TipPtrSRef, TipPtrInst:
 		spec.Pointers += n
 	case TipPtrArr:
 		spec.Slices += n
