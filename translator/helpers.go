@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cznic/xc"
+	"modernc.org/xc"
 )
 
 var (

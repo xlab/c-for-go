@@ -69,18 +69,19 @@ func (gen *Generator) writeStructMembers(wr io.Writer, structName string, spec t
 	fmt.Fprintf(wr, "allocs%2x interface{}\n", crc)
 }
 
-func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpec tl.CType) {
+func (gen *Generator) writeInstanceObjectParam(wr io.Writer, funcName string, funcSpec tl.CType) {
 	spec := funcSpec.(*tl.CFunctionSpec)
 	ptrTipSpecRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, funcName)
 	typeTipSpecRx, _ := gen.tr.TypeTipRx(tl.TipScopeFunction, funcName)
-	const public = false
 
-	writeStartParams(wr)
 	for i, param := range spec.Params {
 		ptrTip := ptrTipSpecRx.TipAt(i)
-		if !ptrTip.IsValid() {
-			ptrTip = tl.TipPtrArr
+
+		if ptrTip != tl.TipPtrInst {
+			continue
 		}
+
+		ptrTip = tl.TipPtrRef
 		typeTip := typeTipSpecRx.TipAt(i)
 		if !typeTip.IsValid() {
 			// try to use type tip for the type itself
@@ -90,29 +91,73 @@ func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpe
 				}
 			}
 		}
-		declName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, public))
-		switch param.Spec.Kind() {
-		case tl.TypeKind:
-			goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip)
-			if len(goSpec.OuterArr) > 0 {
-				fmt.Fprintf(wr, "%s *%s", declName, goSpec)
-			} else {
-				fmt.Fprintf(wr, "%s %s", declName, goSpec)
-			}
-		case tl.StructKind, tl.OpaqueStructKind, tl.UnionKind:
-			goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip)
-			if len(goSpec.OuterArr) > 0 {
-				fmt.Fprintf(wr, "%s *%s", declName, goSpec)
-			} else {
-				fmt.Fprintf(wr, "%s %s", declName, goSpec)
-			}
-		case tl.EnumKind:
-			typeRef := gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip).String()
-			fmt.Fprintf(wr, "%s %s", declName, typeRef)
-		case tl.FunctionKind:
-			gen.writeFunctionAsArg(wr, param, ptrTip, typeTip, public)
+
+		writeSpace(wr, 1)
+		writeStartParams(wr)
+		gen.writeFunctionParam(wr, param, ptrTip, typeTip)
+		writeEndParams(wr)
+
+		break
+	}
+}
+
+func (gen *Generator) writeFunctionParam(wr io.Writer, param *tl.CDecl, ptrTip tl.Tip, typeTip tl.Tip) {
+	const public = false
+
+	declName := checkName(gen.tr.TransformName(tl.TargetType, param.Name, public))
+	switch param.Spec.Kind() {
+	case tl.TypeKind:
+		goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip)
+		if len(goSpec.OuterArr) > 0 {
+			fmt.Fprintf(wr, "%s *%s", declName, goSpec)
+		} else {
+			fmt.Fprintf(wr, "%s %s", declName, goSpec)
 		}
-		if i < len(spec.Params)-1 {
+	case tl.StructKind, tl.OpaqueStructKind, tl.UnionKind:
+		goSpec := gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip)
+		if len(goSpec.OuterArr) > 0 {
+			fmt.Fprintf(wr, "%s *%s", declName, goSpec)
+		} else {
+			fmt.Fprintf(wr, "%s %s", declName, goSpec)
+		}
+	case tl.EnumKind:
+		typeRef := gen.tr.TranslateSpec(param.Spec, ptrTip, typeTip).String()
+		fmt.Fprintf(wr, "%s %s", declName, typeRef)
+	case tl.FunctionKind:
+		gen.writeFunctionAsArg(wr, param, ptrTip, typeTip, public)
+	}
+}
+
+func (gen *Generator) writeFunctionParams(wr io.Writer, funcName string, funcSpec tl.CType) {
+	spec := funcSpec.(*tl.CFunctionSpec)
+	ptrTipSpecRx, _ := gen.tr.PtrTipRx(tl.TipScopeFunction, funcName)
+	typeTipSpecRx, _ := gen.tr.TypeTipRx(tl.TipScopeFunction, funcName)
+
+	writeStartParams(wr)
+	for i, param := range spec.Params {
+		ptrTip := ptrTipSpecRx.TipAt(i)
+
+		if ptrTip == tl.TipPtrInst {
+			continue
+		}
+
+		if !ptrTip.IsValid() {
+			ptrTip = tl.TipPtrArr
+		}
+
+		typeTip := typeTipSpecRx.TipAt(i)
+		if !typeTip.IsValid() {
+			// try to use type tip for the type itself
+			if tip, ok := gen.tr.TypeTipRx(tl.TipScopeType, param.Spec.CGoName()); ok {
+				if tip := tip.Self(); tip.IsValid() {
+					typeTip = tip
+				}
+			}
+		}
+
+		gen.writeFunctionParam(wr, param, ptrTip, typeTip)
+
+		if i < len(spec.Params)-1 && ptrTipSpecRx.TipAt(i+1) != tl.TipPtrInst {
 			fmt.Fprintf(wr, ", ")
 		}
 	}
