@@ -52,6 +52,7 @@ var basePredefines = `
 #define __GNUC__ 4
 #define __GNUC_PREREQ(maj,min) 0
 #define __POSIX_C_DEPRECATED(ver)
+#define __has_include_next(...) 1
 
 #define __FLT_MIN__ 0
 #define __DBL_MIN__ 0
