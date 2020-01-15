@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 
 	tl "github.com/xlab/c-for-go/translator"
 )
@@ -82,7 +83,7 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl,
 		goName = gen.tr.TransformName(tl.TargetFunction, "new_"+cName, public)
 	}
 	fmt.Fprintf(wr, "// %s function as declared in %s\n", goName,
-		gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos)))
 	fmt.Fprintf(wr, "func")
 	gen.writeInstanceObjectParam(wr, cName, decl.Spec)
 	fmt.Fprintf(wr, " %s", goName)

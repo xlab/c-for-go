@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 
 	tl "github.com/xlab/c-for-go/translator"
 )
@@ -16,7 +17,7 @@ func (gen *Generator) writeTypeTypedef(wr io.Writer, decl *tl.CDecl, seenNames m
 		seenNames[string(goTypeName)] = true
 	}
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goTypeName,
-		gen.tr.SrcLocation(tl.TargetType, decl.Name, decl.Pos))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetType, decl.Name, decl.Pos)))
 	fmt.Fprintf(wr, "type %s %s", goTypeName, goSpec.UnderlyingString())
 	writeSpace(wr, 1)
 }
@@ -30,7 +31,7 @@ func (gen *Generator) writeEnumTypedef(wr io.Writer, decl *tl.CDecl) {
 	typeRef := gen.tr.TranslateSpec(decl.Spec).UnderlyingString()
 	if typeName := string(goName); typeName != typeRef {
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
-			gen.tr.SrcLocation(tl.TargetConst, cName, decl.Pos))
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, cName, decl.Pos)))
 		fmt.Fprintf(wr, "type %s %s", goName, typeRef)
 		writeSpace(wr, 1)
 	}
@@ -69,7 +70,7 @@ func (gen *Generator) writeFunctionTypedef(wr io.Writer, decl *tl.CDecl, seenNam
 	goSpec := gen.tr.TranslateSpec(funcSpec, ptrTipRx.Self(), typeTipRx.Self())
 	goSpec.Raw = "" // not used in func typedef
 	fmt.Fprintf(wr, "// %s type as declared in %s\n", goFuncName,
-		gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos)))
 	fmt.Fprintf(wr, "type %s %s", goFuncName, goSpec)
 	gen.writeFunctionParams(wr, decl.Name, decl.Spec)
 	if len(returnRef) > 0 {
@@ -105,7 +106,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool,
 	if raw || !decl.Spec.IsComplete() {
 		// opaque struct
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
-			gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos))
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos)))
 		fmt.Fprintf(wr, "type %s C.%s", goName, decl.Spec.CGoName())
 		writeSpace(wr, 1)
 		for _, helper := range gen.getRawStructHelpers(goName, cName, decl.Spec) {
@@ -115,7 +116,7 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool,
 	}
 
 	fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
-		gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos)))
 	fmt.Fprintf(wr, "type %s struct {", goName)
 	writeSpace(wr, 1)
 	gen.submitHelper(cgoAllocMap)
@@ -137,7 +138,7 @@ func (gen *Generator) writeUnionTypedef(wr io.Writer, decl *tl.CDecl) {
 
 	if typeName := string(goName); typeName != typeRef {
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
-			gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos))
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetType, cName, decl.Pos)))
 		fmt.Fprintf(wr, "const sizeof%s = unsafe.Sizeof(C.%s{})\n", goName, decl.Spec.CGoName())
 		fmt.Fprintf(wr, "type %s [sizeof%s]byte\n", goName, goName)
 		writeSpace(wr, 1)

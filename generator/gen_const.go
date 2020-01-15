@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	tl "github.com/xlab/c-for-go/translator"
 )
@@ -19,7 +20,7 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 			continue
 		}
 		fmt.Fprintf(wr, "// %s as defined in %s\n", name,
-			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos)))
 
 		if decl.Value != nil {
 			fmt.Fprintf(wr, "%s = %v", name, decl.Value)
@@ -41,7 +42,7 @@ func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 		return
 	}
 	fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
-		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos)))
 	goSpec := gen.tr.TranslateSpec(decl.Spec)
 
 	if decl.Value != nil {
@@ -68,11 +69,11 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 	if hasType {
 		enumType := gen.tr.TranslateSpec(&spec.Type)
 		fmt.Fprintf(wr, "// %s as declared in %s\n", typeName,
-			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos)))
 		fmt.Fprintf(wr, "type %s %s\n", typeName, enumType)
 		writeSpace(wr, 1)
 		fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName,
-			gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos)))
 	}
 	writeStartConst(wr)
 	for i, m := range spec.Members {
@@ -89,7 +90,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 		}
 		if !hasType {
 			fmt.Fprintf(wr, "// %s as declared in %s\n", mName,
-				gen.tr.SrcLocation(tl.TargetConst, m.Name, m.Pos))
+				filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, m.Name, m.Pos)))
 		}
 		switch {
 		case m.Value != nil:
@@ -131,21 +132,21 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[str
 	tagName := gen.tr.TransformName(tl.TargetType, decl.Spec.GetBase())
 	enumType := gen.tr.TranslateSpec(&spec.Type)
 	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName,
-		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos)))
 	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
 	writeSpace(wr, 1)
 	if isTypedef {
 		if !bytes.Equal(tagName, declName) && len(declName) > 0 {
 			// alias type decl name to the tag
 			fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
-				gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+				filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos)))
 			fmt.Fprintf(wr, "type %s %s", declName, tagName)
 			writeSpace(wr, 1)
 		}
 	}
 
 	fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName,
-		gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Pos)))
 	writeStartConst(wr)
 	for i, m := range spec.Members {
 		if !gen.tr.IsAcceptableName(tl.TargetConst, m.Name) {
