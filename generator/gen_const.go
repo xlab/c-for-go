@@ -27,7 +27,8 @@ func (gen *Generator) writeDefinesGroup(wr io.Writer, defines []*tl.CDecl) (n in
 		} else if len(decl.Expression) > 0 {
 			fmt.Fprintf(wr, "%s = %s", name, decl.Expression)
 		} else {
-			fmt.Fprint(wr, name)
+			// In this case, it's nil or the expression is zero length.
+			// fmt.Fprint(wr, name)
 		}
 		writeSpace(wr, 1)
 		n++
