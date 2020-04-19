@@ -307,8 +307,8 @@ The caller is responsible for freeing the this memory via C.free.`, name, cgoSpe
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, `func %s(n int) unsafe.Pointer {
 			mem, err := C.calloc(C.size_t(n), (C.size_t)(%s))
-			if err != nil {
-				panic("memory alloc error: " + err.Error())
+			if mem == nil {
+				panic(fmt.Sprintln("memory alloc error: ", err))
 			}
 			return mem
 		}`, name, sizeofConst)
