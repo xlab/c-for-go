@@ -907,7 +907,7 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 			fmt.Fprintf(fromBuf, "if %s != nil {\n%s, _ = %s\n}", refName, name, fromProxy)
 		} else {
 			fmt.Fprintf(fromBuf, "%s, %sAllocMap := %s\n", name, name, fromProxy)
-			fmt.Fprintf(fromBuf, "if %sAllocMap != cgoAllocsUnknown {\n defer %sAllocMap.Free() \n}", name, name)
+			fmt.Fprintf(fromBuf, "if %sAllocMap != nil && %sAllocMap != cgoAllocsUnknown {\n defer %sAllocMap.Free() \n}", name, name, name)
 			to = append(to, proxyDecl{
 				Name: name,
 				Decl: fmt.Sprintf("runtime.KeepAlive(%s)\n", name),
