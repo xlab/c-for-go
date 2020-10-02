@@ -203,9 +203,9 @@ func (gen *Generator) unpackArray(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		gen.submitHelper(cgoAllocMap)
 
 		fmt.Fprintf(buf1, `allocs = new(cgoAllocMap)
-		defer runtime.SetFinalizer(&unpacked, func(*%s) {
-			go allocs.Free()
-		})`, cgoSpec)
+		defer runtime.SetFinalizer(allocs, func(a *cgoAllocMap) {
+			go a.Free()
+		})`)
 		fmt.Fprintf(buf1, "\n\nmem0 := %s(1)\n", h.Name)
 		fmt.Fprintf(buf1, "allocs.Add(mem0)\n")
 		fmt.Fprintf(buf1, "v0 := (*%s)(mem0)\n", cgoSpec)
@@ -252,9 +252,9 @@ func (gen *Generator) unpackSlice(buf1 io.Writer, buf2 *reverseBuffer, cgoSpec t
 		gen.submitHelper(cgoAllocMap)
 
 		fmt.Fprintf(buf1, `allocs = new(cgoAllocMap)
-		defer runtime.SetFinalizer(&unpacked, func(*%s) {
-			go allocs.Free()
-		})`, cgoSpec)
+		defer runtime.SetFinalizer(allocs, func(a *cgoAllocMap) {
+			go a.Free()
+		})`)
 		fmt.Fprintf(buf1, "\n\nlen0 := len(x)\n")
 		fmt.Fprintf(buf1, "mem0 := %s(len0)\n", h.Name)
 		fmt.Fprintf(buf1, "allocs.Add(mem0)\n")
@@ -307,8 +307,8 @@ The caller is responsible for freeing the this memory via C.free.`, name, cgoSpe
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, `func %s(n int) unsafe.Pointer {
 			mem, err := C.calloc(C.size_t(n), (C.size_t)(%s))
-			if err != nil {
-				panic("memory alloc error: " + err.Error())
+			if mem == nil {
+				panic(fmt.Sprintln("memory alloc error: ", err))
 			}
 			return mem
 		}`, name, sizeofConst)
@@ -912,8 +912,10 @@ func (gen *Generator) createProxies(funcName string, funcSpec tl.CType) (from, t
 			fmt.Fprintf(fromBuf, "var %s %s\n", name, cgoSpec)
 			fmt.Fprintf(fromBuf, "if %s != nil {\n%s, _ = %s\n}", refName, name, fromProxy)
 		} else {
-			fmt.Fprintf(fromBuf, "%s, _ := %s", name, fromProxy)
+			fmt.Fprintf(fromBuf, "%s, %sAllocMap := %s", name, name, fromProxy)
+			to = append(to, proxyDecl{Name: name, Decl: fmt.Sprintf("runtime.KeepAlive(%sAllocMap)\n", name)})
 		}
+
 		from[i] = proxyDecl{Name: name, Decl: fromBuf.String()}
 		if needKeepalive {
 			keepaliveDecl := fmt.Sprintf("runtime.KeepAlive(%s)\n", refName)
