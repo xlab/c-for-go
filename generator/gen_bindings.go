@@ -328,23 +328,72 @@ func (gen *Generator) getUnpackStringHelper(cgoSpec tl.CGoSpec) *Helper {
 	if gen.cfg.Options.SafeStrings {
 		return &Helper{
 			Name:        name,
-			Description: fmt.Sprintf("%s represents the data from Go string as %s and avoids copying.", name, cgoSpec),
+			Description: fmt.Sprintf("%s copies the data from Go string as %s.", name, cgoSpec),
 			Source: fmt.Sprintf(`func %s(str string) (%s, *cgoAllocMap) {
+			allocs := new(cgoAllocMap)
+			defer runtime.SetFinalizer(allocs, func(a *cgoAllocMap) {
+				go a.Free()
+			})
+
 			str = safeString(str)
-			h := (*stringHeader)(unsafe.Pointer(&str))
-			return (%s)(h.Data), cgoAllocsUnknown
+			mem0 := unsafe.Pointer(C.CString(str))
+			allocs.Add(mem0)
+			return (%s)(mem0), allocs
 		}`, name, cgoSpec, cgoSpec),
 			Requires: []*Helper{stringHeader, cgoAllocMap, safeString},
 		}
 	}
 	return &Helper{
 		Name:        name,
-		Description: fmt.Sprintf("%s represents the data from Go string as %s and avoids copying.", name, cgoSpec),
+		Description: fmt.Sprintf("%s copies the data from Go string as %s.", name, cgoSpec),
 		Source: fmt.Sprintf(`func %s(str string) (%s, *cgoAllocMap) {
-			h := (*stringHeader)(unsafe.Pointer(&str))
-			return (%s)(h.Data), cgoAllocsUnknown
+			allocs := new(cgoAllocMap)
+			defer runtime.SetFinalizer(allocs, func(a *cgoAllocMap) {
+				go a.Free()
+			})
+
+			mem0 := unsafe.Pointer(C.CString(str))
+			allocs.Add(mem0)
+			return (%s)(mem0), allocs
 		}`, name, cgoSpec, cgoSpec),
 		Requires: []*Helper{stringHeader, cgoAllocMap},
+	}
+}
+
+func (gen *Generator) getCopyBytesHelper(cgoSpec tl.CGoSpec) *Helper {
+	cgoSpec = tl.CGoSpec{
+		Pointers: 1,
+		Base:     cgoSpec.Base,
+	}
+	name := "copy" + gen.getTypedHelperName("bytes", cgoSpec)
+	sizeofConst := "sizeOf" + gen.getTypedHelperName("value", tl.CGoSpec{
+		Base: cgoSpec.Base,
+	})
+	return &Helper{
+		Name:        name,
+		Description: fmt.Sprintf("%s copies the data from Go slice as %s.", name, cgoSpec),
+		Source: fmt.Sprintf(`func %s(slice *sliceHeader) (%s, *cgoAllocMap) {
+			allocs := new(cgoAllocMap)
+			defer runtime.SetFinalizer(allocs, func(a *cgoAllocMap) {
+				go a.Free()
+			})
+
+			mem0 := unsafe.Pointer(C.CBytes(*(*[]byte)(unsafe.Pointer(&sliceHeader{
+				Data: slice.Data,
+				Len: int(%s) * slice.Len,
+				Cap: int(%s) * slice.Len,
+			}))))
+			allocs.Add(mem0)
+
+			return (%s)(mem0), allocs
+		}`, name, cgoSpec, sizeofConst, sizeofConst, cgoSpec),
+		Requires: []*Helper{
+			sliceHeader,
+			cgoAllocMap,
+			gen.getAllocMemoryHelper(tl.CGoSpec{
+				Base: cgoSpec.Base,
+			}),
+		},
 	}
 }
 
@@ -438,11 +487,10 @@ func (gen *Generator) proxyValueFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
-		gen.submitHelper(sliceHeader)
-		proxy = fmt.Sprintf(
-			"(%s)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&%s)).Data)), cgoAllocsUnknown",
-			cgoSpec, name)
-		return
+		helper := gen.getCopyBytesHelper(cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s((*sliceHeader)(unsafe.Pointer(&%s)))", helper.Name, name)
+		return proxy, helper.Nillable
 	case isPlain: // ex: byte, [4]byte
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
 			len(goSpec.OuterArr)+len(goSpec.InnerArr) == 0 && goSpec.Pointers == 0 {
@@ -500,10 +548,10 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 			// Go 1.8+
 			cgoSpec.Base = "unsafe.Pointer"
 		}
-		proxy = fmt.Sprintf(
-			"(%s)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&%s)).Data)), cgoAllocsUnknown",
-			cgoSpec.AtLevel(0), name)
-		return
+		helper := gen.getCopyBytesHelper(cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s((*sliceHeader)(unsafe.Pointer(&%s)))", helper.Name, name)
+		return proxy, helper.Nillable
 	case isPlain: // ex: byte, [4]byte
 		var ref, ptr string
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&
