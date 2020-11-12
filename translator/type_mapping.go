@@ -30,18 +30,33 @@ var (
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
 
+func getCTypeMap(constCharIsString, constUCharIsString bool) CTypeMap {
+	config := make(CTypeMap, len(builtinCTypeMap)+2)
+	for k, v := range builtinCTypeMap {
+		config[k] = v
+	}
+
+	if constCharIsString {
+		// const char* -> string
+		config[CTypeSpec{Base: "char", Const: true, Pointers: 1}] = StringSpec
+	}
+
+	if constUCharIsString {
+		// const unsigned char* -> string
+		config[CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}] = UStringSpec
+	}
+
+	return config
+}
+
 // https://en.wikipedia.org/wiki/C_data_types
 var builtinCTypeMap = CTypeMap{
 	// char -> byte
 	CTypeSpec{Base: "char"}: ByteSpec,
-	// const char* -> string
-	CTypeSpec{Base: "char", Const: true, Pointers: 1}: StringSpec,
 	// signed char -> int8
 	CTypeSpec{Base: "char", Signed: true}: Int8Spec,
 	// unsigned char -> unsigned byte
 	CTypeSpec{Base: "char", Unsigned: true}: ByteSpec,
-	// const unsigned char* -> string
-	CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}: UStringSpec,
 	// short -> int16
 	CTypeSpec{Base: "short"}: Int16Spec,
 	// unsigned short -> uint16

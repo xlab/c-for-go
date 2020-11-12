@@ -20,8 +20,12 @@ type Translator struct {
 	compiledMemTipRxs  MemTipRxList
 	constRules         ConstRules
 	typemap            CTypeMap
-	fileScope          *cc.Bindings
-	ignoredFiles       map[string]struct{}
+	builtinTypemap     CTypeMap
+	// builtinTypemap2 is an optional
+	// typemap with overriden const (u)char rules
+	builtinTypemap2 CTypeMap
+	fileScope       *cc.Bindings
+	ignoredFiles    map[string]struct{}
 
 	valueMap map[string]Value
 	exprMap  map[string]string
@@ -77,12 +81,14 @@ func (t TipSpecRx) Self() Tip {
 }
 
 type Config struct {
-	Rules      Rules      `yaml:"Rules"`
-	ConstRules ConstRules `yaml:"ConstRules"`
-	PtrTips    PtrTips    `yaml:"PtrTips"`
-	TypeTips   TypeTips   `yaml:"TypeTips"`
-	MemTips    MemTips    `yaml:"MemTips"`
-	Typemap    CTypeMap   `yaml:"Typemap"`
+	Rules              Rules      `yaml:"Rules"`
+	ConstRules         ConstRules `yaml:"ConstRules"`
+	PtrTips            PtrTips    `yaml:"PtrTips"`
+	TypeTips           TypeTips   `yaml:"TypeTips"`
+	MemTips            MemTips    `yaml:"MemTips"`
+	Typemap            CTypeMap   `yaml:"Typemap"`
+	ConstCharIsString  *bool      `yaml:"ConstCharIsString"`
+	ConstUCharIsString *bool      `yaml:"ConstUCharIsString"`
 
 	IgnoredFiles []string `yaml:"-"`
 }
@@ -91,10 +97,27 @@ func New(cfg *Config) (*Translator, error) {
 	if cfg == nil {
 		cfg = &Config{}
 	}
+
+	var constCharAsString bool
+	if cfg.ConstCharIsString == nil {
+		constCharAsString = true
+	} else {
+		constCharAsString = *cfg.ConstCharIsString
+	}
+
+	var constUCharAsString bool
+	if cfg.ConstUCharIsString == nil {
+		constUCharAsString = false
+	} else {
+		constUCharAsString = *cfg.ConstUCharIsString
+	}
+
 	t := &Translator{
 		rules:              cfg.Rules,
 		constRules:         cfg.ConstRules,
 		typemap:            cfg.Typemap,
+		builtinTypemap:     getCTypeMap(constCharAsString, constUCharAsString),
+		builtinTypemap2:    getCTypeMap(true, false),
 		compiledRxs:        make(map[RuleAction]RxMap),
 		compiledPtrTipRxs:  make(PtrTipRxMap),
 		compiledTypeTipRxs: make(TypeTipRxMap),
@@ -550,19 +573,26 @@ func (t *Translator) TransformName(target RuleTarget, str string, publicOpt ...b
 	return name
 }
 
-func (t *Translator) lookupSpec(spec CTypeSpec) (GoTypeSpec, bool) {
+func (t *Translator) lookupSpec(spec CTypeSpec, useConstCharTypemap bool) (GoTypeSpec, bool) {
 	if gospec, ok := t.typemap[spec]; ok {
 		return gospec, true
 	}
-	if gospec, ok := builtinCTypeMap[spec]; ok {
-		return gospec, true
+	if useConstCharTypemap {
+		if gospec, ok := t.builtinTypemap2[spec]; ok {
+			return gospec, true
+		}
+	} else {
+		if gospec, ok := t.builtinTypemap[spec]; ok {
+			return gospec, true
+		}
 	}
+
 	if spec.Const {
 		spec.Const = false
 		if gospec, ok := t.typemap[spec]; ok {
 			return gospec, true
 		}
-		if gospec, ok := builtinCTypeMap[spec]; ok {
+		if gospec, ok := t.builtinTypemap[spec]; ok {
 			return gospec, true
 		}
 	}
@@ -681,7 +711,8 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 			lookupSpec.Unsigned = typeSpec.Unsigned
 			lookupSpec.Signed = typeSpec.Signed
 		}
-		if gospec, ok := t.lookupSpec(lookupSpec); ok {
+
+		if gospec, ok := t.lookupSpec(lookupSpec, typeTip == TipTypeString); ok {
 			tag := typeSpec.CGoName()
 			if gospec == UnsafePointerSpec && len(tag) > 0 {
 				if decl, ok := t.tagMap[tag]; ok {
@@ -719,6 +750,7 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 					}
 				}
 			}
+
 			return gospec
 		}
 		wrapper := GoTypeSpec{
@@ -741,7 +773,7 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 					wrapper.Slices++
 				}
 				lookupSpec.Pointers--
-				if gospec, ok := t.lookupSpec(lookupSpec); ok {
+				if gospec, ok := t.lookupSpec(lookupSpec, typeTip == TipTypeString); ok {
 					tag := typeSpec.CGoName()
 					if gospec == UnsafePointerSpec && len(tag) > 0 {
 						if decl, ok := t.tagMap[tag]; ok {
