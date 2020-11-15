@@ -62,11 +62,11 @@ var builtinCTypeMap = CTypeMap{
 	// unsigned short -> uint16
 	CTypeSpec{Base: "short", Unsigned: true}: Uint16Spec,
 	// long -> int
-	CTypeSpec{Base: "long"}: IntSpec,
+	CTypeSpec{Base: "long"}: Int32Spec,
 	// unsigned long -> uint
-	CTypeSpec{Base: "long", Unsigned: true}: UintSpec,
+	CTypeSpec{Base: "long", Unsigned: true}: Uint32Spec,
 	// signed long -> int
-	CTypeSpec{Base: "long", Signed: true}: IntSpec,
+	CTypeSpec{Base: "long", Signed: true}: Int32Spec,
 	// long long -> int64
 	CTypeSpec{Base: "long", Long: true}: Int64Spec,
 	// unsigned long long -> uint64
@@ -86,11 +86,11 @@ var builtinCTypeMap = CTypeMap{
 	// signed short int -> uint16
 	CTypeSpec{Base: "int", Short: true, Signed: true}: Int16Spec,
 	// long int -> int
-	CTypeSpec{Base: "int", Long: true}: IntSpec,
+	CTypeSpec{Base: "int", Long: true}: Int32Spec,
 	// unsigned long int -> uint
-	CTypeSpec{Base: "int", Long: true, Unsigned: true}: UintSpec,
+	CTypeSpec{Base: "int", Long: true, Unsigned: true}: Uint32Spec,
 	// signed long int -> uint
-	CTypeSpec{Base: "int", Long: true, Signed: true}: IntSpec,
+	CTypeSpec{Base: "int", Long: true, Signed: true}: Int32Spec,
 	// float -> float32
 	CTypeSpec{Base: "float"}: Float32Spec,
 	// double -> float64
