@@ -96,10 +96,11 @@ func NewProcess(configPath, outputPath string) (*Process, error) {
 	// begin generation
 	pkg := filepath.Base(cfg.Generator.PackageName)
 	gen, err := generator.New(pkg, cfg.Generator, tl)
-	gen.SetMaxMemory(generator.NewMemSpec(*maxMem))
 	if err != nil {
 		return nil, err
 	}
+	gen.SetMaxMemory(generator.NewMemSpec(*maxMem))
+
 	if *nostamp {
 		gen.DisableTimestamps()
 	}
