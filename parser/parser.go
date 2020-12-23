@@ -108,6 +108,7 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		cc.EnableEmptyDeclarations(),
 		cc.EnableWideEnumValues(),
 		cc.EnableWideBitFieldTypes(),
+		cc.EnableParenthesizedCompoundStatemen(),
 
 		cc.AllowCompatibleTypedefRedefinitions(),
 	)
