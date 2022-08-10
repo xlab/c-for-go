@@ -75,6 +75,9 @@ func (gen *Generator) getTypedHelperName(goBase string, spec tl.CGoSpec) string 
 	if strings.HasPrefix(spec.Base, "C.") {
 		spec.Base = spec.Base[2:]
 	}
+	if strings.HasPrefix(spec.Base, "unsafe.") {
+		spec.Base = spec.Base[7:]
+	}
 	specName := gen.tr.TransformName(tl.TargetType, spec.Base)
 	buf := new(bytes.Buffer)
 	for _, size := range spec.OuterArr.Sizes() {
