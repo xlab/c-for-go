@@ -25,6 +25,7 @@ var (
 
 const logo = `Copyright (c) 2015-2017 Maxim Kupriianov <max@kc.vc>
 Based on a C99 compiler front end by Jan Mercl <0xjnml@gmail.com>
+
 `
 
 func init() {
@@ -34,7 +35,7 @@ func init() {
 		log.SetFlags(0)
 	}
 	flag.Usage = func() {
-		fmt.Println(logo)
+		fmt.Print(logo)
 		fmt.Printf("Usage: %s package1.yml [package2.yml] ...\n", os.Args[0])
 		fmt.Printf("See https://github.com/xlab/c-for-go for examples and documentation.\n\n")
 		fmt.Println("Options:")

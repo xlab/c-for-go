@@ -44,9 +44,9 @@ type Config struct {
 }
 
 type GenOptions struct {
-	SafeStrings bool `yaml:"SafeStrings"`
+	SafeStrings     bool `yaml:"SafeStrings"`
 	StructAccessors bool `yaml:"StructAccessors"`
-	KeepAlive   bool `yaml:"KeepAlive"`
+	KeepAlive       bool `yaml:"KeepAlive"`
 }
 
 func New(pkg string, cfg *Config, tr *tl.Translator) (*Generator, error) {
@@ -74,8 +74,10 @@ type declList []*tl.CDecl
 func (s declList) Len() int      { return len(s) }
 func (s declList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s declList) Less(i, j int) bool {
-	if s[i].Pos != s[j].Pos {
-		return s[i].Pos < s[j].Pos
+	if s[i].Position.Filename != s[j].Position.Filename {
+		return s[i].Position.Filename < s[j].Position.Filename
+	} else if s[i].Position.Offset != s[j].Position.Offset {
+		return s[i].Position.Offset < s[j].Position.Offset
 	} else {
 		return s[i].Name < s[j].Name
 	}

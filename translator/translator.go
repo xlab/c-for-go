@@ -7,13 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"modernc.org/cc"
-	"modernc.org/xc"
+	"modernc.org/cc/v4"
 )
 
 type Translator struct {
 	rules              Rules
-	prefixEnums        bool
 	compiledRxs        map[RuleAction]RxMap
 	compiledPtrTipRxs  PtrTipRxMap
 	compiledTypeTipRxs TypeTipRxMap
@@ -24,7 +22,6 @@ type Translator struct {
 	// builtinTypemap2 is an optional
 	// typemap with overriden const (u)char rules
 	builtinTypemap2 CTypeMap
-	fileScope       *cc.Bindings
 	ignoredFiles    map[string]struct{}
 
 	valueMap map[string]Value
@@ -279,19 +276,21 @@ type declList []*CDecl
 func (s declList) Len() int      { return len(s) }
 func (s declList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s declList) Less(i, j int) bool {
-	if s[i].Pos != s[j].Pos {
-		return s[i].Pos < s[j].Pos
+	if s[i].Position.Filename != s[j].Position.Filename {
+		return s[i].Position.Filename < s[j].Position.Filename
+	} else if s[i].Position.Offset != s[j].Position.Offset {
+		return s[i].Position.Offset < s[j].Position.Offset
 	} else {
 		return s[i].Name < s[j].Name
 	}
 }
 
-func (t *Translator) Learn(unit *cc.TranslationUnit) {
-	t.walkTranslationUnit(unit)
+func (t *Translator) Learn(ast *cc.AST) {
+	t.walkTranslationUnit(ast.TranslationUnit)
 	t.resolveTypedefs(t.typedefs)
 	sort.Sort(declList(t.declares))
 	sort.Sort(declList(t.typedefs))
-	t.collectDefines(t.declares, unit.Macros)
+	t.collectDefines(t.declares, ast.Macros)
 	sort.Sort(declList(t.defines))
 }
 
@@ -319,13 +318,13 @@ func (t *Translator) Learn(unit *cc.TranslationUnit) {
 // 	fmt.Printf("\n)\n\n")
 // }
 
-func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro) {
+func (t *Translator) collectDefines(declares []*CDecl, defines map[string]*cc.Macro) {
 	seen := make(map[string]struct{}, len(defines)+len(declares))
 
 	// traverse declared constants because macro can reference them,
 	// so we need to collect a map of valid references beforehand
 	for _, decl := range declares {
-		if t.IsTokenIgnored(decl.Pos) {
+		if t.IsTokenIgnored(decl.Position) {
 			continue
 		}
 		if decl.Spec.Kind() == EnumKind {
@@ -342,12 +341,12 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 	// double traverse because macros can depend on each other and the map
 	// brings a randomized order of them.
 	for _, macro := range defines {
-		if t.IsTokenIgnored(macro.DefTok.Pos()) {
+		if t.IsTokenIgnored(macro.Position()) {
 			continue
 		} else if macro.IsFnLike {
 			continue
 		}
-		name := string(macro.DefTok.S())
+		name := string(macro.Name.Name())
 		if !t.IsAcceptableName(TargetConst, name) {
 			continue
 		}
@@ -355,10 +354,10 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 	}
 
 	for _, macro := range defines {
-		if t.IsTokenIgnored(macro.DefTok.Pos()) {
+		if t.IsTokenIgnored(macro.Position()) {
 			continue
 		}
-		name := string(macro.DefTok.S())
+		name := string(macro.Name.Name())
 		if _, ok := seen[name]; !ok {
 			continue
 		}
@@ -368,28 +367,26 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 		}
 
 		if !expand {
-			switch val := macro.Value.(type) {
-			case nil: // unresolved value -> try to expand
+			switch macro.Type().Kind() {
+			case cc.InvalidKind: // unresolved value -> try to expand
 				expand = true
-			case bool: // ban bools
+			case cc.Bool: // ban bools
 				continue
-			case cc.StringLitID:
-				macro.Value = fmt.Sprintf(`"%s"`, xc.Dict.S(int(val)))
 			}
 			if !expand {
 				t.defines = append(t.defines, &CDecl{
 					IsDefine: true,
 					Name:     name,
-					Value:    Value(macro.Value),
-					Pos:      macro.DefTok.Pos(),
+					Value:    Value(macro.Value()),
+					Position: macro.Position(),
 				})
 				continue
 			}
-		} else if _, ok := macro.Value.(bool); ok {
+		} else if macro.Type().Kind() == cc.Bool {
 			// ban bools
 			continue
 		}
-		tokens := macro.ReplacementToks()
+		tokens := macro.ReplacementList()
 		srcParts := make([]string, 0, len(tokens))
 		exprParts := make([]string, 0, len(tokens))
 		valid := true
@@ -400,10 +397,10 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 		typecastValueParens := 0
 
 		for _, token := range tokens {
-			src := cc.TokSrc(token)
+			src := token.SrcStr()
 			srcParts = append(srcParts, src)
-			switch token.Rune {
-			case cc.IDENTIFIER:
+			switch token.Ch {
+			case rune(cc.IDENTIFIER):
 				if _, ok := seen[src]; ok {
 					// const reference
 					exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
@@ -423,13 +420,13 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 					rparen = rune(41)
 				)
 				switch {
-				case needsTypecast && token.Rune == rparen:
+				case needsTypecast && token.Ch == rparen:
 					typecastValue = true
 					needsTypecast = false
 					exprParts = append(exprParts, src+"(")
-				case typecastValue && token.Rune == lparen:
+				case typecastValue && token.Ch == lparen:
 					typecastValueParens++
-				case typecastValue && token.Rune == rparen:
+				case typecastValue && token.Ch == rparen:
 					if typecastValueParens == 0 {
 						typecastValue = false
 						exprParts = append(exprParts, ")"+src)
@@ -438,7 +435,7 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 					}
 				default:
 					// somewhere in the world a kitten died because of this
-					if token.Rune == '~' {
+					if token.Ch == '~' {
 						src = "^"
 					}
 					if runes := []rune(src); len(runes) > 0 && isNumeric(runes) {
@@ -458,13 +455,13 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 			typecastValue = false
 		}
 		if !valid {
-			if macro.Value != nil {
+			if macro.Type().Kind() == cc.InvalidKind {
 				// fallback to the evaluated value
 				t.defines = append(t.defines, &CDecl{
 					IsDefine: true,
 					Name:     name,
 					Value:    Value(macro.Value),
-					Pos:      macro.DefTok.Pos(),
+					Position: macro.Position(),
 				})
 			}
 			continue
@@ -474,14 +471,14 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[int]*cc.Macro
 			Name:       name,
 			Expression: strings.Join(exprParts, " "),
 			Src:        strings.Join(srcParts, " "),
-			Pos:        macro.DefTok.Pos(),
+			Position:   macro.Position(),
 		})
 	}
 }
 
 func (t *Translator) resolveTypedefs(typedefs []*CDecl) {
 	for _, decl := range typedefs {
-		if t.IsTokenIgnored(decl.Pos) {
+		if t.IsTokenIgnored(decl.Position) {
 			continue
 		}
 		if decl.Spec.Kind() != TypeKind {
