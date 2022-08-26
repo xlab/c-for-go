@@ -83,7 +83,7 @@ func (gen *Generator) writeFunctionDeclaration(wr io.Writer, decl *tl.CDecl,
 		goName = gen.tr.TransformName(tl.TargetFunction, "new_"+cName, public)
 	}
 	fmt.Fprintf(wr, "// %s function as declared in %s\n", goName,
-		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Pos)))
+		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetFunction, decl.Name, decl.Position)))
 	fmt.Fprintf(wr, "func")
 	gen.writeInstanceObjectParam(wr, cName, decl.Spec)
 	fmt.Fprintf(wr, " %s", goName)

@@ -17,25 +17,8 @@ type CEnumSpec struct {
 }
 
 func (c *CEnumSpec) PromoteType(v Value) *CTypeSpec {
-	var (
-		int32Spec = CTypeSpec{Base: "int"}
-		int64Spec = CTypeSpec{Base: "long int"}
-	)
-	switch c.Type {
-	case int32Spec: // need promotion
-		switch v.(type) {
-		case int64:
-			c.Type = int64Spec
-		}
-	case int64Spec:
-	default:
-		switch v.(type) {
-		case int32:
-			c.Type = int32Spec
-		case int64:
-			c.Type = int64Spec
-		}
-	}
+	// ANSI C requires int values for enum. Therefore, force enum type to be int.
+	c.Type = CTypeSpec{Base: "int"}
 	return &c.Type
 }
 

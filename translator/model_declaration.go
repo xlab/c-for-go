@@ -3,7 +3,8 @@ package translator
 import (
 	"bytes"
 	"fmt"
-	"go/token"
+
+	"modernc.org/token"
 )
 
 type CTypeKind int
@@ -53,7 +54,7 @@ type CDecl struct {
 	IsStatic   bool
 	IsTypedef  bool
 	IsDefine   bool
-	Pos        token.Pos
+	Position   token.Position
 	Src        string
 }
 

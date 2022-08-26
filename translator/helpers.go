@@ -3,13 +3,12 @@ package translator
 import (
 	"bytes"
 	"fmt"
-	"go/token"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 
-	"modernc.org/xc"
+	"modernc.org/token"
 )
 
 var (
@@ -29,12 +28,6 @@ var (
 		qualConst, specStruct, specUnion, specUnsigned, specSigned, specShort,
 	}, spaceStr)
 )
-
-type bytesSlice [][]byte
-
-func (s bytesSlice) Len() int           { return len(s) }
-func (s bytesSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s bytesSlice) Less(i, j int) bool { return bytes.Compare(s[i], s[j]) < 0 }
 
 // narrowPath reduces full path to file name and parent dir only.
 func narrowPath(fp string) string {
@@ -60,24 +53,22 @@ func replaceBytes(buf []byte, idx []int, piece []byte) []byte {
 
 var srcReferenceRx = regexp.MustCompile(`(?P<path>[^;]+);(?P<file>[^;]+);(?P<line>[^;]+);(?P<name>[^;]+);(?P<goname>[^;]+);`)
 
-func (t *Translator) IsTokenIgnored(p token.Pos) bool {
+func (t *Translator) IsTokenIgnored(p token.Position) bool {
 	if len(t.ignoredFiles) == 0 {
 		return false
 	}
-	pos := xc.FileSet.Position(p)
 	for suffix := range t.ignoredFiles {
-		if strings.HasSuffix(pos.Filename, suffix) {
+		if strings.HasSuffix(p.Filename, suffix) {
 			return true
 		}
 	}
 	return false
 }
 
-func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Pos) string {
-	pos := xc.FileSet.Position(p)
-	filename := filepath.Base(pos.Filename)
+func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Position) string {
+	filename := filepath.Base(p.Filename)
 	defaultLocation := func() string {
-		return fmt.Sprintf("%s:%d", narrowPath(pos.Filename), pos.Line)
+		return fmt.Sprintf("%s:%d", narrowPath(p.Filename), p.Line)
 	}
 	rxs, ok := t.compiledRxs[ActionDocument][docTarget]
 	if !ok {
@@ -107,8 +98,8 @@ func (t *Translator) SrcLocation(docTarget RuleTarget, name string, p token.Pos)
 
 	goName := t.TransformName(TargetGlobal, name, true)
 	goName = t.TransformName(TargetPostGlobal, string(goName), true)
-	values := fmt.Sprintf("%s;%s;%d;%s;%s;", narrowPath(pos.Filename),
-		filename, pos.Line, name, string(goName))
+	values := fmt.Sprintf("%s;%s;%d;%s;%s;", narrowPath(p.Filename),
+		filename, p.Line, name, string(goName))
 	location := srcReferenceRx.ReplaceAllString(values, template)
 	return location
 }
@@ -122,10 +113,7 @@ func (t *TypeCache) Get(id string) bool {
 	t.mux.RLock()
 	defer t.mux.RUnlock()
 	_, ok := t.cache[id]
-	if ok {
-		return true
-	}
-	return false
+	return ok
 }
 
 func (t *TypeCache) Set(id string) {
@@ -234,11 +222,11 @@ var builtinNames = func() map[string]struct{} {
 }()
 
 // blessName transforms the name to be a valid name in Go and not a keyword.
-func blessName(name []byte) string {
-	if _, ok := builtinNames[string(name)]; ok {
-		return "_" + string(name)
+func blessName(name string) string {
+	if _, ok := builtinNames[name]; ok {
+		return "_" + name
 	}
-	return string(name)
+	return name
 }
 
 func isBuiltinName(name []byte) bool {

@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"modernc.org/cc"
+	"modernc.org/cc/v4"
 )
 
 type Config struct {
@@ -21,12 +21,11 @@ type Config struct {
 
 	Defines map[string]interface{} `yaml:"Defines"`
 
-	CCDefs   bool `yaml:"-"`
-	CCIncl   bool `yaml:"-"`
-	archBits TargetArch
+	CCDefs bool `yaml:"-"`
+	CCIncl bool `yaml:"-"`
 }
 
-func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
+func ParseWith(cfg *Config) (*cc.AST, error) {
 	if len(cfg.SourcesPaths) == 0 {
 		return nil, errors.New("parser: no target paths specified")
 	}
@@ -35,7 +34,7 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		return nil, err
 	}
 
-	predefined := builtinBase
+	var predefined string
 	// user-provided defines take precedence
 	for name, value := range cfg.Defines {
 		switch v := value.(type) {
@@ -65,7 +64,7 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 		// if expanded, err := exec.LookPath(cppPath); err == nil {
 		// 	cppPath = expanded
 		// }
-		predefined, _, sysIncludePaths, err := hostCppConfig(cppPath)
+		ccpredef, _, sysIncludePaths, err := hostCppConfig(cppPath)
 		if err != nil {
 			log.Println("[WARN] `cpp -dM` failed:", err)
 		} else {
@@ -73,57 +72,34 @@ func ParseWith(cfg *Config) (*cc.TranslationUnit, error) {
 				// add on top of sysIncludePaths if allowed by config
 				cfg.IncludePaths = append(sysIncludePaths, cfg.IncludePaths...)
 			}
-			ccDefs = predefined
+			ccDefs = ccpredef
 			ccDefsOK = true
 		}
 	}
 	if cfg.CCDefs && ccDefsOK {
 		predefined += fmt.Sprintf("\n%s", ccDefs)
-	} else {
-		predefined += basePredefines
-		if archDefs, ok := archPredefines[cfg.archBits]; ok {
-			predefined += fmt.Sprintf("\n%s", archDefs)
-		}
 	}
-	// undefines?
-	predefined += fmt.Sprintf("\n%s", builtinBaseUndef)
-	for name, value := range cfg.Defines {
-		switch value.(type) {
-		case string, int, int16, int32, int64, uint, uint16, uint32, uint64, float32, float64:
-			continue
-		default: // a corner case: undef using an the nil value
-			if value == nil {
-				predefined += fmt.Sprintf("\n#undef %s", name)
-			}
-		}
+	ccConfig, _ := cc.NewConfig(runtime.GOOS, cfg.Arch)
+	// Let cc provide all predefines and builtins. Only append custom definitions.
+	ccConfig.Predefined += predefined
+	ccConfig.IncludePaths = append(ccConfig.IncludePaths, cfg.IncludePaths...)
+	var sources []cc.Source
+	sources = append(sources, cc.Source{Name: "<predefined>", Value: ccConfig.Predefined})
+	sources = append(sources, cc.Source{Name: "<builtin>", Value: cc.Builtin})
+	for _, sourceEntry := range cfg.SourcesPaths {
+		sources = append(sources, cc.Source{
+			Name: sourceEntry,
+		})
 	}
-	model := models[cfg.archBits]
-	return cc.Parse(predefined, cfg.SourcesPaths, model,
-		cc.SysIncludePaths(cfg.IncludePaths),
-		cc.EnableAnonymousStructFields(),
-		cc.EnableAsm(),
-		cc.EnableAlternateKeywords(),
-		cc.EnableIncludeNext(),
-		cc.EnableNoreturn(),
-		cc.EnableEmptyDeclarations(),
-		cc.EnableWideEnumValues(),
-		cc.EnableWideBitFieldTypes(),
-		cc.EnableParenthesizedCompoundStatemen(),
-
-		cc.AllowCompatibleTypedefRedefinitions(),
-	)
+	return cc.Translate(ccConfig, sources)
 }
 
 func checkConfig(cfg *Config) (*Config, error) {
 	if cfg == nil {
 		cfg = &Config{}
 	}
-	if arch, ok := arches[cfg.Arch]; !ok {
-		// default to 64-bit arch
-		cfg.archBits = Arch64
-	} else if arch != Arch32 && arch != Arch64 && arch != Arch48 {
-		// default to 64-bit arch
-		cfg.archBits = Arch64
+	if len(cfg.Arch) == 0 {
+		cfg.Arch = runtime.GOARCH
 	}
 	// workaround for cznic's cc (it panics if supplied path is a dir)
 	var saneFiles []string

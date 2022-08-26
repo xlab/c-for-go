@@ -2,15 +2,13 @@ package translator
 
 import (
 	"fmt"
-	"go/token"
 	"strings"
 
-	"modernc.org/cc"
-	"modernc.org/xc"
+	"modernc.org/cc/v4"
+	"modernc.org/token"
 )
 
 func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
-	t.fileScope = unit.Declarations
 	for unit != nil {
 		t.walkExternalDeclaration(unit.ExternalDeclaration)
 		unit = unit.TranslationUnit
@@ -18,14 +16,14 @@ func (t *Translator) walkTranslationUnit(unit *cc.TranslationUnit) {
 }
 
 func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
-	if t.IsTokenIgnored(d.Pos()) {
+	if t.IsTokenIgnored(d.Position()) {
 		return
 	}
 	switch d.Case {
-	case 0: // FunctionDefinition
+	case cc.ExternalDeclarationFuncDef:
 		var decl *CDecl
 		if declr := d.FunctionDefinition.Declarator; declr != nil {
-			decl = t.declarator(declr)
+			decl = t.declarator(declr.Type(), identifierOf(declr.DirectDeclarator), declr.IsTypename(), declr.IsStatic(), declr.IsConst(), declr.Position())
 			t.registerTagsOf(decl)
 		} else {
 			return
@@ -36,7 +34,7 @@ func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
 			return
 		}
 		t.declares = append(t.declares, decl)
-	case 1: // Declaration
+	case cc.ExternalDeclarationDecl:
 		declares := t.walkDeclaration(d.Declaration)
 		for _, decl := range declares {
 			if decl.IsTypedef {
@@ -50,17 +48,18 @@ func (t *Translator) walkExternalDeclaration(d *cc.ExternalDeclaration) {
 }
 
 func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
-	if t.IsTokenIgnored(d.Pos()) {
+	if t.IsTokenIgnored(d.Position()) {
 		return
 	}
-	if d.InitDeclaratorListOpt != nil {
-		list := d.InitDeclaratorListOpt.InitDeclaratorList
+	list := d.InitDeclaratorList
+	if list != nil {
 		for list != nil {
-			decl := t.declarator(list.InitDeclarator.Declarator)
+			declr := list.InitDeclarator.Declarator
+			decl := t.declarator(declr.Type(), identifierOf(declr.DirectDeclarator), declr.IsTypename(), declr.IsStatic(), declr.IsConst(), declr.Position())
 			init := list.InitDeclarator.Initializer
-			if init != nil && init.Expression != nil {
-				decl.Value = init.Expression.Value
-				decl.Expression = blessName(init.Expression.Token.S())
+			if init != nil && init.AssignmentExpression != nil {
+				decl.Value = init.AssignmentExpression.Value
+				decl.Expression = blessName(init.Token.SrcStr())
 			}
 			t.registerTagsOf(decl)
 			declared = append(declared, decl)
@@ -70,146 +69,144 @@ func (t *Translator) walkDeclaration(d *cc.Declaration) (declared []*CDecl) {
 			}
 			list = list.InitDeclaratorList
 		}
-	} else if declr := d.Declarator(); declr != nil {
-		decl := t.declarator(declr)
+	} else if declr := d.Declarator; declr != nil {
+		decl := t.declarator(declr.Type(), identifierOf(declr.DirectDeclarator), declr.IsTypename(), declr.IsStatic(), declr.IsConst(), declr.Position())
 		t.registerTagsOf(decl)
 		declared = append(declared, decl)
+	} else if dspec := d.DeclarationSpecifiers; dspec != nil {
+		typeSpec := dspec.TypeSpecifier
+		if typeSpec != nil {
+			if structSpec := typeSpec.StructOrUnionSpecifier; structSpec != nil {
+				decl := t.declarator(structSpec.Type(), "", structSpec.Type().Typedef() != nil, false, false, structSpec.Position())
+				t.registerTagsOf(decl)
+				declared = append(declared, decl)
+			} else if enumSpec := typeSpec.EnumSpecifier; enumSpec != nil {
+				decl := t.declarator(enumSpec.Type(), "", enumSpec.Type().Typedef() != nil, false, false, enumSpec.Position())
+				t.registerTagsOf(decl)
+				declared = append(declared, decl)
+			}
+		}
 	}
 	return
 }
 
-func (t *Translator) declarator(d *cc.Declarator) *CDecl {
-	specifier := d.RawSpecifier()
+func (t *Translator) declarator(typ cc.Type, name string, isTypedef bool, isStatic bool, isConst bool, position token.Position) *CDecl {
 	decl := &CDecl{
-		Spec:      t.typeSpec(d.Type, 0, false),
-		Name:      identifierOf(d.DirectDeclarator),
-		IsTypedef: specifier.IsTypedef(),
-		IsStatic:  specifier.IsStatic(),
-		Pos:       d.Pos(),
+		Spec:      t.typeSpec(typ, name, 0, isConst, false),
+		Name:      name,
+		IsTypedef: isTypedef,
+		IsStatic:  isStatic,
+		Position:  position,
 	}
 	return decl
 }
 
 func (t *Translator) getStructTag(typ cc.Type) (tag string) {
-	b := t.fileScope.Lookup(cc.NSTags, typ.Tag())
-	switch v := b.Node.(type) {
-	case *cc.StructOrUnionSpecifier:
-		if v.IdentifierOpt != nil {
-			return blessName(v.IdentifierOpt.Token.S())
-		}
-	case xc.Token:
-		return blessName(v.S())
+	var tagToken cc.Token
+	if structType, ok := typ.(*cc.StructType); ok {
+		tagToken = structType.Tag()
+	} else if unionType, ok := typ.(*cc.UnionType); ok {
+		tagToken = unionType.Tag()
 	}
-	return
+	return blessName(tagToken.SrcStr())
 }
 
 func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
-	tag := blessName(xc.Dict.S(typ.Tag()))
+	tag := blessName(typ.Typedef().Name())
 	spec := &CEnumSpec{
 		Tag:      tag,
 		Pointers: base.Pointers,
 		OuterArr: base.OuterArr,
 		InnerArr: base.InnerArr,
 	}
-	list := typ.EnumeratorList()
-	for _, en := range list {
-		name := blessName(en.DefTok.S())
-		m := &CDecl{
-			Name: name,
-			Pos:  en.DefTok.Pos(),
-		}
-		switch {
-		case en.Value == nil:
-			panic("value cannot be nil in enum")
-		case t.constRules[ConstEnum] == ConstCGOAlias:
-			m.Expression = fmt.Sprintf("C.%s", name)
-		case t.constRules[ConstEnum] == ConstExpand:
-			srcParts := make([]string, 0, len(en.Tokens))
-			exprParts := make([]string, 0, len(en.Tokens))
-			valid := true
+	if enumType, ok := typ.(*cc.EnumType); ok {
+		list := enumType.Enumerators()
+		for _, en := range list {
+			name := blessName(en.Token.SrcStr())
+			m := &CDecl{
+				Name:     name,
+				Position: en.Token.Position(),
+			}
+			switch {
+			case t.constRules[ConstEnum] == ConstCGOAlias:
+				m.Expression = fmt.Sprintf("C.%s", name)
+			case t.constRules[ConstEnum] == ConstExpand:
+				enTokens := cc.NodeTokens(en.ConstantExpression)
+				srcParts := make([]string, 0, len(enTokens))
+				exprParts := make([]string, 0, len(enTokens))
+				valid := true
 
-			// TODO: some state machine
-			needsTypecast := false
-			typecastValue := false
-			typecastValueParens := 0
+				// TODO: needsTypecast is never true here
+				// TODO: some state machine
+				needsTypecast := false
+				typecastValue := false
+				typecastValueParens := 0
 
-			for _, token := range en.Tokens {
-				src := cc.TokSrc(token)
-				srcParts = append(srcParts, src)
-				switch token.Rune {
-				case cc.IDENTIFIER:
-					exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
-				default:
-					// TODO: state machine
-					const (
-						lparen = rune(40)
-						rparen = rune(41)
-					)
-					switch {
-					case needsTypecast && token.Rune == rparen:
-						typecastValue = true
-						needsTypecast = false
-						exprParts = append(exprParts, src+"(")
-					case typecastValue && token.Rune == lparen:
-						typecastValueParens++
-					case typecastValue && token.Rune == rparen:
-						if typecastValueParens == 0 {
-							typecastValue = false
-							exprParts = append(exprParts, ")"+src)
-						} else {
-							typecastValueParens--
-						}
+				for _, token := range enTokens {
+					src := token.SrcStr()
+					srcParts = append(srcParts, src)
+					switch token.Ch {
+					case rune(cc.IDENTIFIER):
+						exprParts = append(exprParts, string(t.TransformName(TargetConst, src, true)))
 					default:
-						// somewhere in the world a helpless kitten died because of this
-						if token.Rune == '~' {
-							src = "^"
+						// TODO: state machine
+						const (
+							lparen = rune(40)
+							rparen = rune(41)
+						)
+						switch {
+						case needsTypecast && token.Ch == rparen:
+							typecastValue = true
+							needsTypecast = false
+							exprParts = append(exprParts, src+"(")
+						case typecastValue && token.Ch == lparen:
+							typecastValueParens++
+						case typecastValue && token.Ch == rparen:
+							if typecastValueParens == 0 {
+								typecastValue = false
+								exprParts = append(exprParts, ")"+src)
+							} else {
+								typecastValueParens--
+							}
+						default:
+							// somewhere in the world a helpless kitten died because of this
+							if token.Ch == '~' {
+								src = "^"
+							}
+							if runes := []rune(src); len(runes) > 0 && isNumeric(runes) {
+								// TODO(xlab): better const handling
+								src = readNumeric(runes)
+							}
+							exprParts = append(exprParts, src)
 						}
-						if runes := []rune(src); len(runes) > 0 && isNumeric(runes) {
-							// TODO(xlab): better const handling
-							src = readNumeric(runes)
-						}
-						exprParts = append(exprParts, src)
+					}
+					if !valid {
+						break
 					}
 				}
-				if !valid {
-					break
+				if typecastValue {
+					// still in typecast value, need to close paren
+					exprParts = append(exprParts, ")")
+					typecastValue = false
 				}
-			}
-			if typecastValue {
-				// still in typecast value, need to close paren
-				exprParts = append(exprParts, ")")
-				typecastValue = false
-			}
 
-			if len(exprParts) > 0 {
-				m.Expression = strings.Join(exprParts, " ")
-			} else {
-				m.Value = en.Value
+				if len(exprParts) > 0 {
+					m.Expression = strings.Join(exprParts, " ")
+				} else {
+					m.Value = en.Value()
+				}
+				m.Src = strings.Join(srcParts, " ")
+			default:
+				m.Value = en.Value()
 			}
-			m.Src = strings.Join(srcParts, " ")
-		default:
-			m.Value = en.Value
+			m.Spec = spec.PromoteType(en.Value())
+			spec.Members = append(spec.Members, m)
+			t.valueMap[m.Name] = en.Value()
+			t.exprMap[m.Name] = m.Expression
 		}
-		m.Spec = spec.PromoteType(en.Value)
-		spec.Members = append(spec.Members, m)
-		t.valueMap[m.Name] = en.Value
-		t.exprMap[m.Name] = m.Expression
 	}
 
 	return spec
-}
-
-func (t *Translator) walkEnumerator(e *cc.Enumerator) *CDecl {
-	decl := &CDecl{
-		Name: blessName(e.EnumerationConstant.Token.S()),
-	}
-	switch e.Case {
-	case 0: // EnumerationConstant
-	case 1: // EnumerationConstant '=' ConstantExpression
-		decl.Value = e.ConstantExpression.Value
-		decl.Expression = string(e.ConstantExpression.Expression.Token.S())
-	}
-	return decl
 }
 
 const maxDeepLevel = 3
@@ -226,75 +223,101 @@ func (t *Translator) structSpec(base *CTypeSpec, typ cc.Type, deep int) *CStruct
 	if deep > maxDeepLevel {
 		return spec
 	}
-	members, _ := typ.Members()
-	for i, m := range members {
-		var pos token.Pos
-		if m.Declarator != nil {
-			pos = m.Declarator.Pos()
+	if structType, ok := typ.(*cc.StructType); ok {
+		for i := 0; i < structType.NumFields(); i++ {
+			m := structType.FieldByIndex(i)
+			var position token.Position
+			var name string
+			var isConst bool
+			if m.Declarator() != nil {
+				position = m.Declarator().Position()
+				name = identifierOf(m.Declarator().DirectDeclarator)
+				isConst = m.Declarator().IsConst()
+			}
+			spec.Members = append(spec.Members, &CDecl{
+				Name:     memberName(i, m),
+				Spec:     t.typeSpec(m.Type(), name, deep+1, isConst, false),
+				Position: position,
+			})
 		}
-		spec.Members = append(spec.Members, &CDecl{
-			Name: memberName(i, m),
-			Spec: t.typeSpec(m.Type, deep+1, false),
-			Pos:  pos,
-		})
 	}
 	return spec
 }
 
-func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, deep int) *CFunctionSpec {
+func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, name string, isConst bool, deep int) *CFunctionSpec {
 	spec := &CFunctionSpec{
 		Pointers: base.Pointers,
 	}
 	if deep > 2 { // a function inside params of another function
-		spec.Raw = typedefNameOf(typ)
+		// Replicate cc v1 behaviour.
+		spec.Raw = base.Raw
+		spec.Typedef = base.Raw
 	} else {
-		spec.Raw = identifierOf(typ.Declarator().DirectDeclarator)
+		spec.Raw = name
 	}
 	if deep > maxDeepLevel {
 		return spec
 	}
-	if ret := typ.Result(); ret != nil && ret.Kind() != cc.Void {
-		spec.Return = t.typeSpec(ret, deep+1, true)
-	}
-	params, _ := typ.Parameters()
-	for i, p := range params {
-		spec.Params = append(spec.Params, &CDecl{
-			Name: paramName(i, p),
-			Spec: t.typeSpec(p.Type, deep+1, false),
-			Pos:  p.Declarator.Pos(),
-		})
+	if funcType, ok := typ.(*cc.FunctionType); ok {
+		if ret := funcType.Result(); ret != nil && ret.Kind() != cc.Void {
+			// function result type cannot be declarator of a function definition
+			// so we use typedef here
+			var name string
+			var isResultConst = isConst
+			if funcType.Result().Typedef() != nil {
+				name = identifierOf(funcType.Result().Typedef().DirectDeclarator)
+				isResultConst = isResultConst || funcType.Result().Typedef().IsConst()
+			}
+			spec.Return = t.typeSpec(ret, name, deep+1, isResultConst, true)
+		}
+		params := funcType.Parameters()
+		for i, p := range params {
+			if p.Type().Kind() != cc.Void { // cc v4 may return a "void" parameter, which means no parameters.
+				var name string
+				var isParamConst bool
+				if p.Declarator != nil {
+					name = identifierOf(p.Declarator.DirectDeclarator)
+					isParamConst = p.Declarator.IsConst()
+				}
+				spec.Params = append(spec.Params, &CDecl{
+					Name:     paramName(i, p),
+					Spec:     t.typeSpec(p.Type(), name, deep+1, isParamConst, false),
+					Position: p.Declarator.Position(),
+				})
+			}
+		}
 	}
 	return spec
 }
 
-func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
+func (t *Translator) typeSpec(typ cc.Type, name string, deep int, isConst bool, isRet bool) CType {
 	spec := &CTypeSpec{
-		Const: typ.Specifier().IsConst(),
+		Const: isConst,
 	}
 	if !isRet {
 		spec.Raw = typedefNameOf(typ)
 	}
 
-	for typ.Kind() == cc.Array {
-		size := typ.Elements()
-		typ = typ.Element()
+	for outerArrayType, ok := typ.(*cc.ArrayType); ok; outerArrayType, ok = typ.(*cc.ArrayType) {
+		size := outerArrayType.Len()
+		typ = outerArrayType.Elem()
 		if size >= 0 {
 			spec.AddOuterArr(uint64(size))
 		}
 	}
 	var isVoidPtr bool
-	for typ.Kind() == cc.Ptr {
-		if next := typ.Element(); next.Kind() == cc.Void {
+	for pointerType, ok := typ.(*cc.PointerType); ok; pointerType, ok = typ.(*cc.PointerType) {
+		if next := pointerType.Elem(); next.Kind() == cc.Void {
 			isVoidPtr = true
 			spec.Base = "void*"
 			break
 		}
-		typ = typ.Element()
+		typ = pointerType.Elem()
 		spec.Pointers++
 	}
-	for typ.Kind() == cc.Array {
-		size := typ.Elements()
-		typ = typ.Element()
+	for innerArrayType, ok := typ.(*cc.ArrayType); ok; innerArrayType, ok = typ.(*cc.ArrayType) {
+		size := innerArrayType.Len()
+		typ = innerArrayType.Elem()
 		if size >= 0 {
 			spec.AddInnerArr(uint64(size))
 		}
@@ -349,13 +372,14 @@ func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 		spec.Long = true
 	case cc.Bool:
 		spec.Base = "_Bool"
-	case cc.FloatComplex:
+		// according to C99, _Bool is unsigned, but the flag is not used here.
+	case cc.ComplexFloat:
 		spec.Base = "complexfloat"
 		spec.Complex = true
-	case cc.DoubleComplex:
+	case cc.ComplexDouble:
 		spec.Base = "complexdouble"
 		spec.Complex = true
-	case cc.LongDoubleComplex:
+	case cc.ComplexLongDouble:
 		spec.Base = "complexdouble"
 		spec.Long = true
 		spec.Complex = true
@@ -381,13 +405,19 @@ func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 		}
 		return s
 	case cc.Function:
-		s := t.functionSpec(spec, typ, deep+1)
-		if !isRet && !typ.Specifier().IsTypedef() {
-			s.Typedef = typedefNameOf(typ)
-			retTyp := typ.Result().RawDeclarator().Type
-			retTypedef := typedefNameOf(retTyp)
-			if s.Return != nil {
-				s.Return.SetRaw(retTypedef)
+		s := t.functionSpec(spec, typ, name, isConst, deep+1)
+		if !isRet && typ.Typedef() == nil {
+			if funcType, ok := typ.(*cc.FunctionType); ok {
+				// According to comparison with cc v1 behavior, typedef is set to return value typedef
+				// if this is not a function typedef.
+				// This is somehow strange, and probably causes some bugs, but I'm trying to replicate previous behaviour here.
+				retTypedef := typedefNameOf(funcType.Result())
+				if s.Typedef == "" {
+					s.Typedef = retTypedef
+				}
+				if s.Return != nil {
+					s.Return.SetRaw(retTypedef)
+				}
 			}
 		}
 		return s
@@ -398,38 +428,50 @@ func (t *Translator) typeSpec(typ cc.Type, deep int, isRet bool) CType {
 	return spec
 }
 
-func paramName(n int, p cc.Parameter) string {
-	if p.Name == 0 {
+func paramName(n int, p *cc.Parameter) string {
+	if len(p.Name()) == 0 {
 		return fmt.Sprintf("arg%d", n)
 	}
-	return blessName(xc.Dict.S(p.Name))
+	return blessName(p.Name())
 }
 
-func memberName(n int, m cc.Member) string {
-	if m.Name == 0 {
+func memberName(n int, f *cc.Field) string {
+	if len(f.Name()) == 0 {
 		return fmt.Sprintf("field%d", n)
 	}
-	return blessName(xc.Dict.S(m.Name))
+	return blessName(f.Name())
 }
 
 func typedefNameOf(typ cc.Type) string {
-	rawSpec := typ.Declarator().RawSpecifier()
-	if name := rawSpec.TypedefName(); name > 0 {
-		return blessName(xc.Dict.S(name))
-	} else if rawSpec.IsTypedef() {
-		return identifierOf(typ.Declarator().DirectDeclarator)
+	var name string
+	typeDef := typ.Typedef()
+	if typeDef != nil {
+		name = blessName(typeDef.Name())
+
+		if len(name) == 0 {
+			name = identifierOf(typeDef.DirectDeclarator)
+		}
 	}
-	return ""
+
+	if len(name) == 0 {
+		if pointerType, ok := typ.(*cc.PointerType); ok {
+			name = typedefNameOf(pointerType.Elem())
+		} else if arrayType, ok := typ.(*cc.ArrayType); ok {
+			name = typedefNameOf(arrayType.Elem())
+		}
+	}
+
+	return name
 }
 
 func identifierOf(dd *cc.DirectDeclarator) string {
+	if dd == nil {
+		return ""
+	}
 	switch dd.Case {
-	case 0: // IDENTIFIER
-		if dd.Token.Val == 0 {
-			return ""
-		}
-		return blessName(dd.Token.S())
-	case 1: // '(' Declarator ')'
+	case cc.DirectDeclaratorIdent: // IDENTIFIER
+		return blessName(dd.Token.SrcStr())
+	case cc.DirectDeclaratorDecl: // '(' Declarator ')'
 		return identifierOf(dd.Declarator.DirectDeclarator)
 	default:
 		//	DirectDeclarator '[' TypeQualifierListOpt ExpressionOpt ']'
