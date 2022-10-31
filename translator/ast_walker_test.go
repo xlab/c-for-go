@@ -21,7 +21,11 @@ func NewTestTranslator(t *testing.T, code string, useSimplePredefs bool) *Transl
 	sources = append(sources, cc.Source{Value: code})
 	ast, err := cc.Translate(config, sources)
 	assert.Equal(t, nil, err)
-	translator, err := New(&Config{})
+	translator, err := New(
+		&Config{
+			Rules: Rules(map[RuleTarget][]RuleSpec{"const": {{From: "^TEST", Action: "accept"}}}),
+		},
+	)
 	assert.Equal(t, nil, err)
 	translator.Learn(ast)
 	return translator
@@ -766,4 +770,21 @@ func TestStructNestedTypedef(t *testing.T) {
 	}
 	assert.Equal(t, true, typedefFound)
 	assert.Equal(t, true, baseTypedefFound)
+}
+
+func TestDefineConst(t *testing.T) {
+	translator := NewTestTranslator(t, "#define TEST_ABC 10", true)
+	defineFound := false
+	for _, d := range translator.defines {
+		if d.Name == "TEST_ABC" {
+			assert.False(t, defineFound)
+			defineFound = true
+			assert.Equal(t, false, d.IsStatic)
+			assert.Equal(t, false, d.IsTypedef)
+			assert.Equal(t, true, d.IsDefine)
+			assert.Equal(t, "10", d.Expression)
+			assert.Nil(t, d.Spec) // there is no spec for macros
+		}
+	}
+	assert.Equal(t, true, defineFound)
 }
