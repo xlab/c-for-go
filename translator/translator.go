@@ -346,7 +346,7 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[string]*cc.Ma
 		} else if macro.IsFnLike {
 			continue
 		}
-		name := string(macro.Name.Name())
+		name := string(macro.Name.SrcStr())
 		if !t.IsAcceptableName(TargetConst, name) {
 			continue
 		}
@@ -357,7 +357,7 @@ func (t *Translator) collectDefines(declares []*CDecl, defines map[string]*cc.Ma
 		if t.IsTokenIgnored(macro.Position()) {
 			continue
 		}
-		name := string(macro.Name.Name())
+		name := string(macro.Name.SrcStr())
 		if _, ok := seen[name]; !ok {
 			continue
 		}
