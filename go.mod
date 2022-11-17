@@ -8,8 +8,8 @@ require (
 	github.com/xlab/pkgconfig v0.0.0-20170226114623-cea12a0fd245
 	golang.org/x/tools v0.1.12
 	gopkg.in/yaml.v2 v2.4.0
-	modernc.org/cc/v4 v4.0.0-20220822131148-c47a4b1f7491
-	modernc.org/token v1.0.0
+	modernc.org/cc/v4 v4.1.0
+	modernc.org/token v1.0.1
 )
 
 require (
@@ -21,5 +21,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/opt v0.1.3 // indirect
-	modernc.org/strutil v1.1.2 // indirect
+	modernc.org/strutil v1.1.3 // indirect
 )
