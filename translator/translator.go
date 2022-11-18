@@ -88,6 +88,7 @@ type Config struct {
 	ConstUCharIsString *bool      `yaml:"ConstUCharIsString"`
 
 	IgnoredFiles []string `yaml:"-"`
+	LongIs64Bit  bool     `yaml:"-"`
 }
 
 func New(cfg *Config) (*Translator, error) {
@@ -113,8 +114,8 @@ func New(cfg *Config) (*Translator, error) {
 		rules:              cfg.Rules,
 		constRules:         cfg.ConstRules,
 		typemap:            cfg.Typemap,
-		builtinTypemap:     getCTypeMap(constCharAsString, constUCharAsString),
-		builtinTypemap2:    getCTypeMap(true, false),
+		builtinTypemap:     getCTypeMap(constCharAsString, constUCharAsString, cfg.LongIs64Bit),
+		builtinTypemap2:    getCTypeMap(true, false, cfg.LongIs64Bit),
 		compiledRxs:        make(map[RuleAction]RxMap),
 		compiledPtrTipRxs:  make(PtrTipRxMap),
 		compiledTypeTipRxs: make(TypeTipRxMap),

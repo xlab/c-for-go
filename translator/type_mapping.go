@@ -30,7 +30,7 @@ var (
 	InterfaceSliceSpec = GoTypeSpec{Base: "[]interface{}"}
 )
 
-func getCTypeMap(constCharIsString, constUCharIsString bool) CTypeMap {
+func getCTypeMap(constCharIsString, constUCharIsString, longIs64Bit bool) CTypeMap {
 	config := make(CTypeMap, len(builtinCTypeMap)+2)
 	for k, v := range builtinCTypeMap {
 		config[k] = v
@@ -44,6 +44,13 @@ func getCTypeMap(constCharIsString, constUCharIsString bool) CTypeMap {
 	if constUCharIsString {
 		// const unsigned char* -> string
 		config[CTypeSpec{Base: "char", Const: true, Unsigned: true, Pointers: 1}] = UStringSpec
+	}
+
+	if longIs64Bit {
+		config[CTypeSpec{Base: "long", Unsigned: true}] = Uint64Spec
+		config[CTypeSpec{Base: "long", Signed: true}] = Int64Spec
+		config[CTypeSpec{Base: "int", Long: true, Unsigned: true}] = Uint64Spec
+		config[CTypeSpec{Base: "int", Long: true}] = Int64Spec
 	}
 
 	return config

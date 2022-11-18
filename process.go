@@ -17,6 +17,7 @@ import (
 	"github.com/xlab/pkgconfig/pkg"
 	"golang.org/x/tools/imports"
 	"gopkg.in/yaml.v2"
+	"modernc.org/cc/v4"
 )
 
 type Buf int
@@ -86,6 +87,7 @@ func NewProcess(configPath, outputPath string) (*Process, error) {
 		cfg.Translator = &translator.Config{}
 	}
 	cfg.Translator.IgnoredFiles = cfg.Parser.IgnoredPaths
+	cfg.Translator.LongIs64Bit = unit.ABI.Types[cc.Long].Size == 8
 	// learn the model
 	tl, err := translator.New(cfg.Translator)
 	if err != nil {
