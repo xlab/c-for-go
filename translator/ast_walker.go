@@ -349,10 +349,17 @@ func (t *Translator) typeSpec(typ cc.Type, name string, deep int, isConst bool, 
 	case cc.UInt:
 		spec.Base = "int"
 		spec.Unsigned = true
+	case cc.Int128:
+		spec.Base = "int"
+		spec.Long = true
 	case cc.Long:
 		spec.Base = "int"
 		spec.Long = true
 	case cc.ULong:
+		spec.Base = "int"
+		spec.Long = true
+		spec.Unsigned = true
+	case cc.UInt128:
 		spec.Base = "int"
 		spec.Long = true
 		spec.Unsigned = true
