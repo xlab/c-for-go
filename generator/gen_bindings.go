@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"github.com/xlab/c-for-go/utils"
 	"io"
 	"strings"
 
@@ -1033,7 +1034,7 @@ func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 	if spec.Return != nil {
 		fmt.Fprint(wr, "__ret := ")
 	}
-	fmt.Fprintf(wr, "C.%s", decl.Name)
+	fmt.Fprintf(wr, utils.CTypeString(decl.Name))
 	writeStartParams(wr)
 	for i := range spec.Params {
 		fmt.Fprint(wr, from[i].Name)
