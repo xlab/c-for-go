@@ -315,7 +315,8 @@ The caller is responsible for freeing the this memory via C.free.`, name, cgoSpe
 			}
 			return mem
 		}`, name, sizeofConst)
-	fmt.Fprintln(buf, "\n")
+	fmt.Fprintln(buf)
+	fmt.Fprintln(buf)
 	fmt.Fprintf(buf, `const %s = unsafe.Sizeof([1]%s{})`, sizeofConst, cgoSpec)
 
 	helper.Source = buf.String()
@@ -787,7 +788,7 @@ func (gen *Generator) proxyArgToGo(memTip tl.Tip, varName, ptrName string,
 }
 
 func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
-	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec) (proxy string, nillable bool) {
+	goSpec tl.GoTypeSpec, cgoSpec tl.CGoSpec, lenField string) (proxy string, nillable bool) {
 	nillable = true
 
 	if goSpec.IsGoString() {
@@ -829,7 +830,15 @@ func (gen *Generator) proxyValueToGo(memTip tl.Tip, varName, ptrName string,
 		fmt.Fprintf(buf, "hx%2x := (*sliceHeader)(unsafe.Pointer(&%s))\n", postfix, varName)
 		fmt.Fprintf(buf, "hx%2x.Data = unsafe.Pointer(%s)\n", postfix, ptrName)
 		fmt.Fprintf(buf, "hx%2x.Cap = %s\n", postfix, gen.maxMem)
-		fmt.Fprintf(buf, "// hx%2x.Len = ?\n", postfix)
+
+		// check if we have a configuration for a custom length property
+		idx := strings.LastIndex(ptrName, ".")
+		if lenField != "" && idx > 0 {
+			// replace the `x.refxxxxx.some_field` suffix with the lenField name
+			fmt.Fprintf(buf, "hx%2x.Len = int(%s)\n", postfix, ptrName[0:idx+1]+lenField)
+		} else {
+			fmt.Fprintf(buf, "// hx%2x.Len = ? %s %s\n", postfix, varName, ptrName)
+		}
 		proxy = buf.String()
 		return
 	case isPlain: // ex: byte, [4]byte

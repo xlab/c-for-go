@@ -24,9 +24,10 @@ type Translator struct {
 	builtinTypemap2 CTypeMap
 	ignoredFiles    map[string]struct{}
 
-	valueMap map[string]Value
-	exprMap  map[string]string
-	tagMap   map[string]*CDecl
+	valueMap  map[string]Value
+	exprMap   map[string]string
+	tagMap    map[string]*CDecl
+	lenFields map[string]string
 
 	defines  []*CDecl
 	typedefs []*CDecl
@@ -78,14 +79,15 @@ func (t TipSpecRx) Self() Tip {
 }
 
 type Config struct {
-	Rules              Rules      `yaml:"Rules"`
-	ConstRules         ConstRules `yaml:"ConstRules"`
-	PtrTips            PtrTips    `yaml:"PtrTips"`
-	TypeTips           TypeTips   `yaml:"TypeTips"`
-	MemTips            MemTips    `yaml:"MemTips"`
-	Typemap            CTypeMap   `yaml:"Typemap"`
-	ConstCharIsString  *bool      `yaml:"ConstCharIsString"`
-	ConstUCharIsString *bool      `yaml:"ConstUCharIsString"`
+	Rules              Rules             `yaml:"Rules"`
+	ConstRules         ConstRules        `yaml:"ConstRules"`
+	PtrTips            PtrTips           `yaml:"PtrTips"`
+	TypeTips           TypeTips          `yaml:"TypeTips"`
+	MemTips            MemTips           `yaml:"MemTips"`
+	Typemap            CTypeMap          `yaml:"Typemap"`
+	ConstCharIsString  *bool             `yaml:"ConstCharIsString"`
+	ConstUCharIsString *bool             `yaml:"ConstUCharIsString"`
+	LenFields          map[string]string `yaml:"LenFields"`
 
 	IgnoredFiles []string `yaml:"-"`
 	LongIs64Bit  bool     `yaml:"-"`
@@ -122,6 +124,7 @@ func New(cfg *Config) (*Translator, error) {
 		valueMap:           make(map[string]Value),
 		exprMap:            make(map[string]string),
 		tagMap:             make(map[string]*CDecl),
+		lenFields:          cfg.LenFields,
 		typedefsSet:        make(map[string]struct{}),
 		typedefKinds:       make(map[string]CTypeKind),
 		ignoredFiles:       make(map[string]struct{}),
@@ -1014,6 +1017,10 @@ func (t *Translator) IsAcceptableName(target RuleTarget, name string) bool {
 
 func (t *Translator) TagMap() map[string]*CDecl {
 	return t.tagMap
+}
+
+func (t *Translator) LenFields() map[string]string {
+	return t.lenFields
 }
 
 func (t *Translator) ExpressionMap() map[string]string {

@@ -208,15 +208,16 @@ func (gen *Generator) getRawStructHelpers(goStructName []byte, cStructName strin
 			goSpec.Pointers += 1
 			cgoSpec.Pointers += 1
 		}
-		fmt.Fprintf(buf,"func (s *%s) Get%s() %s {\n", goStructName, goName, goSpec)
-		toProxy, _ := gen.proxyValueToGo(memTip, "ret", "&s." + m.Name, goSpec, cgoSpec)
-		fmt.Fprintf(buf,"\tvar ret %s\n", goSpec)
-		fmt.Fprintf(buf,"\t%s\n",toProxy)
+		fmt.Fprintf(buf, "func (s *%s) Get%s() %s {\n", goStructName, goName, goSpec)
+		lenField := getLenField(gen, structSpec, m)
+		toProxy, _ := gen.proxyValueToGo(memTip, "ret", "&s."+m.Name, goSpec, cgoSpec, lenField)
+		fmt.Fprintf(buf, "\tvar ret %s\n", goSpec)
+		fmt.Fprintf(buf, "\t%s\n", toProxy)
 		fmt.Fprintf(buf, "\treturn ret\n")
 		fmt.Fprintf(buf, "}\n")
 		helpers = append(helpers, &Helper{
-			Name:	fmt.Sprintf("%s.Get%s", goStructName, goName),
-			Description: fmt.Sprintf("Get%s returns a reference to C object within a struct",goName),
+			Name:        fmt.Sprintf("%s.Get%s", goStructName, goName),
+			Description: fmt.Sprintf("Get%s returns a reference to C object within a struct", goName),
 			Source:      buf.String(),
 		})
 	}
@@ -345,8 +346,17 @@ func (gen *Generator) getDerefSource(goStructName []byte, cStructName string, sp
 		goName := "x." + string(gen.tr.TransformName(tl.TargetType, m.Name, public))
 		cgoName := fmt.Sprintf("x.ref%2x.%s", crc, m.Name)
 		cgoSpec := gen.tr.CGoSpec(m.Spec, false)
-		toProxy, _ := gen.proxyValueToGo(memTip, goName, cgoName, goSpec, cgoSpec)
+		lenField := getLenField(gen, structSpec, m)
+		toProxy, _ := gen.proxyValueToGo(memTip, goName, cgoName, goSpec, cgoSpec, lenField)
 		fmt.Fprintln(buf, toProxy)
 	}
 	return buf.Bytes()
+}
+
+func getLenField(gen *Generator, structSpec *tl.CStructSpec, m *tl.CDecl) string {
+	lenField := ""
+	if gen.tr.LenFields() != nil {
+		lenField = gen.tr.LenFields()[structSpec.Typedef+"."+m.Name]
+	}
+	return lenField
 }
