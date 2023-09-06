@@ -370,11 +370,11 @@ func (t *Translator) typeSpec(typ cc.Type, name string, deep int, isConst bool, 
 		spec.Base = "long"
 		spec.Long = true
 		spec.Unsigned = true
-	case cc.Float:
+	case cc.Float, cc.Float32, cc.Float32x:
 		spec.Base = "float"
-	case cc.Double:
+	case cc.Double, cc.Float64, cc.Float64x:
 		spec.Base = "double"
-	case cc.LongDouble:
+	case cc.LongDouble, cc.Float128, cc.Float128x:
 		spec.Base = "double"
 		spec.Long = true
 	case cc.Bool:
