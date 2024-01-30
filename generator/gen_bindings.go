@@ -554,7 +554,8 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 		}
 		helper := gen.getCopyBytesHelper(cgoSpec)
 		gen.submitHelper(helper)
-		proxy = fmt.Sprintf("%s((*sliceHeader)(unsafe.Pointer(&%s)))", helper.Name, name)
+		// proxy = fmt.Sprintf("%s((*sliceHeader)(unsafe.Pointer(&%s)))", helper.Name, name)
+		proxy = fmt.Sprintf("(*%s%s)(unsafe.Pointer(&%s[0])), cgoAllocsUnknown", cgoSpec.InnerArr, cgoSpec.Base, name)
 		return proxy, helper.Nillable
 	case isPlain: // ex: byte, [4]byte
 		var ref, ptr string
