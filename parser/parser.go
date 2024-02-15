@@ -14,10 +14,11 @@ import (
 )
 
 type Config struct {
-	Arch         string   `yaml:"Arch"`
-	IncludePaths []string `yaml:"IncludePaths"`
-	SourcesPaths []string `yaml:"SourcesPaths"`
-	IgnoredPaths []string `yaml:"IgnoredPaths"`
+	Arch            string   `yaml:"Arch"`
+	IncludePaths    []string `yaml:"IncludePaths"`
+	SysIncludePaths []string `yaml:"SysIncludePaths"`
+	SourcesPaths    []string `yaml:"SourcesPaths"`
+	IgnoredPaths    []string `yaml:"IgnoredPaths"`
 
 	Defines map[string]interface{} `yaml:"Defines"`
 
@@ -64,13 +65,17 @@ func ParseWith(cfg *Config) (*cc.AST, error) {
 		// if expanded, err := exec.LookPath(cppPath); err == nil {
 		// 	cppPath = expanded
 		// }
-		ccpredef, _, sysIncludePaths, err := hostCppConfig(cppPath)
+		ccpredef, includePaths, sysIncludePaths, err := hostCppConfig(cppPath)
 		if err != nil {
 			log.Println("[WARN] `cpp -dM` failed:", err)
 		} else {
+			if cfg.CCIncl && len(includePaths) > 0 {
+				// add on top of includePaths if allowed by config
+				cfg.IncludePaths = append(includePaths, cfg.IncludePaths...)
+			}
 			if cfg.CCIncl && len(sysIncludePaths) > 0 {
 				// add on top of sysIncludePaths if allowed by config
-				cfg.IncludePaths = append(sysIncludePaths, cfg.IncludePaths...)
+				cfg.SysIncludePaths = append(sysIncludePaths, cfg.SysIncludePaths...)
 			}
 			ccDefs = ccpredef
 			ccDefsOK = true
@@ -83,6 +88,7 @@ func ParseWith(cfg *Config) (*cc.AST, error) {
 	// Let cc provide all predefines and builtins. Only append custom definitions.
 	ccConfig.Predefined += predefined
 	ccConfig.IncludePaths = append(ccConfig.IncludePaths, cfg.IncludePaths...)
+	ccConfig.SysIncludePaths = append(ccConfig.SysIncludePaths, cfg.SysIncludePaths...)
 	var sources []cc.Source
 	sources = append(sources, cc.Source{Name: "<predefined>", Value: ccConfig.Predefined})
 	sources = append(sources, cc.Source{Name: "<builtin>", Value: cc.Builtin})
