@@ -69,6 +69,11 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 	spec := decl.Spec.(*tl.CEnumSpec)
 	if hasType {
 		enumType := gen.tr.TranslateSpec(&spec.Type)
+		if tips, ok := gen.tr.TypeTipRx(tl.TipScopeEnum, string(typeName)); ok {
+			if tips.HasTip(tl.TipTypeUnsigned) {
+				enumType.Unsigned = true
+			}
+		}
 		fmt.Fprintf(wr, "// %s as declared in %s\n", typeName,
 			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
 		fmt.Fprintf(wr, "type %s %s\n", typeName, enumType)
@@ -132,6 +137,11 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[str
 	spec := decl.Spec.(*tl.CEnumSpec)
 	tagName := gen.tr.TransformName(tl.TargetType, decl.Spec.GetBase())
 	enumType := gen.tr.TranslateSpec(&spec.Type)
+	if tips, ok := gen.tr.TypeTipRx(tl.TipScopeEnum, string(tagName)); ok {
+		if tips.HasTip(tl.TipTypeUnsigned) {
+			enumType.Unsigned = true
+		}
+	}
 	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName,
 		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
 	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
