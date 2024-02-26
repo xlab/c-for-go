@@ -86,15 +86,16 @@ const (
 type Tip string
 
 const (
-	TipPtrSRef    Tip = "sref"
-	TipPtrRef     Tip = "ref"
-	TipPtrArr     Tip = "arr"
-	TipPtrInst    Tip = "inst"
-	TipMemRaw     Tip = "raw"
-	TipTypeNamed  Tip = "named"
-	TipTypePlain  Tip = "plain"
-	TipTypeString Tip = "string"
-	NoTip         Tip = ""
+	TipPtrSRef      Tip = "sref"
+	TipPtrRef       Tip = "ref"
+	TipPtrArr       Tip = "arr"
+	TipPtrInst      Tip = "inst"
+	TipMemRaw       Tip = "raw"
+	TipTypeNamed    Tip = "named"
+	TipTypePlain    Tip = "plain"
+	TipTypeString   Tip = "string"
+	TipTypeUnsigned Tip = "unsigned"
+	NoTip           Tip = ""
 )
 
 type TipKind string
@@ -110,7 +111,7 @@ func (t Tip) Kind() TipKind {
 	switch t {
 	case TipPtrArr, TipPtrRef, TipPtrSRef, TipPtrInst:
 		return TipKindPtr
-	case TipTypePlain, TipTypeNamed, TipTypeString:
+	case TipTypePlain, TipTypeNamed, TipTypeString, TipTypeUnsigned:
 		return TipKindType
 	case TipMemRaw:
 		return TipKindMem
@@ -126,6 +127,8 @@ func (t Tip) IsValid() bool {
 	case TipTypePlain, TipTypeNamed, TipTypeString:
 		return true
 	case TipMemRaw:
+		return true
+	case TipTypeUnsigned:
 		return true
 	default:
 		return false
@@ -145,6 +148,7 @@ const (
 	TipScopeAny      TipScope = "any"
 	TipScopeStruct   TipScope = "struct"
 	TipScopeType     TipScope = "type"
+	TipScopeEnum     TipScope = "enum"
 	TipScopeFunction TipScope = "function"
 )
 
