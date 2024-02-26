@@ -71,6 +71,15 @@ func (t TipSpecRx) TipAt(i int) Tip {
 	return t.Default
 }
 
+func (t TipSpecRx) HasTip(q Tip) bool {
+	for _, tip := range t.tips {
+		if tip.IsValid() && tip == q {
+			return true
+		}
+	}
+	return false
+}
+
 func (t TipSpecRx) Self() Tip {
 	if t.self.IsValid() {
 		return t.self
