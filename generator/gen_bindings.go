@@ -1020,6 +1020,12 @@ func (gen *Generator) submitHelper(h *Helper) {
 
 func (gen *Generator) writeFunctionBody(wr io.Writer, decl *tl.CDecl) {
 	writeStartFuncBody(wr)
+
+	validateFunc, validateRet, matched := gen.tr.GetLibrarySymbolValidation(decl.Name)
+	if matched {
+		writeValidation(wr, validateFunc, decl.Name, validateRet)
+	}
+
 	wr2 := new(reverseBuffer)
 	from, to := gen.createProxies(decl.Name, decl.Spec)
 	for _, proxy := range from {
@@ -1129,7 +1135,7 @@ var (
 			m   map[unsafe.Pointer]struct{}
 		}
 
-		var cgoAllocsUnknown = new(cgoAllocMap) 
+		var cgoAllocsUnknown = new(cgoAllocMap)
 
 		func (a *cgoAllocMap) Add(ptr unsafe.Pointer) {
 			a.mux.Lock()
