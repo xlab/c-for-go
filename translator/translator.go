@@ -7,10 +7,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dlclark/regexp2"
 	"modernc.org/cc/v4"
 )
 
 type Translator struct {
+	validations        Validations
 	rules              Rules
 	compiledRxs        map[RuleAction]RxMap
 	compiledPtrTipRxs  PtrTipRxMap
@@ -88,6 +90,7 @@ func (t TipSpecRx) Self() Tip {
 }
 
 type Config struct {
+	Validations        Validations       `yaml:"Validations"`
 	Rules              Rules             `yaml:"Rules"`
 	ConstRules         ConstRules        `yaml:"ConstRules"`
 	PtrTips            PtrTips           `yaml:"PtrTips"`
@@ -122,6 +125,7 @@ func New(cfg *Config) (*Translator, error) {
 	}
 
 	t := &Translator{
+		validations:        cfg.Validations,
 		rules:              cfg.Rules,
 		constRules:         cfg.ConstRules,
 		typemap:            cfg.Typemap,
@@ -167,6 +171,13 @@ func New(cfg *Config) (*Translator, error) {
 	} else {
 		t.compiledMemTipRxs = rxList
 	}
+
+	for _, v := range t.validations {
+		if _, err := regexp2.Compile(v.MatchedFunc, 0); err != nil {
+			return nil, fmt.Errorf("translator: %s, invalid regexp %s", err.Error(), v.MatchedFunc)
+		}
+	}
+
 	return t, nil
 }
 
@@ -1050,4 +1061,13 @@ func (t *Translator) Declares() []*CDecl {
 
 func (t *Translator) Typedefs() []*CDecl {
 	return t.typedefs
+}
+
+func (t *Translator) GetLibrarySymbolValidation(name string) (string, string, bool) {
+	for _, v := range t.validations {
+		if v.MatchFunc(name) {
+			return v.ValidateFunc, v.Ret, true
+		}
+	}
+	return "", "", false
 }

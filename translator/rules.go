@@ -1,10 +1,28 @@
 package translator
 
+import (
+	"github.com/dlclark/regexp2"
+)
+
 type Rules map[RuleTarget][]RuleSpec
 type ConstRules map[ConstScope]ConstRule
 type PtrTips map[TipScope][]TipSpec
 type TypeTips map[TipScope][]TipSpec
 type MemTips []TipSpec
+
+type Validations []ValidationSpec
+
+type ValidationSpec struct {
+	ValidateFunc string
+	Ret          string
+	MatchedFunc  string
+}
+
+func (v ValidationSpec) MatchFunc(name string) bool {
+	reg := regexp2.MustCompile(v.MatchedFunc, 0)
+	matched, _ := reg.MatchString(name)
+	return matched
+}
 
 type RuleSpec struct {
 	From, To  string

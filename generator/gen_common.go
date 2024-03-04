@@ -8,6 +8,8 @@ import (
 	tl "github.com/xlab/c-for-go/translator"
 )
 
+const validationTemplate = "if %s(\"%s\") != nil { \n	return %s \n}\n"
+
 var (
 	skipName    = []byte("_")
 	skipNameStr = "_"
@@ -190,4 +192,8 @@ func writeSpace(wr io.Writer, n int) {
 
 func writeError(wr io.Writer, err error) {
 	fmt.Fprintf(wr, "// error: %v\n", err)
+}
+
+func writeValidation(wr io.Writer, validateFunc, funcName, retStr string) {
+	fmt.Fprintf(wr, validationTemplate, validateFunc, funcName, retStr)
 }
