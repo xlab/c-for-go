@@ -3,6 +3,7 @@ module github.com/xlab/c-for-go
 go 1.17
 
 require (
+	github.com/dlclark/regexp2 v1.11.0
 	github.com/stretchr/testify v1.6.1
 	github.com/tj/go-spin v1.1.0
 	github.com/xlab/pkgconfig v0.0.0-20170226114623-cea12a0fd245
