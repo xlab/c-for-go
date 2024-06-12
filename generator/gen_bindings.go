@@ -546,9 +546,16 @@ func (gen *Generator) proxyArgFromGo(memTip tl.Tip, name string,
 		proxy = fmt.Sprintf("%s(%s)", helper.Name, name)
 		return proxy, helper.Nillable
 	case isPlain && goSpec.Slices != 0: // ex: []byte
-		//gen.submitHelper(sliceHeader)
-		proxy = fmt.Sprintf("(%s)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&%s)).Data)), cgoAllocsUnknown", cgoSpec.AtLevel(0), name)
-		return
+		gen.submitHelper(sliceHeader)
+		if goSpec.Base == "unsafe.Pointer" &&
+			(len(goSpec.Raw) == 0 || goSpec.Raw == "unsafe.Pointer") {
+			// Go 1.8+
+			cgoSpec.Base = "unsafe.Pointer"
+		}
+		helper := gen.getCopyBytesHelper(cgoSpec)
+		gen.submitHelper(helper)
+		proxy = fmt.Sprintf("%s((*sliceHeader)(unsafe.Pointer(&%s)))", helper.Name, name)
+		return proxy, helper.Nillable
 	case isPlain: // ex: byte, [4]byte
 		var ref, ptr string
 		if (goSpec.Kind == tl.PlainTypeKind || goSpec.Kind == tl.EnumKind) &&

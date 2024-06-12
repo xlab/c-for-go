@@ -1,9 +1,8 @@
-package process
+package main
 
 import (
 	"bytes"
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -22,17 +21,6 @@ import (
 )
 
 type Buf int
-
-var (
-	OutputPath = flag.String("out", "", "Specify a `dir` for the output.")
-	NoCGO      = flag.Bool("nocgo", false, "Do not include a cgo-specific header in resulting files.")
-	CcDefs     = flag.Bool("ccdefs", false, "Use built-in defines from a hosted C-compiler.")
-	CcIncl     = flag.Bool("ccincl", false, "Use built-in sys include paths from a hosted C-compiler.")
-	MaxMem     = flag.String("maxmem", "0x7fffffff", "Specifies platform's memory cap the generated code.")
-	Fancy      = flag.Bool("fancy", true, "Enable fancy output in the term.")
-	Nostamp    = flag.Bool("nostamp", false, "Disable printing timestamps in the output files.")
-	Debug      = flag.Bool("debug", false, "Enable some debug info.")
-)
 
 const (
 	BufDoc Buf = iota
@@ -81,8 +69,8 @@ func NewProcess(configPath, outputPath string) (*Process, error) {
 		if cfg.Parser == nil {
 			cfg.Parser = &parser.Config{}
 		}
-		cfg.Parser.CCDefs = *CcDefs
-		cfg.Parser.CCIncl = *CcIncl
+		cfg.Parser.CCDefs = *ccDefs
+		cfg.Parser.CCIncl = *ccIncl
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, paths...)
 		cfg.Parser.IncludePaths = append(cfg.Parser.IncludePaths, filepath.Dir(configPath))
 	} else {
@@ -113,9 +101,9 @@ func NewProcess(configPath, outputPath string) (*Process, error) {
 	if err != nil {
 		return nil, err
 	}
-	gen.SetMaxMemory(generator.NewMemSpec(*MaxMem))
+	gen.SetMaxMemory(generator.NewMemSpec(*maxMem))
 
-	if *Nostamp {
+	if *nostamp {
 		gen.DisableTimestamps()
 	}
 	c := &Process{
