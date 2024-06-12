@@ -10,17 +10,7 @@ import (
 	"time"
 
 	"github.com/tj/go-spin"
-)
-
-var (
-	outputPath = flag.String("out", "", "Specify a `dir` for the output.")
-	noCGO      = flag.Bool("nocgo", false, "Do not include a cgo-specific header in resulting files.")
-	ccDefs     = flag.Bool("ccdefs", false, "Use built-in defines from a hosted C-compiler.")
-	ccIncl     = flag.Bool("ccincl", false, "Use built-in sys include paths from a hosted C-compiler.")
-	maxMem     = flag.String("maxmem", "0x7fffffff", "Specifies platform's memory cap the generated code.")
-	fancy      = flag.Bool("fancy", true, "Enable fancy output in the term.")
-	nostamp    = flag.Bool("nostamp", false, "Disable printing timestamps in the output files.")
-	debug      = flag.Bool("debug", false, "Enable some debug info.")
+	"github.com/xlab/c-for-go/process"
 )
 
 const logo = `Copyright (c) 2015-2017 Maxim Kupriianov <max@kc.vc>
@@ -29,7 +19,7 @@ Based on a C99 compiler front end by Jan Mercl <0xjnml@gmail.com>
 `
 
 func init() {
-	if *debug {
+	if *process.Debug {
 		log.SetFlags(log.Lshortfile)
 	} else {
 		log.SetFlags(0)
@@ -55,7 +45,7 @@ func main() {
 	var wg sync.WaitGroup
 	doneChan := make(chan struct{})
 	for _, cfgPath := range getConfigPaths() {
-		if *fancy {
+		if *process.Fancy {
 			wg.Add(1)
 			go func() {
 				for {
@@ -74,21 +64,21 @@ func main() {
 		}
 
 		var t0 time.Time
-		if *debug {
+		if *process.Debug {
 			t0 = time.Now()
 		}
-		process, err := NewProcess(cfgPath, *outputPath)
+		prc, err := process.NewProcess(cfgPath, *process.OutputPath)
 		if err != nil {
 			log.Fatalln("[ERR]", err)
 		}
-		process.Generate(*noCGO)
-		if err := process.Flush(*noCGO); err != nil {
+		prc.Generate(*process.NoCGO)
+		if err := prc.Flush(*process.NoCGO); err != nil {
 			log.Fatalln("[ERR]", err)
 		}
-		if *debug {
+		if *process.Debug {
 			fmt.Printf("done in %v\n", time.Now().Sub(t0))
 		}
-		if *fancy {
+		if *process.Fancy {
 			close(doneChan)
 			wg.Wait()
 		}
