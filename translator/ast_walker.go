@@ -112,7 +112,9 @@ func (t *Translator) getStructTag(typ cc.Type) (tag string) {
 }
 
 func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
-	tag := blessName(typ.Typedef().Name())
+	enumType := typ.(*cc.EnumType)
+	enumTag := enumType.Tag()
+	tag := blessName(enumTag.SrcStr())
 	spec := &CEnumSpec{
 		Tag:      tag,
 		Pointers: base.Pointers,
