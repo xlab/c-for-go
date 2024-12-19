@@ -1,4 +1,4 @@
-# c-for-go [![Go Report Card](https://goreportcard.com/badge/github.com/xlab/c-for-go)](https://goreportcard.com/report/github.com/xlab/c-for-go)
+# c-for-go [![Go Report Card](https://goreportcard.com/badge/github.com/xlab/c-for-go)](https://goreportcard.com/report/github.com/xlab/c-for-go)[![go-recipes](https://raw.githubusercontent.com/nikolaydubina/go-recipes/main/badge.svg?raw=true)](https://github.com/nikolaydubina/go-recipes)
 _Automatic C-Go Bindings Generator for Go Programming Language_
 
 This project allows to reuse existing C/C++ libraries in your Go applications, by automatically creating [c-go bindings](https://golang.org/cmd/cgo/) for a given set of C headers and the manifest file. We believe in component-based software engineering and think that reusing C/C++ code in Go applications could bring a huge boost to developer's productivity and system's performance. Read more about the motivation: [top reasons to use bindings](https://github.com/xlab/c-for-go/wiki/Top-5-reasons-to-use-bindings).
