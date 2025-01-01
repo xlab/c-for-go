@@ -3,6 +3,7 @@ package translator
 import (
 	"bytes"
 	"fmt"
+	"github.com/xlab/c-for-go/utils"
 	"regexp"
 	"sort"
 	"strings"
@@ -901,7 +902,7 @@ func (t *Translator) TranslateSpec(spec CType, tips ...Tip) GoTypeSpec {
 		if base := spec.GetBase(); len(base) > 0 {
 			wrapper.Raw = string(t.TransformName(TargetType, base))
 		} else if cgoName := spec.CGoName(); len(cgoName) > 0 {
-			wrapper.Raw = "C." + cgoName
+			wrapper.Raw = utils.CTypeString(cgoName)
 		}
 		return wrapper
 	}
@@ -939,7 +940,7 @@ func (t *Translator) CGoSpec(spec CType, asArg bool) CGoSpec {
 			}
 		}
 	}
-	cgo.Base = "C." + spec.CGoName()
+	cgo.Base = utils.CTypeString(spec.CGoName())
 	return cgo
 }
 
