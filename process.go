@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -86,7 +87,27 @@ func NewProcess(configPath, outputPath string) (*Process, error) {
 	if cfg.Translator == nil {
 		cfg.Translator = &translator.Config{}
 	}
-	cfg.Translator.IgnoredFiles = cfg.Parser.IgnoredPaths
+
+	for _, p := range cfg.Parser.IgnoredPaths {
+		stat, err := os.Stat(p)
+		if err != nil {
+			return nil, err
+		}
+		if !stat.IsDir() {
+			cfg.Translator.IgnoredFiles = append(cfg.Translator.IgnoredFiles, p)
+			continue
+		}
+		if err := filepath.WalkDir(p, func(path string, d fs.DirEntry, err error) error {
+			if d.IsDir() {
+				return nil
+			}
+			cfg.Translator.IgnoredFiles = append(cfg.Translator.IgnoredFiles, path)
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+
 	cfg.Translator.LongIs64Bit = unit.ABI.Types[cc.Long].Size == 8
 	// learn the model
 	tl, err := translator.New(cfg.Translator)
