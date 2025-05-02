@@ -18,7 +18,7 @@ Full documentation is available at https://github.com/xlab/c-for-go/wiki
 ### Installation
 
 ```bash
-$ go get github.com/xlab/c-for-go
+$ go install github.com/xlab/c-for-go@latest
 ```
 
 A simple [Makefile template](https://github.com/xlab/c-for-go/wiki/Makefile-template).
