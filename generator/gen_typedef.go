@@ -2,10 +2,10 @@ package generator
 
 import (
 	"fmt"
+	tl "github.com/xlab/c-for-go/translator"
+	"github.com/xlab/c-for-go/utils"
 	"io"
 	"path/filepath"
-
-	tl "github.com/xlab/c-for-go/translator"
 )
 
 func (gen *Generator) writeTypeTypedef(wr io.Writer, decl *tl.CDecl, seenNames map[string]bool) {
@@ -107,7 +107,8 @@ func (gen *Generator) writeStructTypedef(wr io.Writer, decl *tl.CDecl, raw bool,
 		// opaque struct
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
 			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetType, cName, decl.Position)))
-		fmt.Fprintf(wr, "type %s C.%s", goName, decl.Spec.CGoName())
+		cgoName := decl.Spec.CGoName()
+		fmt.Fprintf(wr, "type %s %s", goName, utils.CTypeString(cgoName))
 		writeSpace(wr, 1)
 		for _, helper := range gen.getRawStructHelpers(goName, cName, decl.Spec) {
 			gen.submitHelper(helper)
@@ -139,7 +140,7 @@ func (gen *Generator) writeUnionTypedef(wr io.Writer, decl *tl.CDecl) {
 	if typeName := string(goName); typeName != typeRef {
 		fmt.Fprintf(wr, "// %s as declared in %s\n", goName,
 			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetType, cName, decl.Position)))
-		fmt.Fprintf(wr, "const sizeof%s = unsafe.Sizeof(C.%s{})\n", goName, decl.Spec.CGoName())
+		fmt.Fprintf(wr, "const sizeof%s = unsafe.Sizeof(%s{})\n", goName, utils.CTypeString(decl.Spec.CGoName()))
 		fmt.Fprintf(wr, "type %s [sizeof%s]byte\n", goName, goName)
 		writeSpace(wr, 1)
 		return
