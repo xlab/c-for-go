@@ -425,7 +425,14 @@ func (t *Translator) typeSpec(typ cc.Type, name string, deep int, isConst bool, 
 	case cc.Struct:
 		s := t.structSpec(spec, typ, deep+1)
 		if !isRet {
+			// For pointer handle typedefs like "typedef struct VkBuffer_T* VkBuffer",
+			// the struct's own typedefNameOf returns "" because the typedef is on the
+			// pointer, not the struct. Fall back to the outer spec's Raw field which
+			// was set from the pointer type's typedef name (e.g. "VkBuffer").
 			s.Typedef = typedefNameOf(typ)
+			if s.Typedef == "" && len(spec.Raw) > 0 {
+				s.Typedef = spec.Raw
+			}
 		}
 		return s
 	case cc.Function:
