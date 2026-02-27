@@ -263,7 +263,7 @@ func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, name string, isC
 			// function result type cannot be declarator of a function definition
 			// so we use typedef here
 			var name string
-			var isResultConst = isConst
+			var isResultConst = isConst || typeHasConstQualifier(ret)
 			if funcType.Result().Typedef() != nil {
 				name = identifierOf(funcType.Result().Typedef().DirectDeclarator)
 				isResultConst = isResultConst || funcType.Result().Typedef().IsConst()
@@ -288,6 +288,23 @@ func (t *Translator) functionSpec(base *CTypeSpec, typ cc.Type, name string, isC
 		}
 	}
 	return spec
+}
+
+func typeHasConstQualifier(ccType cc.Type) bool {
+	if ccType == nil {
+		return false
+	}
+	if attrs := ccType.Attributes(); attrs != nil && attrs.IsConst() {
+		return true
+	}
+	switch t := ccType.(type) {
+	case *cc.PointerType:
+		return typeHasConstQualifier(t.Elem())
+	case *cc.ArrayType:
+		return typeHasConstQualifier(t.Elem())
+	default:
+		return false
+	}
 }
 
 func (t *Translator) typeSpec(typ cc.Type, name string, deep int, isConst bool, isRet bool) CType {
