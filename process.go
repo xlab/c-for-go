@@ -179,7 +179,10 @@ func (c *Process) Generate(noCGO bool) {
 func (c *Process) Flush(noCGO bool) error {
 	c.gen.Close()
 	c.genSync.Wait()
-	filePrefix := filepath.Join(c.outputPath, c.cfg.Generator.PackageName)
+	filePrefix := "."
+	if c.outputPath != "" {
+		filePrefix = filepath.Join(c.outputPath, c.cfg.Generator.PackageName)
+	}
 	if err := os.MkdirAll(filePrefix, 0755); err != nil {
 		return err
 	}
