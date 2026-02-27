@@ -1,3 +1,5 @@
+.idea
+.vscode
 .DS_Store
 /tmp/
 c-for-go
