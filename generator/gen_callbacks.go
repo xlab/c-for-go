@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"github.com/xlab/c-for-go/utils"
 	"io"
 	"strings"
 
@@ -78,8 +79,8 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		if %sFunc == nil {
  			%sFunc = x
  		}
-		return (*%s)(C.%s), nil
-	}`, cbGoName, cbGoName, cgoSpec, cbCName)
+		return (*%s)(%s), nil
+	}`, cbGoName, cbGoName, cgoSpec, utils.CTypeString(cbCName))
 	helpers = append(helpers, &Helper{
 		Name:   fmt.Sprintf("%s.PassRef", goFuncName),
 		Source: buf.String(),
@@ -95,8 +96,8 @@ func (gen *Generator) getCallbackHelpers(goFuncName, cFuncName string, spec tl.C
 		if %sFunc == nil {
  			%sFunc = x
  		}
-		return (%s)(C.%s), nil
-	}`, cbGoName, cbGoName, cgoSpec, cbCName)
+		return (%s)(%s), nil
+	}`, cbGoName, cbGoName, cgoSpec, utils.CTypeString(cbCName))
 		helpers = append(helpers, &Helper{
 			Name:   fmt.Sprintf("%s.PassValue", goFuncName),
 			Source: buf.String(),
