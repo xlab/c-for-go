@@ -82,10 +82,8 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
 		fmt.Fprintf(wr, "type %s %s\n", typeName, enumType)
 		writeSpace(wr, 1)
-		fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName,
-			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
 	}
-	writeStartConst(wr)
+	var constBuf bytes.Buffer
 	for i, m := range spec.Members {
 		if !gen.tr.IsAcceptableName(tl.TargetConst, m.Name) {
 			continue
@@ -99,34 +97,42 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 			namesSeen[string(mName)] = true
 		}
 		if !hasType {
-			fmt.Fprintf(wr, "// %s as declared in %s\n", mName,
+			fmt.Fprintf(&constBuf, "// %s as declared in %s\n", mName,
 				filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, m.Name, m.Position)))
 		}
 		switch {
 		case m.Value != nil:
 			if hasType {
-				fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, iotaOnZero(i, m.Value))
+				fmt.Fprintf(&constBuf, "%s %s = %s\n", mName, typeName, iotaOnZero(i, m.Value))
 				continue
 			}
-			fmt.Fprintf(wr, "%s = %s\n", mName, iotaOnZero(i, m.Value))
+			fmt.Fprintf(&constBuf, "%s = %s\n", mName, iotaOnZero(i, m.Value))
 		case len(m.Expression) > 0:
 			if hasType {
-				fmt.Fprintf(wr, "%s %s = %s\n", mName, typeName, iotaOnZero(i, m.Expression))
+				fmt.Fprintf(&constBuf, "%s %s = %s\n", mName, typeName, iotaOnZero(i, m.Expression))
 				continue
 			}
-			fmt.Fprintf(wr, "%s = %s\n", mName, iotaOnZero(i, m.Expression))
+			fmt.Fprintf(&constBuf, "%s = %s\n", mName, iotaOnZero(i, m.Expression))
 		default:
 			if i == 0 && hasType {
-				fmt.Fprintf(wr, "%s %s = iota\n", mName, typeName)
+				fmt.Fprintf(&constBuf, "%s %s = iota\n", mName, typeName)
 				continue
 			} else if i == 0 {
-				fmt.Fprintf(wr, "%s = iota\n", mName)
+				fmt.Fprintf(&constBuf, "%s = iota\n", mName)
 			}
-			fmt.Fprintf(wr, "%s\n", mName)
+			fmt.Fprintf(&constBuf, "%s\n", mName)
 		}
 	}
-	writeEndConst(wr)
-	writeSpace(wr, 1)
+	if constBuf.Len() > 0 {
+		if hasType {
+			fmt.Fprintf(wr, "// %s enumeration from %s\n", typeName,
+				filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
+		}
+		writeStartConst(wr)
+		constBuf.WriteTo(wr)
+		writeEndConst(wr)
+		writeSpace(wr, 1)
+	}
 }
 
 func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool, typesSeen map[string]bool) {
@@ -166,9 +172,7 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[str
 		}
 	}
 
-	fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName,
-		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
-	writeStartConst(wr)
+	var constBuf bytes.Buffer
 	for i, m := range spec.Members {
 		if !gen.tr.IsAcceptableName(tl.TargetConst, m.Name) {
 			continue
@@ -183,19 +187,25 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[str
 		}
 		switch {
 		case m.Value != nil:
-			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Value))
+			fmt.Fprintf(&constBuf, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Value))
 		case len(m.Expression) > 0:
-			fmt.Fprintf(wr, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Expression))
+			fmt.Fprintf(&constBuf, "%s %s = %v\n", mName, declName, iotaOnZero(i, m.Expression))
 		default:
 			if i == 0 {
-				fmt.Fprintf(wr, "%s %s = iota\n", mName, declName)
+				fmt.Fprintf(&constBuf, "%s %s = iota\n", mName, declName)
 				continue
 			}
-			fmt.Fprintf(wr, "%s\n", mName)
+			fmt.Fprintf(&constBuf, "%s\n", mName)
 		}
 	}
-	writeEndConst(wr)
-	writeSpace(wr, 1)
+	if constBuf.Len() > 0 {
+		fmt.Fprintf(wr, "// %s enumeration from %s\n", tagName,
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
+		writeStartConst(wr)
+		constBuf.WriteTo(wr)
+		writeEndConst(wr)
+		writeSpace(wr, 1)
+	}
 }
 
 func iotaOnZero(i int, v interface{}) string {
