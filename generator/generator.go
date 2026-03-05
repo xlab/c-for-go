@@ -92,16 +92,17 @@ func (gen *Generator) WriteConst(wr io.Writer) int {
 	writeSpace(wr, 1)
 	tagsSeen := make(map[string]bool)
 	namesSeen := make(map[string]bool)
+	typesSeen := make(map[string]bool)
 
 	gen.submitHelper(cgoGenTag)
 	expandEnum := func(decl *tl.CDecl) bool {
 		if tag := decl.Spec.GetTag(); len(tag) == 0 {
-			gen.expandEnumAnonymous(wr, decl, namesSeen)
+			gen.expandEnumAnonymous(wr, decl, namesSeen, typesSeen)
 			return true
 		} else if tagsSeen[tag] {
 			return false
 		} else {
-			gen.expandEnum(wr, decl, namesSeen)
+			gen.expandEnum(wr, decl, namesSeen, typesSeen)
 			if decl.Spec.IsComplete() {
 				tagsSeen[tag] = true
 			}

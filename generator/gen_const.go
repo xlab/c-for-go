@@ -57,7 +57,7 @@ func (gen *Generator) writeConstDeclaration(wr io.Writer, decl *tl.CDecl) {
 	fmt.Fprintf(wr, "var %s %s", declName, goSpec)
 }
 
-func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool) {
+func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool, typesSeen map[string]bool) {
 	var typeName []byte
 	var hasType bool
 	if decl.IsTypedef {
@@ -68,6 +68,10 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 
 	spec := decl.Spec.(*tl.CEnumSpec)
 	if hasType {
+		if typesSeen[string(typeName)] {
+			return
+		}
+		typesSeen[string(typeName)] = true
 		enumType := gen.tr.TranslateSpec(&spec.Type)
 		if tips, ok := gen.tr.TypeTipRx(tl.TipScopeEnum, string(typeName)); ok {
 			if tips.HasTip(tl.TipTypeUnsigned) {
@@ -125,7 +129,7 @@ func (gen *Generator) expandEnumAnonymous(wr io.Writer, decl *tl.CDecl, namesSee
 	writeSpace(wr, 1)
 }
 
-func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool) {
+func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[string]bool, typesSeen map[string]bool) {
 	var declName []byte
 	var isTypedef bool
 	if decl.IsTypedef {
@@ -142,17 +146,23 @@ func (gen *Generator) expandEnum(wr io.Writer, decl *tl.CDecl, namesSeen map[str
 			enumType.Unsigned = true
 		}
 	}
-	fmt.Fprintf(wr, "// %s as declared in %s\n", tagName,
-		filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
-	fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
-	writeSpace(wr, 1)
+	if !typesSeen[string(tagName)] {
+		typesSeen[string(tagName)] = true
+		fmt.Fprintf(wr, "// %s as declared in %s\n", tagName,
+			filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
+		fmt.Fprintf(wr, "type %s %s\n", tagName, enumType)
+		writeSpace(wr, 1)
+	}
 	if isTypedef {
 		if !bytes.Equal(tagName, declName) && len(declName) > 0 {
-			// alias type decl name to the tag
-			fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
-				filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
-			fmt.Fprintf(wr, "type %s %s", declName, tagName)
-			writeSpace(wr, 1)
+			if !typesSeen[string(declName)] {
+				typesSeen[string(declName)] = true
+				// alias type decl name to the tag
+				fmt.Fprintf(wr, "// %s as declared in %s\n", declName,
+					filepath.ToSlash(gen.tr.SrcLocation(tl.TargetConst, decl.Name, decl.Position)))
+				fmt.Fprintf(wr, "type %s %s", declName, tagName)
+				writeSpace(wr, 1)
+			}
 		}
 	}
 
