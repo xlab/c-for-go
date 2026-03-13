@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"github.com/xlab/c-for-go/utils"
 	"strings"
 
 	"modernc.org/cc/v4"
@@ -129,7 +130,7 @@ func (t *Translator) enumSpec(base *CTypeSpec, typ cc.Type) *CEnumSpec {
 			}
 			switch {
 			case t.constRules[ConstEnum] == ConstCGOAlias:
-				m.Expression = fmt.Sprintf("C.%s", name)
+				m.Expression = utils.CTypeString(name)
 			case t.constRules[ConstEnum] == ConstExpand:
 				enTokens := cc.NodeTokens(en.ConstantExpression)
 				srcParts := make([]string, 0, len(enTokens))
